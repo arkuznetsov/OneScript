@@ -6,102 +6,88 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace OneScript.Language
 {
     public class ScriptException : ApplicationException
     {
-        private readonly CodePositionInfo _codePosition;
-
-        public ScriptException() 
-        {
-            _codePosition = new CodePositionInfo();
-            _codePosition.LineNumber = -1;
-        }
-
+        private readonly ErrorPositionInfo _codePosition;
+        
         public ScriptException(string message)
-            : this(new CodePositionInfo(), message, null)
+            : this(new ErrorPositionInfo(), message, null)
         {
-
         }
 
-        public ScriptException(CodePositionInfo codeInfo, string message)
-            : this(codeInfo, message, null)
-        {
-
-        }
-
-        public ScriptException(CodePositionInfo codeInfo, string message, Exception innerException)
+        public ScriptException(ErrorPositionInfo errorInfo, string message, Exception innerException = null)
             : base(message, innerException)
         {
-            _codePosition = codeInfo;
+            _codePosition = errorInfo ?? throw new ArgumentNullException(nameof(errorInfo));
         }
 
+        public ScriptException(ErrorPositionInfo errorInfo, Exception innerException)
+            : base(innerException.Message, innerException)
+        {
+            _codePosition = errorInfo ?? throw new ArgumentNullException(nameof(errorInfo));
+        }
+        
+        public ScriptException(Exception innerException)
+            : base(innerException.Message, innerException)
+        {
+            _codePosition = new ErrorPositionInfo();
+        }
+        
         public int LineNumber
         {
-            get
-            {
-                return _codePosition.LineNumber;
-            }
-            set
-            {
-                _codePosition.LineNumber = value;
-            }
+            get => _codePosition.LineNumber;
+            set => _codePosition.LineNumber = value;
         }
 
         public int ColumnNumber
         {
-            get
-            {
-                return _codePosition.ColumnNumber;
-            }
-            set
-            {
-                _codePosition.ColumnNumber = value;
-            }
+            get => _codePosition.ColumnNumber;
+            set => _codePosition.ColumnNumber = value;
         }
 
         public string Code
         {
-            get
-            {
-                return _codePosition.Code;
-            }
-            set
-            {
-                _codePosition.Code = value;
-            }
+            get => _codePosition.Code;
+            set => _codePosition.Code = value;
         }
 
         public string ModuleName
         {
-            get
-            {
-                return _codePosition.ModuleName;
-            }
-            set
-            {
-                _codePosition.ModuleName = value;
-            }
+            get => _codePosition.ModuleName;
+            set => _codePosition.ModuleName = value;
         }
 
-        public string ErrorDescription
+        public ErrorPositionInfo GetPosition()
         {
-            get
-            {
-                return base.Message;
-            }
+            return _codePosition;
         }
+
+        public string ErrorDescription => base.Message;
 
         public string MessageWithoutCodeFragment
         {
             get
             {
-                if (ColumnNumber != CodePositionInfo.OUT_OF_TEXT)
-                    return $"{{Модуль {ModuleName} / Ошибка в строке: {LineNumber},{ColumnNumber} / {base.Message}}}";
-                
-                return $"{{Модуль {ModuleName} / Ошибка в строке: {LineNumber} / {base.Message}}}";
+                var parts = new List<string>();
+
+                if (!string.IsNullOrEmpty(ModuleName))
+                    parts.Add($"Модуль {ModuleName}");
+
+                if (LineNumber != ErrorPositionInfo.OUT_OF_TEXT)
+                {
+                    parts.Add(ColumnNumber != ErrorPositionInfo.OUT_OF_TEXT
+                        ? $"Ошибка в строке: {LineNumber},{ColumnNumber}"
+                        : $"Ошибка в строке: {LineNumber}");
+                }
+                parts.Add(base.Message);
+
+                var unquotedResult = string.Join(" / ", parts);
+                return $"{{{unquotedResult}}}";
             }
         }
 
@@ -116,5 +102,7 @@ namespace OneScript.Language
                 return sb.ToString();
             }
         }
+        
+        public object RuntimeSpecificInfo { get; set; }
     }
 }

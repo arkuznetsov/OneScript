@@ -4,68 +4,18 @@ Mozilla Public License, v.2.0. If a copy of the MPL
 was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using OneScript.Commons;
+using OneScript.Contexts;
 using OneScript.Language;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class ContextMethodAttribute : Attribute
-    {
-        private readonly string _name;
-        private readonly string _alias;
-
-        public ContextMethodAttribute(string name, string alias = null)
-        {
-            if (!Utils.IsValidIdentifier(name))
-                throw new ArgumentException("Name must be a valid identifier");
-
-            if (!string.IsNullOrEmpty(alias) && !Utils.IsValidIdentifier(alias))
-                throw new ArgumentException("Alias must be a valid identifier");
-
-            _name = name;
-            _alias = alias;
-        }
-
-        public string GetName()
-        {
-            return _name;
-        }
-
-        public string GetAlias()
-        {
-            return _alias;
-        }
-
-        public string GetAlias(string nativeMethodName)
-        {
-            if (!string.IsNullOrEmpty(_alias))
-            {
-                return _alias;
-            }
-            if (!IsDeprecated)
-            {
-                return nativeMethodName;
-            }
-            return null;
-        }
-
-        public bool IsDeprecated { get; set; }
-
-        public bool ThrowOnUse { get; set; }
-
-        public bool IsFunction { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public class ByRefAttribute : Attribute
-    {
-    }
-
     public delegate IValue ContextCallableDelegate<TInstance>(TInstance instance, IValue[] args);
 
     public class ContextMethodsMapper<TInstance>
@@ -73,59 +23,62 @@ namespace ScriptEngine.Machine.Contexts
         private List<InternalMethInfo> _methodPtrs;
         private IdentifiersTrie<int> _methodNumbers;
 
+        private readonly object _locker = new object();
+
+        private static readonly MethodInfo _genConvertParamMethod =
+            typeof(InternalMethInfo).GetMethod("ConvertParam",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
+        private static readonly MethodInfo _genConvertReturnMethod =
+            typeof(InternalMethInfo).GetMethod("ConvertReturnValue",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        
         private void Init()
         {
             if (_methodPtrs == null)
             {
-                lock (this)
+                lock (_locker)
                 {
                     if (_methodPtrs == null)
                     {
-                        _methodPtrs = new List<InternalMethInfo>();
-                        MapType(typeof(TInstance));
+                        var localPtrs = MapType(typeof(TInstance));
+                        _methodNumbers = new IdentifiersTrie<int>();
+                        for (int idx = 0; idx < localPtrs.Count; ++idx)
+                        {
+                            var methinfo = localPtrs[idx].MethodSignature;
+
+                            _methodNumbers.Add(methinfo.Name, idx);
+                            if (methinfo.Alias != null)
+                                _methodNumbers.Add(methinfo.Alias, idx);
+                        }
+
+                        _methodPtrs = localPtrs;
                     }
                 }
             }
         }
 
-        private void InitSearch()
-        {
-            if (_methodNumbers == null)
-            {
-                Init();
-                _methodNumbers = new IdentifiersTrie<int>();
-                for (int idx = 0; idx < _methodPtrs.Count; ++idx)
-                {
-                    var methinfo = _methodPtrs[idx].MethodInfo;
-
-                    _methodNumbers.Add(methinfo.Name, idx);
-                    if (methinfo.Alias != null)
-                        _methodNumbers.Add(methinfo.Alias, idx);
-                }
-            }
-        }
-
-        public ContextCallableDelegate<TInstance> GetMethod(int number)
+        public ContextCallableDelegate<TInstance> GetCallableDelegate(int number)
         {
             Init();
             return _methodPtrs[number].Method;
         }
 
-        public ScriptEngine.Machine.MethodInfo GetMethodInfo(int number)
+        public BslMethodInfo GetRuntimeMethod(int number)
         {
             Init();
-            return _methodPtrs[number].MethodInfo;
+            return _methodPtrs[number].ClrMethod;
         }
 
-        public IEnumerable<MethodInfo> GetMethods()
+        public IEnumerable<BslMethodInfo> GetMethods()
         {
             Init();
-            return _methodPtrs.Select(x => x.MethodInfo);
+            return _methodPtrs.Select(x => x.ClrMethod);
         }
 
         public int FindMethod(string name)
         {
-            InitSearch();
+            Init();
 
             if (!_methodNumbers.TryGetValue(name, out var idx))
                 throw RuntimeException.MethodNotFoundException(name);
@@ -142,9 +95,9 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
 
-        private void MapType(Type type)
+        private List<InternalMethInfo> MapType(Type type)
         {
-            _methodPtrs = type.GetMethods()
+            return type.GetMethods()
                 .SelectMany(method => method.GetCustomAttributes(typeof(ContextMethodAttribute), false)
                     .Select(attr => new InternalMethInfo(method, (ContextMethodAttribute)attr)) )
                 .ToList();
@@ -153,9 +106,11 @@ namespace ScriptEngine.Machine.Contexts
         private class InternalMethInfo
         {
             private readonly Lazy<ContextCallableDelegate<TInstance>> _method;
-            public MethodInfo MethodInfo { get; }
+            public MethodSignature MethodSignature { get; }
+            
+            public BslMethodInfo ClrMethod { get; }
 
-            public InternalMethInfo(System.Reflection.MethodInfo target, ContextMethodAttribute binding)
+            public InternalMethInfo(MethodInfo target, ContextMethodAttribute binding)
             {
                 _method = new Lazy<ContextCallableDelegate<TInstance>>(() =>
                 {
@@ -163,12 +118,13 @@ namespace ScriptEngine.Machine.Contexts
                     return isFunc ? CreateFunction(target) : CreateProcedure(target);
                 });
 
-                MethodInfo = CreateMetadata(target, binding);
+                MethodSignature = CreateMetadata(target, binding);
+                ClrMethod = new ContextMethodInfo(target, binding);
             }
 
             public ContextCallableDelegate<TInstance> Method => _method.Value;
 
-            private static MethodInfo CreateMetadata(System.Reflection.MethodInfo target, ContextMethodAttribute binding)
+            private static MethodSignature CreateMetadata(MethodInfo target, ContextMethodAttribute binding)
             {
                 var parameters = target.GetParameters();
                 var isFunc = target.ReturnType != typeof(void);
@@ -201,7 +157,7 @@ namespace ScriptEngine.Machine.Contexts
 
                 }
 
-                var scriptMethInfo = new ScriptEngine.Machine.MethodInfo();
+                var scriptMethInfo = new MethodSignature();
                 scriptMethInfo.IsFunction = isFunc;
                 scriptMethInfo.IsExport = true;
                 scriptMethInfo.IsDeprecated = binding.IsDeprecated;
@@ -214,12 +170,12 @@ namespace ScriptEngine.Machine.Contexts
                 return scriptMethInfo;
             }
 
-            private static ContextCallableDelegate<TInstance> CreateFunction(System.Reflection.MethodInfo target)
+            private static ContextCallableDelegate<TInstance> CreateFunction(MethodInfo target)
             {
                 var methodCall = MethodCallExpression(target, out var instParam, out var argsParam);
 
-                var convertRetMethod = typeof(InternalMethInfo).GetMethod("ConvertReturnValue", BindingFlags.Static | BindingFlags.NonPublic)?.MakeGenericMethod(target.ReturnType);
-                System.Diagnostics.Debug.Assert(convertRetMethod != null);
+                var convertRetMethod = _genConvertReturnMethod.MakeGenericMethod(target.ReturnType);
+                //System.Diagnostics.Debug.Assert(convertRetMethod != null);
                 var convertReturnCall = Expression.Call(convertRetMethod, methodCall);
                 var body = convertReturnCall;
 
@@ -228,7 +184,7 @@ namespace ScriptEngine.Machine.Contexts
                 return l.Compile();
 
             }
-            private static ContextCallableDelegate<TInstance> CreateProcedure(System.Reflection.MethodInfo target)
+            private static ContextCallableDelegate<TInstance> CreateProcedure(MethodInfo target)
             {
                 var methodCall = MethodCallExpression(target, out var instParam, out var argsParam);
                 var returnLabel = Expression.Label(typeof(IValue));
@@ -249,7 +205,7 @@ namespace ScriptEngine.Machine.Contexts
                 return l.Compile();
             }
 
-            private static InvocationExpression MethodCallExpression(System.Reflection.MethodInfo target, out ParameterExpression instParam, out ParameterExpression argsParam)
+            private static InvocationExpression MethodCallExpression(MethodInfo target, out ParameterExpression instParam, out ParameterExpression argsParam)
             {
                 // For those who dare:
                 // Код ниже формирует следующую лямбду с 2-мя замыканиями realMethodDelegate и defaults:
@@ -275,16 +231,7 @@ namespace ScriptEngine.Machine.Contexts
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
-                    var convertMethod = typeof(InternalMethInfo).GetMethod("ConvertParam",
-                                            BindingFlags.Static | BindingFlags.NonPublic,
-                                            null,
-                                            new Type[]
-                                            {
-                                                typeof(IValue),
-                                                typeof(object)
-                                            },
-                                            null)?.MakeGenericMethod(parameters[i].ParameterType);
-                    System.Diagnostics.Debug.Assert(convertMethod != null);
+                    var convertMethod = _genConvertParamMethod.MakeGenericMethod(parameters[i].ParameterType);
 
                     if (parameters[i].HasDefaultValue)
                     {
@@ -295,14 +242,13 @@ namespace ScriptEngine.Machine.Contexts
                     var defaultArg = Expression.ArrayIndex(defaultsClojure, Expression.Constant(i));
                     var conversionCall = Expression.Call(convertMethod, indexedArg, defaultArg);
                     argsPass.Add(conversionCall);
-
                 }
 
                 var methodCall = Expression.Invoke(methodClojure, argsPass);
                 return methodCall;
             }
 
-            private static Expression CreateDelegateExpr(System.Reflection.MethodInfo target)
+            private static Expression CreateDelegateExpr(MethodInfo target)
             {
                 var types = new List<Type>();
                 types.Add(target.DeclaringType);
@@ -330,15 +276,9 @@ namespace ScriptEngine.Machine.Contexts
             }
 
             // ReSharper disable once UnusedMember.Local
-            private static T ConvertParam<T>(IValue value)
-            {
-                return ContextValuesMarshaller.ConvertParam<T>(value);
-            }
-
-            // ReSharper disable once UnusedMember.Local
             private static T ConvertParam<T>(IValue value, object def)
             {
-                if (value == null || value.DataType == DataType.NotAValidValue)
+                if (value == null || value.IsSkippedArgument())
                     return (T)def;
 
                 return ContextValuesMarshaller.ConvertParam<T>(value);
@@ -346,7 +286,7 @@ namespace ScriptEngine.Machine.Contexts
 
             private static IValue ConvertReturnValue<TRet>(TRet param)
             {
-                return ContextValuesMarshaller.ConvertReturnValue<TRet>(param);
+                return ContextValuesMarshaller.ConvertReturnValue(param);
             }
         }
 

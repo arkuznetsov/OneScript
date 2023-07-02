@@ -41,6 +41,8 @@ namespace OneScript.Language.LexicalAnalysis
         Execute,
         AddHandler,
         RemoveHandler,
+        Async,
+        Await,
 
         // operators
         Plus,
@@ -109,12 +111,14 @@ namespace OneScript.Language.LexicalAnalysis
         Hour,
         Minute,
         Second,
+        BegOfWeek,
         BegOfYear,
         BegOfMonth,
         BegOfDay,
         BegOfHour,
         BegOfMinute,
         BegOfQuarter,
+        EndOfWeek,
         EndOfYear,
         EndOfMonth,
         EndOfDay,

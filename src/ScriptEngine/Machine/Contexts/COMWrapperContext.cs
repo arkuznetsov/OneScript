@@ -8,18 +8,30 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OneScript.Commons;
+using OneScript.Contexts;
+using OneScript.Types;
+using OneScript.Values;
+using ScriptEngine.Types;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    [ContextClass("COMОбъект", "COMObject")]
-    public abstract class COMWrapperContext : PropertyNameIndexAccessor, ICollectionContext, IDisposable, IObjectWrapper, IEnumerable<IValue>
+    [ContextClass("COMОбъект", "COMObject", TypeUUID = "5E4FA60E-9724-494A-A5C8-5BB0A4F914E0")]
+    public abstract class COMWrapperContext : PropertyNameIndexAccessor, 
+        ICollectionContext<IValue>,
+        IEmptyValueCheck,
+        IDisposable,
+        IObjectWrapper
     {
-        protected static readonly DateTime MIN_OLE_DATE = new DateTime(100,1,1);
+        private static readonly DateTime MIN_OLE_DATE = new DateTime(100,1,1);
+        protected static readonly TypeDescriptor ComObjectType = typeof(COMWrapperContext).GetTypeFromClassMarkup();
+            
+        protected object Instance;
 
-        public COMWrapperContext()
-            : base(TypeManager.GetTypeByFrameworkType(typeof(COMWrapperContext)))
+        protected COMWrapperContext(object instance)
+            : base(ComObjectType)
         {
-
+            Instance = instance;
         }
 
         private static Type FindTypeByName(string typeName)
@@ -35,10 +47,11 @@ namespace ScriptEngine.Machine.Contexts
             return Type.GetType(typeName, throwOnError:false, ignoreCase:true);
         }
 
-        public static COMWrapperContext Create(string progId, IValue[] arguments)
+        private static COMWrapperContext Create(string progId, IValue[] arguments)
         {
             Type type = null;
-            if (Type.GetType("Mono.Runtime") == null)
+#if NETFRAMEWORK
+            if (!Utils.IsMonoRuntime)
             {
                 type = Type.GetTypeFromProgID(progId, throwOnError: false);
             }
@@ -46,7 +59,13 @@ namespace ScriptEngine.Machine.Contexts
             {
                 type = FindTypeByName(progId);
             }
-
+#else
+            type = FindTypeByName(progId);
+            if (type == null)
+            {
+                type = Type.GetTypeFromProgID(progId, false);
+            }
+#endif
             if (type == null)
             {
                 throw new TypeLoadException(String.Format("Тип {0} не найден!", progId));
@@ -77,8 +96,8 @@ namespace ScriptEngine.Machine.Contexts
         private static COMWrapperContext InitByInstance(Type type, object instance)
         {
             if (TypeIsRuntimeCallableWrapper(type))
-            {
-                return new UnmanagedRCWComContext(instance);
+            {               
+                return new UnmanagedCOMWrapperContext(instance);
             }
             else if (IsObjectType(type) || IsAStruct(type))
             {
@@ -112,9 +131,9 @@ namespace ScriptEngine.Machine.Contexts
         public static object MarshalIValue(IValue val)
         {
             object retValue;
-            if (val != null && val.DataType == Machine.DataType.Date)
+            if (val != null && val is BslDateValue dateVal)
             {
-                var date = val.AsDate();
+                var date = (DateTime)dateVal;
                 if (date <= MIN_OLE_DATE)
                 {
                     retValue = MIN_OLE_DATE;
@@ -126,7 +145,7 @@ namespace ScriptEngine.Machine.Contexts
             }
             else
             {
-                retValue = ContextValuesMarshaller.ConvertToCLRObject(val);
+                retValue = ContextValuesMarshaller.ConvertToClrObject(val);
             }
 
             return retValue;
@@ -171,7 +190,7 @@ namespace ScriptEngine.Machine.Contexts
 
         private static bool IsMissedArg(IValue arg)
         {
-            return arg == null || arg.DataType == DataType.NotAValidValue;
+            return arg == null || arg.IsSkippedArgument();
         }
 
         public static IValue CreateIValue(object objParam)
@@ -235,7 +254,7 @@ namespace ScriptEngine.Machine.Contexts
                 {
                     throw new RuntimeException("Тип " + type + " невозможно преобразовать в один из поддерживаемых типов", e);
                 }
-                return ValueFactory.Create(ctx);
+                return ctx;
             }
             
             else
@@ -246,23 +265,18 @@ namespace ScriptEngine.Machine.Contexts
 
         #region ICollectionContext Members
 
-        public int Count()
+        public virtual int Count() => 0;
+
+        bool IEmptyValueCheck.IsEmpty => false;
+
+        public virtual void Clear()
         {
             throw new NotImplementedException();
-        }
-
-        public void Clear()
-        {
-            throw new NotImplementedException();
-        }
-
-        public CollectionEnumerator GetManagedIterator()
-        {
-            return new CollectionEnumerator(GetEnumerator());
         }
 
         public abstract IEnumerator<IValue> GetEnumerator();
-        public abstract object UnderlyingObject { get; }
+
+        public object UnderlyingObject => Instance;
 
         #region IEnumerable Members
 

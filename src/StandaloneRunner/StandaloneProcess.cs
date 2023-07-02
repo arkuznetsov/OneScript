@@ -6,20 +6,9 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
-
-using oscript;
-using ScriptEngine;
-using ScriptEngine.Compiler;
-using ScriptEngine.Environment;
-using ScriptEngine.HostedScript;
-using ScriptEngine.HostedScript.Library;
 using ScriptEngine.Machine;
-using ScriptEngine.Machine.Contexts;
 
 namespace StandaloneRunner
 {
@@ -51,14 +40,10 @@ namespace StandaloneRunner
         }
     }
 
-    internal class BinaryCodeSource : ICodeSource
+    internal class BinaryCodeSource : OneScript.Sources.ICodeSource
     {
-        #region ICodeSource Members
-
-        public string SourceDescription => Assembly.GetExecutingAssembly().Location;
-
-        public string Code => "<Source is not available>";
-
-        #endregion
+        public string Location => Assembly.GetExecutingAssembly().Location;
+        
+        public string GetSourceCode() => "<Source is not available>";
     }
 }

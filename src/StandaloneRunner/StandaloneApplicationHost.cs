@@ -6,9 +6,9 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using OneScript.StandardLibrary;
 using oscript;
 using ScriptEngine.HostedScript;
-using ScriptEngine.HostedScript.Library;
 
 namespace StandaloneRunner
 {
@@ -26,9 +26,9 @@ namespace StandaloneRunner
             ConsoleHostImpl.ShowExceptionInfo(exc);
         }
 
-        public bool InputString(out string result, int maxLen)
+        public bool InputString(out string result, string prompt, int maxLen, bool multiline)
         {
-            return ConsoleHostImpl.InputString(out result, maxLen);
+            return ConsoleHostImpl.InputString(out result, prompt, maxLen, multiline);
         }
 
         public string[] GetCommandLineArguments()

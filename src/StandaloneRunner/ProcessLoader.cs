@@ -9,11 +9,14 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
+using OneScript.Commons;
+using OneScript.Sources;
+using OneScript.StandardLibrary.Collections;
 using ScriptEngine;
 using ScriptEngine.Compiler;
 using ScriptEngine.HostedScript;
-using ScriptEngine.Machine;
-using ScriptEngine.Machine.Contexts;
+using ScriptEngine.HostedScript.Extensions;
+using ScriptEngine.Hosting;
 
 namespace StandaloneRunner
 {
@@ -22,19 +25,30 @@ namespace StandaloneRunner
         public Process CreateProcess(Stream sourceStream, IHostApplication host)
         {
             var appDump = DeserializeAppDump(sourceStream);
-            var engine = new HostedScriptEngine();
-            var src = new BinaryCodeSource();
-            var templateStorage = new TemplateStorage(new StandaloneTemplateFactory());
+            
+            var engineBuilder = DefaultEngineBuilder
+                .Create()
+                .SetupEnvironment(e =>
+                {
+                    e.AddAssembly(typeof(ArrayImpl).Assembly);
+                    e.UseTemplateFactory(new StandaloneTemplateFactory());
+                })
+                .SetupConfiguration(p => p.UseEnvironmentVariableConfig("OSCRIPT_CONFIG"));
 
+            var engine = new HostedScriptEngine(engineBuilder.Build());
+            var src = SourceCodeBuilder.Create()
+                .FromSource(new BinaryCodeSource())
+                .WithName("Compiler source")
+                .Build();
+            
             engine.SetGlobalEnvironment(host, src);
             engine.InitializationCallback = (e, env) =>
             {
-                e.Environment.InjectObject(templateStorage);
-                GlobalsManager.RegisterInstance(templateStorage);
+                var storage = e.GlobalsManager.GetInstance<TemplateStorage>();
+                LoadResources(storage, appDump.Resources);
             };
             engine.Initialize();
 
-            LoadResources(templateStorage, appDump.Resources);
             LoadScripts(engine, appDump.Scripts);
             
             var process = engine.CreateProcess(host, appDump.Scripts[0].Image, src);

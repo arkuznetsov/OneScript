@@ -9,9 +9,19 @@ namespace OneScript.Language
 {
     public class SyntaxErrorException : ScriptException
     {
-        internal SyntaxErrorException(CodePositionInfo codeInfo, string message):base(codeInfo, message)
+        public SyntaxErrorException(ErrorPositionInfo codeInfo, string message):base(codeInfo, message)
         {
 
+        }
+
+        internal SyntaxErrorException(CodeError error) : base(error.Position, error.Description)
+        {
+            
+        }
+        
+        internal SyntaxErrorException(ErrorPositionInfo codeInfo, CodeError error) : base(codeInfo, error.Description)
+        {
+            
         }
     }
 }

@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System.Collections.Generic;
+using OneScript.Commons;
 
 namespace ScriptEngine.Machine.Contexts
 {
@@ -28,11 +29,6 @@ namespace ScriptEngine.Machine.Contexts
             _propHolder.RemoveProperty(name);
         }
 
-        protected void ReorderPropertyNumbers()
-        {
-            _propHolder.ReorderPropertyNumbers();
-        }
-
         protected void ClearProperties()
         {
             _propHolder.ClearProperties();
@@ -43,7 +39,7 @@ namespace ScriptEngine.Machine.Contexts
             return _propHolder.GetPropertyName(idx);
         }
 
-        protected virtual IEnumerable<KeyValuePair<string, int>> GetProperties()
+        protected virtual IEnumerable<KeyValuePair<string, int>> GetDynamicProperties()
         {
             return _propHolder.GetProperties();
         }
@@ -65,7 +61,7 @@ namespace ScriptEngine.Machine.Contexts
             return GetPropertyName(propNum);
         }
 
-        public override int FindProperty(string name)
+        public override int GetPropertyNumber(string name)
         {
             try
             {
@@ -73,7 +69,7 @@ namespace ScriptEngine.Machine.Contexts
             }
             catch (KeyNotFoundException)
             {
-                throw RuntimeException.PropNotFoundException(name);
+                throw PropertyAccessException.PropNotFoundException(name);
             }
         }
 

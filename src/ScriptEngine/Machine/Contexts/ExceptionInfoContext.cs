@@ -5,6 +5,10 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
+using System.Collections.Generic;
+using System.Text;
+using OneScript.Commons;
+using OneScript.Contexts;
 using OneScript.Language;
 
 namespace ScriptEngine.Machine.Contexts
@@ -20,17 +24,13 @@ namespace ScriptEngine.Machine.Contexts
 
         public ExceptionInfoContext(ScriptException source)
         {
-            if (source == null)
-                throw new ArgumentNullException();
-            
-            _exc = source;
+            _exc = source ?? throw new ArgumentNullException();
+            if (source.InnerException is ParametrizedRuntimeException pre)
+            {
+                Parameters = pre.Parameter;
+            }
         }
-
-        public ExceptionInfoContext(ParametrizedRuntimeException source):this((ScriptException)source)
-        {
-            Parameters = source.Parameter;
-        }
-
+        
         /// <summary>
         /// Значение, переданное при создании исключения в конструкторе объекта ИнформацияОбОшибке.
         /// </summary>
@@ -57,44 +57,39 @@ namespace ScriptEngine.Machine.Contexts
 
         public string DetailedDescription
         {
-            get { return _exc.Message; }
+            get
+            {
+                var sb = new StringBuilder(_exc.Message);
+                var inner = _exc.InnerException;
+                while (inner != default)
+                {
+                    sb.AppendLine();
+                    sb.AppendLine(Locale.NStr("ru = 'по причине:';en = 'caused by:'"));
+                    sb.AppendLine(inner.Message);
+                    inner = inner.InnerException;
+                }
+
+                return sb.ToString();
+            }
         }
 
         /// <summary>
         /// Имя модуля, вызвавшего исключение.
         /// </summary>
         [ContextProperty("ИмяМодуля", "ModuleName")]
-        public string ModuleName
-        {
-            get
-            {
-                return SafeMarshallingNullString(_exc.ModuleName);
-            }
-        }
+        public string ModuleName => _exc.ModuleName ?? string.Empty;
 
         /// <summary>
         /// Номер строки, вызвавшей исключение.
         /// </summary>
         [ContextProperty("НомерСтроки", "LineNumber")]
-        public int LineNumber
-        {
-            get
-            {
-                return _exc.LineNumber;
-            }
-        }
+        public int LineNumber => _exc.LineNumber;
 
         /// <summary>
         /// Строка исходного кода, вызвавшего исключение.
         /// </summary>
         [ContextProperty("ИсходнаяСтрока", "SourceLine")]
-        public string SourceLine
-        {
-            get
-            {
-                return SafeMarshallingNullString(_exc.Code);
-            }
-        }
+        public string SourceLine => _exc.Code ?? string.Empty;
 
         /// <summary>
         /// Предоставляет доступ к стеку вызовов процедур.
@@ -104,21 +99,14 @@ namespace ScriptEngine.Machine.Contexts
         [ContextMethod("ПолучитьСтекВызовов", "GetStackTrace")]
         public IValue GetStackTrace()
         {
-            if (_exc is RuntimeException rte)
+            if (_exc.RuntimeSpecificInfo is IList<ExecutionFrameInfo> frames)
             {
-                var frames = rte.CallStackFrames;
-                if (frames == null)
-                    return ValueFactory.Create();
-
+                // var frames = rte.CallStackFrames;
+                // if (frames == null)
+                //    return ValueFactory.Create();
                 return new StackTraceCollectionContext(frames);
             }
-            else
-                return ValueFactory.Create();
-        }
-
-        private string SafeMarshallingNullString(string src)
-        {
-            return src == null ? "" : src;
+            return ValueFactory.Create();
         }
 
         /// <summary>
@@ -162,7 +150,7 @@ namespace ScriptEngine.Machine.Contexts
                     return ValueFactory.Create();
 
                 var inner = new ExternalSystemException(_exc.InnerException.InnerException);
-                if (inner.LineNumber == CodePositionInfo.OUT_OF_TEXT)
+                if (inner.LineNumber == ErrorPositionInfo.OUT_OF_TEXT)
                 {
                     inner.ModuleName = this.ModuleName;
                     inner.Code = this.SourceLine;

@@ -4,231 +4,139 @@ Mozilla Public License, v.2.0. If a copy of the MPL
 was not distributed with this file, You can obtain one 
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
+
 using System;
-using ScriptEngine.Environment;
+using OneScript.Sources;
 using ScriptEngine.HostedScript.Library;
 using ScriptEngine.Machine;
-using System.Collections.Generic;
+using OneScript.Commons;
+using OneScript.Compilation;
+using OneScript.Contexts;
+using OneScript.Execution;
+using OneScript.StandardLibrary;
+using OneScript.StandardLibrary.Tasks;
 using ScriptEngine.Machine.Contexts;
-
 
 namespace ScriptEngine.HostedScript
 {
     public class HostedScriptEngine : IDisposable
     {
         private readonly ScriptingEngine _engine;
-        private readonly SystemGlobalContext _globalCtx;
+        private SystemGlobalContext _globalCtx;
         private readonly RuntimeEnvironment _env;
         private bool _isInitialized;
-        private bool _configInitialized;
-        private bool _librariesInitialized;
 
+        private readonly OneScriptLibraryOptions _workingConfig;
+        
         private CodeStatProcessor _codeStat;
 
-        public HostedScriptEngine()
+        public HostedScriptEngine(ScriptingEngine engine)
         {
-            _engine = new ScriptingEngine();
-            _env = new RuntimeEnvironment();
-            _engine.AttachAssembly(System.Reflection.Assembly.GetExecutingAssembly(), _env);
+            _engine = engine;
+            _env = _engine.Environment;
+            _engine.AttachAssembly(typeof(HostedScriptEngine).Assembly);
+            _workingConfig = _engine.Services.Resolve<OneScriptLibraryOptions>();
+            SetGlobalContexts(engine.GlobalsManager);
+        }
 
+        private void SetGlobalContexts(IGlobalsManager manager)
+        {
             _globalCtx = new SystemGlobalContext();
             _globalCtx.EngineInstance = _engine;
 
-            _env.InjectObject(_globalCtx, false);
-            GlobalsManager.RegisterInstance(_globalCtx);
+            _env.InjectObject(_globalCtx);
+            manager.RegisterInstance(_globalCtx);
 
-            InitializationCallback = (eng, env) =>
-            {
-                var templateFactory = new DefaultTemplatesFactory();
-                var storage = new TemplateStorage(templateFactory);
-                env.InjectObject(storage);
-                GlobalsManager.RegisterInstance(storage);
-            };
+            var dynLoader = new DynamicLoadingFunctions(_engine);
+            _env.InjectObject(dynLoader);
+            manager.RegisterInstance(dynLoader);
 
-            _engine.Environment = _env;
+            var bgTasksManager = new BackgroundTasksManager(_engine.Services.Resolve<ExecutionContext>());
+            _env.InjectGlobalProperty(bgTasksManager, "ФоновыеЗадания", "BackgroundJobs", true);
         }
 
-        public ScriptingEngine EngineInstance => _engine;
-
-        public void InitExternalLibraries(string systemLibrary, IEnumerable<string> searchDirs)
-        {
-            var libLoader = new LibraryResolver(_engine, _env);
-            _engine.DirectiveResolvers.Add(libLoader);
-
-            libLoader.LibraryRoot = systemLibrary;
-            libLoader.SearchDirectories.Clear();
-            if (searchDirs != null)
-            {
-                libLoader.SearchDirectories.AddRange(searchDirs);
-            }
-
-            _librariesInitialized = true;
-        }
-
-        public static string ConfigFileName => EngineConfigProvider.CONFIG_FILE_NAME;
-
-        public KeyValueConfig GetWorkingConfig()
-        {
-            var cfgAccessor = GlobalsManager.GetGlobalContext<SystemConfigAccessor>();
-            if (!_configInitialized)
-            {
-                cfgAccessor.Provider = new EngineConfigProvider(CustomConfig);
-                cfgAccessor.Refresh();
-                _configInitialized = true;
-            }
-            return cfgAccessor.GetConfig();
-        }
-
-        public string CustomConfig { get; set; }
-
-        public Action<ScriptingEngine, RuntimeEnvironment> InitializationCallback { get; set; }
-        
         public void Initialize()
         {
             if (!_isInitialized)
             {
-                InitializationCallback?.Invoke(_engine, _engine.Environment);
                 _engine.Initialize();
                 _isInitialized = true;
             }
 
             // System language
-            var SystemLanguageCfg = GetWorkingConfig()["SystemLanguage"];
+            var systemLanguageCfg = _workingConfig.SystemLanguage;
 
-            if (SystemLanguageCfg != null)
-                Locale.SystemLanguageISOName = SystemLanguageCfg;
-            else
-                Locale.SystemLanguageISOName = System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
+            Locale.SystemLanguageISOName = systemLanguageCfg ?? System.Globalization.CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
         }
 
-        private void InitLibraries(KeyValueConfig config)
+        public void InjectGlobalProperty(string name, string alias, IValue value, bool readOnly)
         {
-            if (_librariesInitialized)
-                return;
-
-            if(config != null)
-            {
-                InitLibrariesFromConfig(config);
-            }
-            else
-            {
-                InitExternalLibraries(null, null);
-            }
+            _env.InjectGlobalProperty(value, name, alias, readOnly);
         }
 
-        private static string ConfigFilePath()
+        public void InjectObject(IAttachableContext obj)
         {
-            return EngineConfigProvider.DefaultConfigFilePath();
+            _env.InjectObject(obj);
         }
 
-        private void InitLibrariesFromConfig(KeyValueConfig config)
+        public ScriptSourceFactory Loader => _engine.Loader;
+
+        public ICompilerFrontend GetCompilerService()
         {
-            string sysDir = config[EngineConfigProvider.SYSTEM_LIB_KEY];
-            string additionalDirsList = config[EngineConfigProvider.ADDITIONAL_LIB_KEY];
-            string[] addDirs = null;
-            
-            if(additionalDirsList != null)
-            {
-                addDirs = additionalDirsList.Split(';');
-            }
-
-            InitExternalLibraries(sysDir, addDirs);
-
-        }
-
-        public void AttachAssembly(System.Reflection.Assembly asm)
-        {
-            _engine.AttachAssembly(asm, _env);
-        }
-
-        public void InjectGlobalProperty(string name, IValue value, bool readOnly)
-        {
-            _env.InjectGlobalProperty(value, name, readOnly);
-        }
-
-        public void InjectObject(IAttachableContext obj, bool asDynamicScope)
-        {
-            _env.InjectObject(obj, asDynamicScope);
-        }
-
-        public ICodeSourceFactory Loader => _engine.Loader;
-
-        public IDebugController DebugController
-        {
-            get => _engine.DebugController;
-            set => _engine.DebugController = value;
-        }
-
-        public CompilerService GetCompilerService()
-        {
-            InitLibraries(GetWorkingConfig());
-
             var compilerSvc = _engine.GetCompilerService();
-            compilerSvc.DefineVariable("ЭтотОбъект", "ThisObject", SymbolType.ContextProperty);
-            UserScriptContextInstance.GetOwnMethodsDefinition().ForEach(x => compilerSvc.DefineMethod(x));
+            compilerSvc.FillSymbols(typeof(UserScriptContextInstance));
+            
             return compilerSvc;
         }
 
-        public IEnumerable<ExternalLibraryDef> GetExternalLibraries()
-        {
-            return _env.GetUserAddedScripts();
-        }
-
-        public void LoadUserScript(UserAddedScript script)
-        {
-            if (script.Type == UserAddedScriptType.Class)
-            {
-                _engine.AttachedScriptsFactory.LoadAndRegister(script.Symbol, script.Image);
-            }
-            else
-            {
-                var loaded = _engine.LoadModuleImage(script.Image);
-                var instance = (IValue)_engine.NewObject(loaded);
-                _env.InjectGlobalProperty(instance, script.Symbol, true);
-            }
-        }
-
-        public Process CreateProcess(IHostApplication host, ICodeSource src)
+        public Process CreateProcess(IHostApplication host, SourceCode src)
         {
             Initialize();
             SetGlobalEnvironment(host, src);
             if (_engine.DebugController != null)
             {
                 _engine.DebugController.Init();
-                _engine.DebugController.AttachToThread(_engine.Machine);
+                _engine.DebugController.AttachToThread();
                 _engine.DebugController.Wait();
             }
 
             var compilerSvc = GetCompilerService();
             DefineConstants(compilerSvc);
-            var module = _engine.LoadModuleImage(compilerSvc.Compile(src));
+            IExecutableModule module;
+            try
+            {
+                module = compilerSvc.Compile(src);
+            }
+            catch (CompilerException)
+            {
+                _engine.DebugController?.NotifyProcessExit(1);
+                throw;
+            }
             return InitProcess(host, module);
         }
 
-        private void DefineConstants(CompilerService compilerSvc)
+        private void DefineConstants(ICompilerFrontend compilerSvc)
         {
-            var definitions = GetWorkingConfig()["preprocessor.define"]?.Split(',') ?? new string[0];
+            var definitions = _workingConfig.PreprocessorDefinitions;
             foreach (var val in definitions)
             {
-                compilerSvc.DefinePreprocessorValue(val);
+                compilerSvc.PreprocessorDefinitions.Add(val);
+            }
+
+            if (Utils.IsMonoRuntime)
+            {
+                compilerSvc.PreprocessorDefinitions.Add("MONO");
             }
         }
 
-        public Process CreateProcess(IHostApplication host, ModuleImage moduleImage, ICodeSource src)
-        {
-            SetGlobalEnvironment(host, src);
-            var module = _engine.LoadModuleImage(moduleImage);
-            return InitProcess(host, module);
-        }
-
-        public void SetGlobalEnvironment(IHostApplication host, ICodeSource src)
+        public void SetGlobalEnvironment(IHostApplication host, SourceCode src)
         {
             _globalCtx.ApplicationHost = host;
             _globalCtx.CodeSource = src;
             _globalCtx.InitInstance();
         }
 
-        private Process InitProcess(IHostApplication host, LoadedModule module)
+        private Process InitProcess(IHostApplication host, IExecutableModule module)
         {
             Initialize();
             

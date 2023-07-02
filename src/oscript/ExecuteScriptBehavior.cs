@@ -5,24 +5,18 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using OneScript.DebugProtocol;
-
+using OneScript.StandardLibrary;
 using ScriptEngine;
-using ScriptEngine.Compiler;
 using ScriptEngine.HostedScript;
-using ScriptEngine.HostedScript.Library;
+using ScriptEngine.Hosting;
 using ScriptEngine.Machine;
 
 namespace oscript
 {
     class ExecuteScriptBehavior : AppBehavior, IHostApplication, ISystemLogWriter
     {
-        string[] _scriptArgs;
-        string _path;
+        protected string[] _scriptArgs;
+        protected string _path;
 
         public ExecuteScriptBehavior(string path, string[] args)
         {
@@ -31,6 +25,10 @@ namespace oscript
         }
         
         public IDebugController DebugController { get; set; }
+        
+        public string CodeStatFile { get; set; }
+
+        public bool CodeStatisticsEnabled => CodeStatFile != null;
 
         public override int Execute()
         {
@@ -42,27 +40,35 @@ namespace oscript
 
             SystemLogger.SetWriter(this);
 
-            var hostedScript = new HostedScriptEngine();
-            hostedScript.DebugController = DebugController;
-            hostedScript.CustomConfig = ScriptFileHelper.CustomConfigPath(_path);
-            ScriptFileHelper.OnBeforeScriptRead(hostedScript);
-            var source = hostedScript.Loader.FromFile(_path);
+            var builder = ConsoleHostBuilder.Create(_path);
+            builder.WithDebugger(DebugController);
 
+            var hostedScript = ConsoleHostBuilder.Build(builder);
+
+            if (CodeStatisticsEnabled)
+                hostedScript.EnableCodeStatistics();
+            
+            var source = hostedScript.Loader.FromFile(_path);
             Process process;
             try
             {
                 process = hostedScript.CreateProcess(this, source);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                this.ShowExceptionInfo(e);
+                ShowExceptionInfo(e);
                 return 1;
             }
-
+            
             var result = process.Start();
             hostedScript.Dispose();
 
-            ScriptFileHelper.OnAfterScriptExecute(hostedScript);
+            if (CodeStatisticsEnabled)
+            {
+                var codeStat = hostedScript.GetCodeStatData();
+                var statsWriter = new CodeStatWriter(CodeStatFile, CodeStatWriterType.JSON);
+                statsWriter.Write(codeStat);
+            }
 
             return result;
         }
@@ -79,9 +85,9 @@ namespace oscript
             ConsoleHostImpl.ShowExceptionInfo(exc);
         }
 
-        public bool InputString(out string result, int maxLen)
+        public bool InputString(out string result, string prompt, int maxLen, bool multiline)
         {
-            return ConsoleHostImpl.InputString(out result, maxLen);
+            return ConsoleHostImpl.InputString(out result, prompt, maxLen, multiline);
         }
 
         public string[] GetCommandLineArguments()

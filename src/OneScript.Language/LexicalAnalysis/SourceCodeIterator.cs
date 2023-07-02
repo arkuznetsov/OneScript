@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 
 using System;
 using System.Collections.Generic;
+using OneScript.Sources;
 
 namespace OneScript.Language.LexicalAnalysis
 {
@@ -19,24 +20,37 @@ namespace OneScript.Language.LexicalAnalysis
         private int _startPosition;
 
         private List<int> _lineBounds;
+        private bool _onNewLine;
+
+        public bool OnNewLine { get; private set; }
+        
+        public bool StayOnSameLine { get; set; }
 
         private const int OUT_OF_TEXT = -1;
 
-        public SourceCodeIterator() : this(string.Empty)
+        public SourceCodeIterator(SourceCode code)
         {
+            Source = code;
+            InitOnString(code.GetSourceCode());
         }
 
-        public SourceCodeIterator(string code)
+        internal SourceCodeIterator()
         {
-            if(code == null)
-                throw new ArgumentNullException(nameof(code));
+            InitOnString(String.Empty);
+        }
+        
+        public SourceCode Source { get; }
 
+        private void InitOnString(string code)
+        {
             _code = code;
             int cap = code.Length < 512 ? 32 : 512;
             _lineBounds = new List<int>(cap);
             _index = OUT_OF_TEXT;
             _startPosition = OUT_OF_TEXT;
             _currentSymbol = '\0';
+            _onNewLine = true;
+            OnNewLine = true;
 
             if (!String.IsNullOrEmpty(code))
             {
@@ -47,7 +61,6 @@ namespace OneScript.Language.LexicalAnalysis
             {
                 _lineCounter = OUT_OF_TEXT;
             }
-
         }
 
         public int Position => _index;
@@ -96,9 +109,9 @@ namespace OneScript.Language.LexicalAnalysis
         public char PeekNext()
         {
             char result = '\0';
-            if(_index+1 < _code.Length)
+            if (_index + 1 < _code.Length)
             {
-                result = _code[_index+1];
+                result = _code[_index + 1];
             }
 
             return result;
@@ -110,6 +123,7 @@ namespace OneScript.Language.LexicalAnalysis
             if (SkipSpaces())
             {
                 _startPosition = _index;
+                OnNewLine = _onNewLine;
                 return true;
             }
             else
@@ -127,6 +141,14 @@ namespace OneScript.Language.LexicalAnalysis
 
             while (Char.IsWhiteSpace(_currentSymbol))
             {
+                if (_currentSymbol == '\n')
+                {
+                    if (StayOnSameLine)
+                        return false;
+                    
+                    _onNewLine = true;
+                }
+
                 if (!MoveNext())
                 {
                     return false;
@@ -139,6 +161,20 @@ namespace OneScript.Language.LexicalAnalysis
             }
 
             return true;
+        }
+
+        public string ReadToLineEnd()
+        {
+            while (_currentSymbol != '\n' && MoveNext())
+            {
+            }
+
+            var res = GetContents();
+
+            _onNewLine = true;
+            OnNewLine = true;
+
+            return res.Trim();
         }
 
         public string GetCodeLine(int lineNumber)
@@ -159,13 +195,8 @@ namespace OneScript.Language.LexicalAnalysis
         {
             return _lineBounds[lineNumber - 1];
         }
-
-        public string GetContents()
-        {
-            return GetContents(0, 0);
-        }
-
-        public string GetContents(int padLeft, int padRight)
+        
+        public ReadOnlyMemory<char> GetContentSpan()
         {
             int len;
 
@@ -179,26 +210,22 @@ namespace OneScript.Language.LexicalAnalysis
             }
             else
             {
-                return "";
+                return ReadOnlyMemory<char>.Empty;
             }
 
-            var contents = _code.Substring(_startPosition + padLeft, len - padRight);
+            var contents = _code.AsMemory(_startPosition, len);
 
             _startPosition = _index + 1;
+            
+            OnNewLine = _onNewLine;
+            _onNewLine = false;
 
             return contents;
         }
-
-        public CodePositionInfo GetPositionInfo()
+        
+        public string GetContents()
         {
-            var posInfo = new CodePositionInfo()
-            {
-                LineNumber = CurrentLine,
-                ColumnNumber = CurrentColumn,
-                Code = GetCodeLine(CurrentLine)
-            };
-
-            return posInfo;
+            return GetContentSpan().ToString();
         }
     }
 }

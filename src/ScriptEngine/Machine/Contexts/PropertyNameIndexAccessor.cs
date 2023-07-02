@@ -5,23 +5,22 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using OneScript.Commons;
+using OneScript.Types;
+
 namespace ScriptEngine.Machine.Contexts
 {
     public abstract class PropertyNameIndexAccessor : ContextIValueImpl
     {
-        public PropertyNameIndexAccessor()
-        {
-
-        }
-
-        public PropertyNameIndexAccessor(TypeDescriptor type):base(type)
+        protected PropertyNameIndexAccessor()
         {
         }
-
-        public override bool IsIndexed
+        
+        protected PropertyNameIndexAccessor(TypeDescriptor type):base(type)
         {
-            get { return true; }
         }
+
+        public override bool IsIndexed => true;
 
         public override bool IsPropReadable(int propNum)
         {
@@ -35,30 +34,30 @@ namespace ScriptEngine.Machine.Contexts
 
         public override IValue GetIndexedValue(IValue index)
         {
-            if (index.DataType != DataType.String)
+            if (index.SystemType != BasicTypes.String)
             {
                 throw RuntimeException.InvalidArgumentType();
             }
 
-            var n = FindProperty(index.AsString());
+            var n = GetPropertyNumber(index.AsString());
             if (IsPropReadable(n))
                 return GetPropValue(n);
             else
-                throw RuntimeException.PropIsNotReadableException(index.AsString());
+                throw PropertyAccessException.PropIsNotReadableException(index.AsString());
         }
 
         public override void SetIndexedValue(IValue index, IValue val)
         {
-            if (index.DataType != DataType.String)
+            if (index.SystemType != BasicTypes.String)
             {
                 throw RuntimeException.InvalidArgumentType();
             }
 
-            var n = FindProperty(index.AsString());
+            var n = GetPropertyNumber(index.AsString());
             if (IsPropWritable(n))
                 SetPropValue(n, val);
             else
-                throw RuntimeException.PropIsNotWritableException(index.AsString());
+                throw PropertyAccessException.PropIsNotWritableException(index.AsString());
         }
     }
 }

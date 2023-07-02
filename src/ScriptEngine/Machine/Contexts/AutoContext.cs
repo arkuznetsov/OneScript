@@ -7,11 +7,26 @@ at http://mozilla.org/MPL/2.0/.
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using OneScript.Commons;
+using OneScript.Contexts;
+using OneScript.Types;
 
 namespace ScriptEngine.Machine.Contexts
 {
     public abstract class AutoContext<TInstance> : PropertyNameIndexAccessor where TInstance : AutoContext<TInstance>
     {
+        private static readonly ContextPropertyMapper<TInstance> _properties = new ContextPropertyMapper<TInstance>();
+        private static readonly ContextMethodsMapper<TInstance> _methods = new ContextMethodsMapper<TInstance>();
+        private static readonly HashSet<int> _warnedDeprecatedMethods = new HashSet<int>();
+        
+        protected AutoContext()
+        {
+        }
+        
+        protected AutoContext(TypeDescriptor assignedType) : base(assignedType)
+        {
+        }
+        
         public override bool IsPropReadable(int propNum)
         {
             return _properties.GetProperty(propNum).CanRead;
@@ -22,7 +37,7 @@ namespace ScriptEngine.Machine.Contexts
             return _properties.GetProperty(propNum).CanWrite;
         }
 
-        public override int FindProperty(string name)
+        public override int GetPropertyNumber(string name)
         {
             return _properties.FindProperty(name);
         }
@@ -48,6 +63,7 @@ namespace ScriptEngine.Machine.Contexts
             }
             catch (System.Reflection.TargetInvocationException e)
             {
+                Debug.Assert(e.InnerException != null);
                 throw e.InnerException;
             }
         }
@@ -62,7 +78,7 @@ namespace ScriptEngine.Machine.Contexts
             return _properties.GetProperty(propNum).Name;
         }
 
-        public override int FindMethod(string name)
+        public override int GetMethodNumber(string name)
         {
             return _methods.FindMethod(name);
         }
@@ -72,19 +88,27 @@ namespace ScriptEngine.Machine.Contexts
             return _methods.Count;
         }
 
-        public override MethodInfo GetMethodInfo(int methodNumber)
+        public override BslMethodInfo GetMethodInfo(int methodNumber)
         {
-            return _methods.GetMethodInfo(methodNumber);
+            return _methods.GetRuntimeMethod(methodNumber);
+        }
+
+        public override BslPropertyInfo GetPropertyInfo(int propertyNumber)
+        {
+            return _properties.GetProperty(propertyNumber).PropertyInfo;
         }
 
         private void CheckIfCallIsPossible(int methodNumber, IValue[] arguments)
         {
-            var methodInfo = _methods.GetMethodInfo(methodNumber);
+            var methodInfo = _methods.GetRuntimeMethod(methodNumber) as ContextMethodInfo;
+            if(methodInfo == null)
+                return;
+
             if (!methodInfo.IsDeprecated)
             {
                 return;
             }
-            if (methodInfo.ThrowOnUseDeprecated)
+            if (methodInfo.IsForbiddenToUse)
             {
                 throw RuntimeException.DeprecatedMethodCall(methodInfo.Name);
             }
@@ -101,7 +125,7 @@ namespace ScriptEngine.Machine.Contexts
             CheckIfCallIsPossible(methodNumber, arguments);
             try
             {
-                _methods.GetMethod(methodNumber)((TInstance)this, arguments);
+                _methods.GetCallableDelegate(methodNumber)((TInstance)this, arguments);
             }
             catch (System.Reflection.TargetInvocationException e)
             {
@@ -115,7 +139,7 @@ namespace ScriptEngine.Machine.Contexts
             CheckIfCallIsPossible(methodNumber, arguments);
             try
             {
-                retValue = _methods.GetMethod(methodNumber)((TInstance)this, arguments);
+                retValue = _methods.GetCallableDelegate(methodNumber)((TInstance)this, arguments);
             }
             catch (System.Reflection.TargetInvocationException e)
             {
@@ -123,9 +147,5 @@ namespace ScriptEngine.Machine.Contexts
                 throw e.InnerException;
             }
         }
-
-        private static readonly ContextPropertyMapper<TInstance> _properties = new ContextPropertyMapper<TInstance>();
-        private static readonly ContextMethodsMapper<TInstance> _methods = new ContextMethodsMapper<TInstance>();
-        private static readonly HashSet<int> _warnedDeprecatedMethods = new HashSet<int>();
     }
 }

@@ -5,10 +5,12 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using ScriptEngine.Environment;
+using System;
+using OneScript.Sources;
 
 namespace ScriptEngine.Compiler
 {
+    [Obsolete]
     public interface IDirectiveResolver
     {
         ICodeSource Source { get; set; }

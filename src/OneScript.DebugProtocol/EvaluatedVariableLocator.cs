@@ -7,8 +7,6 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace OneScript.DebugProtocol
 {
@@ -18,6 +16,7 @@ namespace OneScript.DebugProtocol
         private int[] _path;
         private readonly int _stackFrameIndex;
 		private readonly string _expression;
+        private readonly int _threadId;
 
         private Variable[] _variables;
 
@@ -28,21 +27,24 @@ namespace OneScript.DebugProtocol
             Array.Copy(parent._path, _path, parent._path.Length);
             _path[parent._path.Length] = variableIndex;
 			_expression = parent._expression;
-		}
+            _threadId = parent._threadId;
+        }
 
-        public EvaluatedVariableLocator(string expression, int stackFrameIndex)
+        public EvaluatedVariableLocator(string expression, int threadId, int stackFrameIndex)
         {
             _stackFrameIndex = stackFrameIndex;
             _path = new int[0];
 			_expression = expression;
-		}
+            _threadId = threadId;
+        }
 
-        public EvaluatedVariableLocator(string expression, int stackFrameIndex, int variableIndex)
+        public EvaluatedVariableLocator(string expression, int threadId, int stackFrameIndex, int variableIndex)
         {
             _stackFrameIndex = stackFrameIndex;
             _path = new int[] { variableIndex };
 			_expression = expression;
-		}
+            _threadId = threadId;
+        }
 
         public Variable this[int index]
         {
@@ -53,7 +55,7 @@ namespace OneScript.DebugProtocol
                 return _variables[index];
             }
         }
-
+        
         public int Count
         {
             get
@@ -85,7 +87,7 @@ namespace OneScript.DebugProtocol
         {
             if(_variables != null)
                 return;
-            var variables = process.GetEvaluatedVariables(_expression, 1, _stackFrameIndex, _path);
+            var variables = process.GetEvaluatedVariables(_expression, _threadId, _stackFrameIndex, _path);
             _variables = variables;
         }
 

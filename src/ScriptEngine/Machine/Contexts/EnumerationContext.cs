@@ -5,11 +5,15 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using OneScript.Commons;
+using OneScript.Contexts;
+using OneScript.Types;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    public class EnumerationContext : PropertyNameIndexAccessor
+    public class EnumerationContext : PropertyNameIndexAccessor, ICollectionContext<IValue>
     {
         private readonly List<EnumerationValue> _values = new List<EnumerationValue>();
 
@@ -31,10 +35,10 @@ namespace ScriptEngine.Machine.Contexts
             System.Diagnostics.Debug.Assert(name != null);
             System.Diagnostics.Debug.Assert(val != null);
 
-            if (!ScriptEngine.Utils.IsValidIdentifier(name))
+            if (!Utils.IsValidIdentifier(name))
                 throw new ArgumentException("Name must be a valid identifier", "name");
 
-            if(alias != null && !ScriptEngine.Utils.IsValidIdentifier(alias))
+            if(alias != null && !Utils.IsValidIdentifier(alias))
                 throw new ArgumentException("Name must be a valid identifier", "alias");
 
             _nameIds.RegisterName(name, alias);
@@ -55,7 +59,7 @@ namespace ScriptEngine.Machine.Contexts
         {
             get
             {
-                int id = FindProperty(name);
+                int id = GetPropertyNumber(name);
                 return _values[id];
             }
         }
@@ -65,13 +69,18 @@ namespace ScriptEngine.Machine.Contexts
             return _values.IndexOf(enumVal);
         }
 
-        public override int FindProperty(string name)
+        public override int GetPropCount()
+        {
+            return _values.Count;
+        }
+
+        public override int GetPropertyNumber(string name)
         {
             int id;
             if (_nameIds.TryGetIdOfName(name, out id))
                 return id;
             else
-                return base.FindProperty(name);
+                return base.GetPropertyNumber(name);
         }
 
         public override bool IsPropReadable(int propNum)
@@ -84,6 +93,12 @@ namespace ScriptEngine.Machine.Contexts
             return _values[propNum];
         }
 
+        public override string GetPropName(int propNum)
+        {
+            return _values[propNum].AsString();
+        }
+
+
         protected IList<EnumerationValue> ValuesInternal
         {
             get
@@ -91,5 +106,27 @@ namespace ScriptEngine.Machine.Contexts
                 return _values;
             }
         }
+
+        #region ICollectionContext Members
+
+        public int Count()
+        {
+            return _values.Count;
+        }
+
+        public IEnumerator<IValue> GetEnumerator()
+        {
+            foreach (var item in _values)
+            {
+                yield return item;
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+        
+        #endregion
     }
 }

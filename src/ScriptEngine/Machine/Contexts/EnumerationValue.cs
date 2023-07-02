@@ -4,11 +4,14 @@ Mozilla Public License, v.2.0. If a copy of the MPL
 was not distributed with this file, You can obtain one 
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
-using System;
+
+using OneScript.Commons;
+using OneScript.Types;
+using OneScript.Values;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    abstract public class EnumerationValue : IValue
+    public abstract class EnumerationValue : BslValue
     {
         readonly EnumerationContext _owner;
 
@@ -30,47 +33,21 @@ namespace ScriptEngine.Machine.Contexts
             get;set;
         }
 
-        public virtual DataType DataType
-        {
-            get { return Machine.DataType.GenericValue; }
-        }
+        public bool IsFilled() => true;
 
-        public virtual TypeDescriptor SystemType
-        {
-            get { return _owner.ValuesType; }
-        }
+        public override TypeDescriptor SystemType => _owner.ValuesType;
 
-        public virtual decimal AsNumber()
-        {
-            throw RuntimeException.ConvertToNumberException();
-        }
-
-        public virtual DateTime AsDate()
-        {
-            throw RuntimeException.ConvertToDateException();
-        }
-
-        public virtual bool AsBoolean()
-        {
-            throw RuntimeException.ConvertToBooleanException();
-        }
-
-        public virtual string AsString()
+        public override string ToString()
         {
             return ValuePresentation == null ? SystemType.Name : ValuePresentation;
         }
 
-        public virtual IRuntimeContextInstance AsObject()
-        {
-            throw RuntimeException.ValueIsNotObjectException();
-        }
-
-        public IValue GetRawValue()
+        public override IValue GetRawValue()
         {
             return this;
         }
 
-        public virtual int CompareTo(IValue other)
+        public override int CompareTo(BslValue other)
         {
             if (other != null)
             {
@@ -82,7 +59,7 @@ namespace ScriptEngine.Machine.Contexts
                 }
                 else
                 {
-                    return SystemType.ID - other.SystemType.ID;
+                    throw RuntimeException.ComparisonNotSupportedException();
                 }
             }
             else
@@ -91,9 +68,9 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
 
-        public virtual bool Equals(IValue other)
+        public override bool Equals(BslValue other)
         {
-            return other.GetRawValue() == this;
+            return ReferenceEquals(other?.GetRawValue(), this);
         }
     }
 }

@@ -9,60 +9,32 @@ using System;
 
 namespace OneScript.Language.LexicalAnalysis
 {
-    public class FullSourceLexer : ILexemGenerator
+    public class FullSourceLexer : ILexer
     {
-        private string _code;
         private SourceCodeIterator _iterator;
         private LexerState _state;
 
-        private LexerState _emptyState = new EmptyLexerState();
-        private LexerState _wordState = new WordLexerState();
-        private LexerState _numberState = new NumberLexerState();
-        private LexerState _stringState = new StringLexerState();
-        private LexerState _operatorState = new OperatorLexerState();
-        private LexerState _dateState = new DateLexerState();
-        private LexerState _commentState = new CommentLexerState();
-        private FixedParserState _fixedState = new FixedParserState();
-        private AnnotationLexerState _annotationState = new AnnotationLexerState();
-        private PreprocessorDirectiveLexerState _directiveState = new PreprocessorDirectiveLexerState();
-
-        private class FixedParserState : LexerState
-        {
-            Lexem _lex;
-
-            public void SetOutput(Lexem lex)
-            {
-                _lex = lex;
-            }
-
-            public override Lexem ReadNextLexem(SourceCodeIterator iterator)
-            {
-                return _lex;
-            }
-        }
+        private readonly LexerState _emptyState = new EmptyLexerState();
+        private readonly LexerState _wordState = new WordLexerState();
+        private readonly LexerState _numberState = new NumberLexerState();
+        private readonly LexerState _stringState = new StringLexerState();
+        private readonly LexerState _operatorState = new OperatorLexerState();
+        private readonly LexerState _dateState = new DateLexerState();
+        private readonly LexerState _commentState = new CommentLexerState();
+        private readonly LexerState _annotationState = new AnnotationLexerState();
+        private readonly LexerState _directiveState = new PreprocessorDirectiveLexerState();
+        
+        private readonly FixedLexerState _fixedState = new FixedLexerState();
 
         public FullSourceLexer()
         {
             _iterator = new SourceCodeIterator();
         }
-
-        public SourceCodeIterator Iterator => _iterator;
-
-        public int CurrentColumn => _iterator.CurrentColumn;
-
-        public int CurrentLine => _iterator.CurrentLine;
-
-        public virtual string Code
+        
+        public SourceCodeIterator Iterator
         {
-            get
-            {
-                return _code;
-            }
-            set
-            {
-                _code = value;
-                _iterator = new SourceCodeIterator(value);
-            }
+            get => _iterator;
+            set => _iterator = value;
         }
 
         public virtual Lexem NextLexem()
@@ -145,13 +117,11 @@ namespace OneScript.Language.LexicalAnalysis
             }
             else if (cs == SpecialChars.Annotation)
             {
-                _iterator.GetContents();
-                _iterator.MoveNext();
                 _state = _annotationState;
             }
             else
             {
-                var cp = _iterator.GetPositionInfo();
+                var cp = _iterator.GetErrorPosition();
                 var exc = new SyntaxErrorException(cp, string.Format("Неизвестный символ {0}", cs));
                 if (!HandleError(exc))
                 {
@@ -176,16 +146,12 @@ namespace OneScript.Language.LexicalAnalysis
             _fixedState.SetOutput(new Lexem()
             {
                 Type = lexemType,
-                Token = token
+                Token = token,
+                Location = new CodeRange(Iterator.CurrentLine, Iterator.CurrentColumn)
             });
 
             _state = _fixedState;
 
-        }
-
-        public CodePositionInfo GetCodePosition()
-        {
-            return _iterator.GetPositionInfo();
         }
 
         private bool HandleError(SyntaxErrorException exc)
@@ -210,15 +176,5 @@ namespace OneScript.Language.LexicalAnalysis
         }
 
         public event EventHandler<LexerErrorEventArgs> UnexpectedCharacterFound;
-
-        public const int OUT_OF_TEXT = -1;
-    }
-
-    public class LexerErrorEventArgs : EventArgs
-    {
-        public bool IsHandled { get; set; }
-        public SourceCodeIterator Iterator { get; set; }
-        public LexerState CurrentState { get; set; }
-        public SyntaxErrorException Exception{ get; set; }
     }
 }

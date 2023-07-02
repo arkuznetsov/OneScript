@@ -5,18 +5,22 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System;
+using OneScript.Compilation.Binding;
+using OneScript.Contexts;
 using ScriptEngine.Machine;
 
 namespace ScriptEngine.Compiler
 {
-    class ModuleCompilerContext : ICompilerContext
+    [Obsolete]
+    public class ModuleCompilerContext : ICompilerContext
     {
-        private readonly CompilerContext _outerCtx;
+        private readonly ICompilerContext _outerCtx;
         private readonly CompilerContext _moduleCtx;
         private int OUTER_CTX_SIZE;
         private int _localScopesCount = 0;
 
-        public ModuleCompilerContext(CompilerContext outerContext)
+        public ModuleCompilerContext(ICompilerContext outerContext)
         {
             _outerCtx = outerContext;
             _moduleCtx = new CompilerContext();
@@ -25,7 +29,7 @@ namespace ScriptEngine.Compiler
         
         #region ICompilerContext Members
 
-        public SymbolBinding DefineMethod(MethodInfo method)
+        public SymbolBinding DefineMethod(BslMethodInfo method)
         {
             var sb = _moduleCtx.DefineMethod(method);
             ShiftIndex(ref sb);
@@ -99,14 +103,6 @@ namespace ScriptEngine.Compiler
 
         }
 
-        public SymbolScope Peek()
-        {
-            if (_localScopesCount > 0)
-                return _moduleCtx.Peek();
-            else
-                return _outerCtx.Peek();
-        }
-
         public SymbolScope PopScope()
         {
             var scope = _moduleCtx.PopScope();
@@ -120,21 +116,6 @@ namespace ScriptEngine.Compiler
         {
             _moduleCtx.PushScope(scope);
             _localScopesCount++;
-        }
-
-        public int ScopeIndex(SymbolScope scope)
-        {
-            int idx = _moduleCtx.ScopeIndex(scope);
-            if (idx >= 0)
-            {
-                return idx + OUTER_CTX_SIZE;
-            }
-            else
-            {
-                idx = _outerCtx.ScopeIndex(scope);
-            }
-
-            return idx;
         }
 
         public int TopIndex()
@@ -153,10 +134,10 @@ namespace ScriptEngine.Compiler
 
         private void ShiftIndex(ref SymbolBinding symbolBinding)
         {
-            symbolBinding.ContextIndex += OUTER_CTX_SIZE;
+            symbolBinding.ScopeNumber += OUTER_CTX_SIZE;
         }
 
-        internal void Update()
+        public void Update()
         {
             OUTER_CTX_SIZE = _outerCtx.TopIndex() + 1;
         }

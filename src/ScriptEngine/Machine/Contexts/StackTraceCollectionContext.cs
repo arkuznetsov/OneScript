@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 
 using System.Collections.Generic;
 using System.Linq;
+using OneScript.Contexts;
 
 namespace ScriptEngine.Machine.Contexts
 {
@@ -15,7 +16,7 @@ namespace ScriptEngine.Machine.Contexts
     /// Содержит объекты типа КадрСтекаВызовов
     /// </summary>
     [ContextClass("КоллекцияКадровСтекаВызовов", "CallStackFramesCollection")]
-    public class StackTraceCollectionContext : AutoContext<StackTraceCollectionContext>, ICollectionContext
+    public class StackTraceCollectionContext : AutoCollectionContext<StackTraceCollectionContext, StackTraceItemContext>
     {
         private List<StackTraceItemContext> _frames;
 
@@ -29,14 +30,14 @@ namespace ScriptEngine.Machine.Contexts
             }).ToList();
         }
 
-        public int Count()
+        public override int Count()
         {
             return _frames.Count;
         }
 
-        public CollectionEnumerator GetManagedIterator()
+        public override IEnumerator<StackTraceItemContext> GetEnumerator()
         {
-            return new CollectionEnumerator(_frames.GetEnumerator());
+            return _frames.GetEnumerator();
         }
     }
 }

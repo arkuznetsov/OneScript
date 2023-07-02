@@ -6,6 +6,8 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System.Collections.Generic;
+using OneScript.Contexts;
+using OneScript.Language;
 
 namespace ScriptEngine.Machine
 {
@@ -16,8 +18,8 @@ namespace ScriptEngine.Machine
         public int LineNumber;
         public bool DiscardReturnValue;
         public string MethodName;
-        public RuntimeException LastException;
-        public LoadedModule Module;
+        public ScriptException LastException;
+        public StackRuntimeModule Module;
         public bool IsReentrantCall;
         
         public Stack<IValue> LocalFrameStack = new Stack<IValue>();
@@ -28,7 +30,7 @@ namespace ScriptEngine.Machine
 
         public override string ToString()
         {
-            return $"{MethodName}: {LineNumber} ({Module.ModuleInfo.ModuleName})";
+            return $"{MethodName}: {LineNumber} ({Module.Source.Name})";
         }
     }
 

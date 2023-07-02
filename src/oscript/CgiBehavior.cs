@@ -9,17 +9,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-
+using OneScript.Commons;
+using OneScript.Contexts;
+using OneScript.StandardLibrary;
 using oscript.Web;
 
 using ScriptEngine.HostedScript;
-using ScriptEngine.HostedScript.Library;
+using ScriptEngine.Hosting;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
-
-using MethodInfo = ScriptEngine.Machine.MethodInfo;
 
 namespace oscript
 {
@@ -59,18 +58,20 @@ namespace oscript
 
 		private int RunCGIMode(string scriptFile)
 		{
-			var engine = new HostedScriptEngine
-			{
-				CustomConfig = ScriptFileHelper.CustomConfigPath(scriptFile)
-			};
-			engine.AttachAssembly(Assembly.GetExecutingAssembly());
+			var builder = ConsoleHostBuilder
+				.Create(scriptFile);
 
+			builder.SetupEnvironment(e =>
+				{
+					e.AddAssembly(GetType().Assembly);
+				});
+
+			var engine = ConsoleHostBuilder.Build(builder);
+			
 			var request = new WebRequestContext();
-			engine.InjectGlobalProperty("ВебЗапрос", request, true);
-			engine.InjectGlobalProperty("WebRequest", request, true);
-			engine.InjectObject(this, false);
+			engine.InjectGlobalProperty("ВебЗапрос", "WebRequest", request, true);
+			engine.InjectObject(this);
 
-			ScriptFileHelper.OnBeforeScriptRead(engine);
 			var source = engine.Loader.FromFile(scriptFile);
 
 			Process process;
@@ -93,24 +94,10 @@ namespace oscript
 			return exitCode;
 		}
 
-		public void OnAttach(MachineInstance machine, out IVariable[] variables, out MethodInfo[] methods)
+		public void OnAttach(out IVariable[] variables, out BslMethodInfo[] methods)
 		{
-			variables = new IVariable[0];
-			methods = (MethodInfo[]) GetMethods();
-		}
-
-		public IEnumerable<VariableInfo> GetProperties()
-		{
-			return new VariableInfo[0];
-		}
-
-		public IEnumerable<MethodInfo> GetMethods()
-		{
-			var array = new MethodInfo[_methods.Count];
-			for (var i = 0; i < _methods.Count; i++)
-				array[i] = _methods.GetMethodInfo(i);
-
-			return array;
+			variables = Array.Empty<IVariable>();
+			methods = this.GetMethods().ToArray();
 		}
 
 		#region CGIHost
@@ -192,7 +179,7 @@ namespace oscript
 			Echo(exc.ToString());
 		}
 
-		public bool InputString(out string result, int maxLen)
+		public bool InputString(out string result, string prompt, int maxLen, bool multiline)
 		{
 			result = null;
 			return false;
@@ -221,9 +208,9 @@ namespace oscript
 			throw new NotImplementedException();
 		}
 
-		public int FindProperty(string name)
+		public int GetPropertyNumber(string name)
 		{
-			throw RuntimeException.PropNotFoundException(name);
+			throw PropertyAccessException.PropNotFoundException(name);
 		}
 
 		public bool IsPropReadable(int propNum)
@@ -246,24 +233,29 @@ namespace oscript
 			throw new InvalidOperationException("global props are not writable");
 		}
 
-		public int FindMethod(string name)
+		public int GetMethodNumber(string name)
 		{
 			return _methods.FindMethod(name);
 		}
-
-		public MethodInfo GetMethodInfo(int methodNumber)
+		
+		public BslMethodInfo GetMethodInfo(int methodNumber)
 		{
-			return _methods.GetMethodInfo(methodNumber);
+			return _methods.GetRuntimeMethod(methodNumber);
 		}
 
+		public BslPropertyInfo GetPropertyInfo(int propertyNumber)
+		{
+			throw new NotImplementedException();
+		}
+		
 		public void CallAsProcedure(int methodNumber, IValue[] arguments)
 		{
-			_methods.GetMethod(methodNumber)(this, arguments);
+			_methods.GetCallableDelegate(methodNumber)(this, arguments);
 		}
 
 		public void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
 		{
-			retValue = _methods.GetMethod(methodNumber)(this, arguments);
+			retValue = _methods.GetCallableDelegate(methodNumber)(this, arguments);
 		}
 
         public int GetPropCount()

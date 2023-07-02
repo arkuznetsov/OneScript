@@ -5,6 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
+using OneScript.Compilation.Binding;
 
 namespace ScriptEngine.Machine
 {
@@ -48,6 +49,7 @@ namespace ScriptEngine.Machine
         JmpCounter,
         Inc,
         NewInstance,
+        NewFunc,
         PushIterator,
         IteratorNext,
         StopIterator,
@@ -96,12 +98,14 @@ namespace ScriptEngine.Machine
         Hour,
         Minute,
         Second,
+        BegOfWeek,
         BegOfYear,
         BegOfMonth,
         BegOfDay,
         BegOfHour,
         BegOfMinute,
         BegOfQuarter,
+        EndOfWeek,
         EndOfYear,
         EndOfMonth,
         EndOfDay,
@@ -157,7 +161,6 @@ namespace ScriptEngine.Machine
         Type,
         Object,
         NotAValidValue, // default argument value
-        Enumeration,
         GenericValue
     }
 
@@ -178,52 +181,7 @@ namespace ScriptEngine.Machine
         }
         
     }
-
-    [Serializable]
-    public struct MethodInfo
-    {
-        public string Name;
-        public string Alias;
-        public bool IsFunction;
-        public bool IsExport;
-        [NonSerialized]
-        public bool IsDeprecated;
-        [NonSerialized]
-        public bool ThrowOnUseDeprecated;
-        public ParameterDefinition[] Params;
-        public AnnotationDefinition[] Annotations;
-
-        public int ArgCount
-        {
-            get
-            {
-                return Params != null ? Params.Length : 0;
-            }
-        }
-
-        public int AnnotationsCount => Annotations?.Length ?? 0;
-
-    }
-
-    [Serializable]
-    public struct ParameterDefinition
-    {
-        public string Name;
-        public bool IsByValue;
-        public bool HasDefaultValue;
-        public int DefaultValueIndex;
-        public AnnotationDefinition[] Annotations;
-
-        public int AnnotationsCount => Annotations?.Length ?? 0;
-
-        public const int UNDEFINED_VALUE_INDEX = -1;
-
-        public bool IsDefaultValueDefined()
-        {
-            return HasDefaultValue && DefaultValueIndex != UNDEFINED_VALUE_INDEX;
-        }
-    }
-
+    
     [Serializable]
     public struct AnnotationDefinition
     {
@@ -258,42 +216,6 @@ namespace ScriptEngine.Machine
         }
     }
 
-    public struct TypeDescriptor : IEquatable<TypeDescriptor>
-    {
-        public int ID;
-        public string Name;
-
-        public override string ToString()
-        {
-            return Name;
-        }
-
-        public static TypeDescriptor FromDataType(DataType srcType)
-        {
-            System.Diagnostics.Debug.Assert(
-                   srcType == DataType.Boolean
-                || srcType == DataType.Date
-                || srcType == DataType.Number
-                || srcType == DataType.String
-                || srcType == DataType.Undefined
-                || srcType == DataType.Type);
-
-            return TypeManager.GetTypeById((int)srcType);
-        }
-
-        public bool Equals(TypeDescriptor other)
-        {
-            return other.ID == this.ID;
-        }
-    }
-
-    [Serializable]
-    public struct SymbolBinding
-    {
-        public int CodeIndex;
-        public int ContextIndex;
-    }
-
     public enum SymbolType
     {
         Variable,
@@ -308,9 +230,6 @@ namespace ScriptEngine.Machine
         public string Alias;
         public SymbolType Type;
         
-        public bool CanGet;
-        public bool CanSet;
-        
         public AnnotationDefinition[] Annotations;
 
         public int AnnotationsCount => Annotations?.Length ?? 0;
@@ -321,7 +240,7 @@ namespace ScriptEngine.Machine
         }
     }
 
-    struct VariableBinding
+    public struct VariableBinding
     {
         public SymbolType type;
         public SymbolBinding binding;

@@ -5,11 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace oscript
 {
@@ -17,7 +13,7 @@ namespace oscript
 	{
 		public override int Execute()
 		{
-            Output.WriteLine($"1Script Execution Engine. Version {Assembly.GetExecutingAssembly().GetName().Version}");
+            Output.WriteLine($"1Script Execution Engine. Version {Program.GetVersion()}");
             Output.WriteLine();
             Output.WriteLine("Usage:");
             Output.WriteLine();
@@ -34,10 +30,7 @@ namespace oscript
             Output.WriteLine("  -encoding=<encoding-name> set output encoding");
             Output.WriteLine("  -codestat=<filename> write code statistics");
             Output.WriteLine();
-            Output.WriteLine("III. Build standalone executable: oscript.exe -make <script_path> <output_exe>");
-            Output.WriteLine("  Builds a standalone executable module based on script specified");
-            Output.WriteLine();
-            Output.WriteLine("IV. Run as CGI application: oscript.exe -cgi <script_path> [script arguments..]");
+            Output.WriteLine("III. Run as CGI application: oscript.exe -cgi <script_path> [script arguments..]");
             Output.WriteLine("  Runs as CGI application under HTTP-server (Apache/Nginx/IIS/etc...)");
 
 			return 0;

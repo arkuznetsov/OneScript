@@ -5,13 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using OneScript.Language;
-using ScriptEngine;
-using ScriptEngine.HostedScript;
 using ScriptEngine.Machine;
 
 namespace oscript
@@ -33,20 +27,16 @@ namespace oscript
 
 		public override int Execute()
 		{
-			var hostedScript = new HostedScriptEngine
-			{
-				CustomConfig = ScriptFileHelper.CustomConfigPath(_path)
-			};
+			var builder = ConsoleHostBuilder.Create(_path);
+			var hostedScript = ConsoleHostBuilder.Build(builder);
 			hostedScript.Initialize();
 
 			if (_isCgi)
 			{
 				var request = ValueFactory.Create();
-				hostedScript.InjectGlobalProperty("ВебЗапрос", request, true);
-				hostedScript.InjectGlobalProperty("WebRequest", request, true);
+				hostedScript.InjectGlobalProperty("ВебЗапрос", "WebRequest", request, true);
 			}
-
-			ScriptFileHelper.OnBeforeScriptRead(hostedScript);
+			
 			var source = hostedScript.Loader.FromFile(_path);
 
 			hostedScript.SetGlobalEnvironment(new DoNothingHost(), source);
@@ -71,6 +61,30 @@ namespace oscript
 			Output.WriteLine("No errors.");
 
 			return 0;
+		}
+
+		public static AppBehavior Create(CmdLineHelper helper)
+		{
+			if (helper.Next() == null) 
+				return null;
+			
+			bool cgiMode = false;
+			var arg = helper.Current();
+			if (arg.ToLowerInvariant() == "-cgi")
+			{
+				cgiMode = true;
+				arg = helper.Next();
+			}
+            
+			var path = arg;
+			var env = helper.Next();
+			if (env != null && env.StartsWith("-env="))
+			{
+				env = env.Substring(5);
+			}
+            
+			return new CheckSyntaxBehavior(path, env, cgiMode);
+
 		}
 	}
 }

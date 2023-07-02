@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System.Collections.Generic;
+using OneScript.Values;
 using ScriptEngine.Machine.Contexts;
 
 namespace ScriptEngine.Machine
@@ -21,12 +22,12 @@ namespace ScriptEngine.Machine
         public int GetHashCode(IValue obj)
         {
             object CLR_obj;
-            if (obj.DataType == DataType.Undefined)
+            if (obj is BslUndefinedValue)
                 return obj.GetHashCode();
 
             try
             {
-                CLR_obj = ContextValuesMarshaller.ConvertToCLRObject(obj);
+                CLR_obj = ContextValuesMarshaller.ConvertToClrObject(obj);
             }
             catch (ValueMarshallingException)
             {
@@ -38,7 +39,10 @@ namespace ScriptEngine.Machine
 
         public int Compare(IValue x, IValue y)
         {
-            if (x.SystemType.ID == y.SystemType.ID)
+            if (ReferenceEquals(x, default) && ReferenceEquals(y, default))
+                return 0;
+            
+            if (x.SystemType == y.SystemType)
                 return x.CompareTo(y);
             else
                 return x.AsString().CompareTo(y.AsString());

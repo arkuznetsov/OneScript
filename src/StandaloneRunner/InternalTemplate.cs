@@ -6,8 +6,8 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System.IO;
+using OneScript.StandardLibrary.Binary;
 using ScriptEngine.HostedScript;
-using ScriptEngine.HostedScript.Library.Binary;
 
 namespace StandaloneRunner
 {
@@ -44,7 +44,7 @@ namespace StandaloneRunner
                 _tempFileName = Path.GetTempFileName();
                 using (var fs = new FileStream(_tempFileName, FileMode.OpenOrCreate))
                 {
-                    fs.Write(_data.Buffer,0,_data.Buffer.Length);
+                    _data.CopyTo(fs);
                 }
             }
 

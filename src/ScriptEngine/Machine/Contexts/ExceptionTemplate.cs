@@ -5,6 +5,10 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using OneScript.Contexts;
+using OneScript.Types;
+using ScriptEngine.Types;
+
 namespace ScriptEngine.Machine.Contexts
 {
     /// <summary>
@@ -14,13 +18,15 @@ namespace ScriptEngine.Machine.Contexts
     /// Данный класс предназначен для создания параметризованных исключений.
     /// </summary>
     /// <example>ВызватьИсключение Новый ИнформацияОбОшибке("Текст ошибки", ДополнительныеДанные);</example>
-    [ContextClass("ИнформацияОбОшибкеШаблон", "ExceptionInfoTemplate")]
+    [ContextClass("ИнформацияОбОшибкеШаблон", "ExceptionInfoTemplate", TypeUUID = "E0EDED59-D37A-42E7-9796-D6C061934B5D")]
     public class ExceptionTemplate : ContextIValueImpl
     {
+        private static readonly TypeDescriptor _objectType = typeof(ExceptionTemplate).GetTypeFromClassMarkup();
+        
         public string Message { get; private set; }
         public IValue Parameter { get; private set; }
-
-        public ExceptionTemplate(string msg, IValue parameter)
+        
+        public ExceptionTemplate(string msg, IValue parameter) : base(_objectType)
         {
             this.Message = msg;
             this.Parameter = parameter;

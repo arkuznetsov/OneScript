@@ -5,7 +5,6 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using System;
 using System.Reflection;
 
 namespace oscript
@@ -14,7 +13,7 @@ namespace oscript
 	{
 		public override int Execute()
 		{
-			Output.WriteLine($"{Assembly.GetExecutingAssembly().GetName().Version}");
+			Output.WriteLine(Program.GetVersion());
 			return 0;
 		}
 	}

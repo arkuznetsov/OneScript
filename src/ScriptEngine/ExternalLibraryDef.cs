@@ -7,6 +7,8 @@ at http://mozilla.org/MPL/2.0/.
 
 using System;
 using System.Collections.Generic;
+using OneScript.Execution;
+using ScriptEngine.Machine;
 
 namespace ScriptEngine
 {
@@ -22,15 +24,14 @@ namespace ScriptEngine
         public IList<UserAddedScript> Classes { get; } = new List<UserAddedScript>();
         public IList<UserAddedScript> Modules { get; } = new List<UserAddedScript>();
 
-        public UserAddedScript AddClass(string identifier, string filePath, ModuleImage image = null)
+        public UserAddedScript AddClass(string identifier, string filePath, StackRuntimeModule module = null)
         {
             var item = new UserAddedScript
             {
                 Type = UserAddedScriptType.Class,
-                Image = image,
+                Module = module,
                 Symbol = identifier,
-                FilePath = filePath,
-                LibraryName = LibraryName
+                FilePath = filePath
             };
             
             Classes.Add(item);
@@ -38,15 +39,14 @@ namespace ScriptEngine
             return item;
         }
         
-        public UserAddedScript AddModule(string identifier, string filePath, ModuleImage image = null)
+        public UserAddedScript AddModule(string identifier, string filePath, StackRuntimeModule module = null)
         {
             var item = new UserAddedScript
             {
                 Type = UserAddedScriptType.Module,
-                Image = image,
+                Module = module,
                 Symbol = identifier,
-                FilePath = filePath,
-                LibraryName = LibraryName
+                FilePath = filePath
             };
             
             Modules.Add(item);
@@ -65,13 +65,13 @@ namespace ScriptEngine
         
         [NonSerialized]
         public string FilePath;
-        
-        [NonSerialized]
-        public string LibraryName;
 
+        [NonSerialized]
+        public IExecutableModule Module;
+        
         public string ModuleName()
         {
-            return $"{LibraryName}.{Type}.{Symbol}";
+            return Image.Source.Name;
         }
     }
 

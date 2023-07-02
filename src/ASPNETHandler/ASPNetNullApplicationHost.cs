@@ -5,11 +5,6 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 using ScriptEngine.HostedScript;
 using ScriptEngine.HostedScript.Library;
 
@@ -34,7 +29,7 @@ namespace OneScript.ASPNETHandler
             // Непонятно что это, наверное аналог системного диалога, на сервере нет никаких диалогов
         }
         
-        public bool InputString(out string result, int maxLen)
+        public bool InputString(out string result, string prompt, int maxLen, bool multiline)
         {
             // Мы не можем вводить никаких строк на сервере в 1С это недоступно
             result = null; 

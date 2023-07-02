@@ -5,61 +5,60 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
-using System.Collections.Generic;
 using System.Linq;
-
-using ScriptEngine.Environment;
+using System.Threading.Tasks;
+using OneScript.Compilation;
+using OneScript.Contexts;
+using OneScript.DependencyInjection;
+using OneScript.Execution;
+using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using ScriptEngine.Compiler;
+using ScriptEngine.Hosting;
 
 namespace ScriptEngine
 {
     public class ScriptingEngine : IDisposable
     {
-        private readonly MachineInstance _machine;
-        private readonly ScriptSourceFactory _scriptFactory;
         private AttachedScriptsFactory _attachedScriptsFactory;
         private IDebugController _debugController;
 
-        public ScriptingEngine()
+        public ScriptingEngine(ITypeManager types,
+            IGlobalsManager globals,
+            RuntimeEnvironment env, 
+            OneScriptCoreOptions options,
+            IServiceContainer services)
         {
-            _machine = MachineInstance.Current;
-
-            TypeManager.Initialize(new StandartTypeManager());
-            TypeManager.RegisterType("Сценарий", typeof(UserScriptContextInstance));
+            TypeManager = types;
+            // FIXME: Пока потребители не отказались от статических инстансов, они будут жить и здесь
             
-            GlobalsManager.Reset();
-            AttachAssembly(System.Reflection.Assembly.GetExecutingAssembly());
+            GlobalsManager = globals;
+            Environment = env;
             
-            _scriptFactory = new ScriptSourceFactory();
-            DirectiveResolvers = new DirectiveMultiResolver();
-
-            SetupDirectiveResolution();
+            Loader = new ScriptSourceFactory();
+            Services = services;
+            ContextDiscoverer = new ContextDiscoverer(types, globals, services);
+            DebugController = services.TryResolve<IDebugController>();
+            Loader.ReaderEncoding = options.FileReaderEncoding;
         }
 
-        private void SetupDirectiveResolution()
+        public IServiceContainer Services { get; }
+
+        private ContextDiscoverer ContextDiscoverer { get; }
+        
+        public RuntimeEnvironment Environment { get; set; }
+
+        public ITypeManager TypeManager { get; }
+        
+        public IGlobalsManager GlobalsManager { get; }
+        
+        private CodeGenerationFlags ProduceExtraCode { get; set; }
+        
+        public void AttachAssembly(System.Reflection.Assembly asm, Predicate<Type> filter = null)
         {
-            var ignoreDirectiveResolver = new DirectiveIgnorer
-            {
-                {"Region", "Область"},
-                {"EndRegion", "КонецОбласти"}
-            };
-
-            DirectiveResolvers.Add(ignoreDirectiveResolver);
-        }
-
-        public CodeGenerationFlags ProduceExtraCode { get; set; }
-
-        public void AttachAssembly(System.Reflection.Assembly asm)
-        {
-            ContextDiscoverer.DiscoverClasses(asm);
-        }
-
-        public void AttachAssembly(System.Reflection.Assembly asm, RuntimeEnvironment globalEnvironment)
-        {
-            ContextDiscoverer.DiscoverClasses(asm);
-            ContextDiscoverer.DiscoverGlobalContexts(globalEnvironment, asm);
+            ContextDiscoverer.DiscoverClasses(asm, filter);
+            ContextDiscoverer.DiscoverGlobalContexts(Environment, asm, filter);
         }
 
         public void AttachExternalAssembly(System.Reflection.Assembly asm, RuntimeEnvironment globalEnvironment)
@@ -72,12 +71,15 @@ namespace ScriptEngine
             var newCount = globalEnvironment.AttachedContexts.Count();
             while (lastCount < newCount)
             {
-                _machine.AttachContext(globalEnvironment.AttachedContexts[lastCount]);
+                MachineInstance.Current.AttachContext(globalEnvironment.AttachedContexts[lastCount].Instance);
                 ++lastCount;
             }
         }
-
-        public RuntimeEnvironment Environment { get; set; }
+        
+        public void AttachExternalAssembly(System.Reflection.Assembly asm)
+        {
+            AttachExternalAssembly(asm, Environment);
+        }
 
         public void Initialize()
         {
@@ -91,7 +93,11 @@ namespace ScriptEngine
 
         public void UpdateContexts()
         {
-            Environment.LoadMemory(_machine);
+            lock (this)
+            {
+                ExecutionDispatcher.Current ??= Services.Resolve<ExecutionDispatcher>();
+            }
+            MachineInstance.Current.SetMemory(Services.Resolve<ExecutionContext>());
         }
 
         private void SetDefaultEnvironmentIfNeeded()
@@ -100,38 +106,33 @@ namespace ScriptEngine
                 Environment = new RuntimeEnvironment();
         }
 
-        public ICodeSourceFactory Loader
-        {
-            get
-            {
-                return _scriptFactory;
-            }
-        }
+        public ScriptSourceFactory Loader { get; }
 
-        public IList<IDirectiveResolver> DirectiveResolvers { get; }
-
-        public CompilerService GetCompilerService()
+        public ICompilerFrontend GetCompilerService()
         {
-            var cs = new CompilerService(Environment.SymbolsContext);
+            using var scope = Services.CreateScope();
+            var compiler = scope.Resolve<CompilerFrontend>();
+            compiler.SharedSymbols = Environment.Symbols;
+            
             switch (System.Environment.OSVersion.Platform)
             {
                 case PlatformID.Unix:
-                    cs.DefinePreprocessorValue("Linux");
+                    compiler.PreprocessorDefinitions.Add("Linux");
                     break;
                 case PlatformID.MacOSX:
-                    cs.DefinePreprocessorValue("MacOS");
+                    compiler.PreprocessorDefinitions.Add("MacOS");
                     break;
                 case PlatformID.Win32NT:
-                    cs.DefinePreprocessorValue("Windows");
+                    compiler.PreprocessorDefinitions.Add("Windows");
                     break;
             }
             
-            cs.ProduceExtraCode = ProduceExtraCode;
-            cs.DirectiveResolver = (IDirectiveResolver)DirectiveResolvers;
-            return cs;
+            compiler.GenerateDebugCode = ProduceExtraCode.HasFlag(CodeGenerationFlags.DebugCode);
+            compiler.GenerateCodeStat = ProduceExtraCode.HasFlag(CodeGenerationFlags.CodeStatistics);
+            return compiler;
         }
         
-        public IRuntimeContextInstance NewObject(LoadedModule module, ExternalContextData externalContext = null)
+        public IRuntimeContextInstance NewObject(IExecutableModule module, ExternalContextData externalContext = null)
         {
             var scriptContext = CreateUninitializedSDO(module, externalContext);
             InitializeSDO(scriptContext);
@@ -139,10 +140,9 @@ namespace ScriptEngine
             return scriptContext;
         }
 
-        public ScriptDrivenObject CreateUninitializedSDO(LoadedModule module, ExternalContextData externalContext = null)
+        public ScriptDrivenObject CreateUninitializedSDO(IExecutableModule module, ExternalContextData externalContext = null)
         {
-            var scriptContext = new UserScriptContextInstance(module);
-            scriptContext.AddProperty("ЭтотОбъект", "ThisObject", scriptContext);
+            var scriptContext = new UserScriptContextInstance(module, true);
             if (externalContext != null)
             {
                 foreach (var item in externalContext)
@@ -155,41 +155,42 @@ namespace ScriptEngine
             return scriptContext;
         }
 
-        public LoadedModule LoadModuleImage(ModuleImage moduleImage)
+        public StackRuntimeModule LoadModuleImage(ModuleImage moduleImage)
         {
-            return new LoadedModule(moduleImage);
+            throw new NotImplementedException("Deserialization of module not implemented");
+            //return new LoadedModule(moduleImage);
         }
 
         public void InitializeSDO(ScriptDrivenObject sdo)
         {
             sdo.Initialize();
         }
-
-        public void ExecuteModule(LoadedModule module)
+        
+        public Task InitializeSDOAsync(ScriptDrivenObject sdo)
         {
-            var scriptContext = new UserScriptContextInstance(module);
-            InitializeSDO(scriptContext);
+            return sdo.InitializeAsync();
         }
-
-        public MachineInstance Machine => _machine;
 
         public AttachedScriptsFactory AttachedScriptsFactory => _attachedScriptsFactory;
 
         public IDebugController DebugController
         {
             get => _debugController;
-            set
+            private set
             {
                 _debugController = value;
-                ProduceExtraCode = CodeGenerationFlags.DebugCode;
-                _machine.SetDebugMode(_debugController);
+                if (value != null)
+                {
+                    ProduceExtraCode |= CodeGenerationFlags.DebugCode;
+                    MachineInstance.Current.SetDebugMode(_debugController.BreakpointManager);
+                }
             }
         }
 
         public void SetCodeStatisticsCollector(ICodeStatCollector collector)
         {
-            ProduceExtraCode = CodeGenerationFlags.CodeStatistics;
-            _machine.SetCodeStatisticsCollector(collector);
+            ProduceExtraCode |= CodeGenerationFlags.CodeStatistics;
+            MachineInstance.Current.SetCodeStatisticsCollector(collector);
         }
 
         #region IDisposable Members
@@ -197,7 +198,6 @@ namespace ScriptEngine
         public void Dispose()
         {
             AttachedScriptsFactory.SetInstance(null);
-            GlobalsManager.Reset();
         }
 
         #endregion

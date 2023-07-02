@@ -5,8 +5,11 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
-using System.Globalization;
-using ScriptEngine.Machine.Values;
+using System.Diagnostics;
+using OneScript.Commons;
+using OneScript.Contexts;
+using OneScript.Types;
+using OneScript.Values;
 
 namespace ScriptEngine.Machine
 {
@@ -14,47 +17,42 @@ namespace ScriptEngine.Machine
     {
         public static IValue Create()
         {
-            return UndefinedValue.Instance;
+            return BslUndefinedValue.Instance;
         }
 
         public static IValue Create(string value)
         {
-            return StringValue.Create(value);
+            return BslStringValue.Create(value);
         }
 
         public static IValue Create(bool value)
         {
-            return value ? BooleanValue.True : BooleanValue.False;
+            return BslBooleanValue.Create(value);
         }
 
         public static IValue Create(decimal value)
         {
-            return NumberValue.Create(value);
+            return BslNumericValue.Create(value);
         }
 
         public static IValue Create(int value)
         {
-            return NumberValue.Create(value);
+            return BslNumericValue.Create(value);
         }
 
         public static IValue Create(DateTime value)
         {
-            return new DateValue(value);
+            return BslDateValue.Create(value);
         }
 
         public static IValue CreateInvalidValueMarker()
         {
-            return InvalidValue.Instance;
+            return BslSkippedParameterValue.Instance;
         }
 
         public static IValue CreateNullValue()
         {
-            return NullValue.Instance;
-        }
-
-        public static IValue Create(IRuntimeContextInstance instance)
-        {
-            return (IValue)instance;
+            return BslNullValue.Instance;
         }
 
         public static IValue Parse(string presentation, DataType type)
@@ -63,160 +61,47 @@ namespace ScriptEngine.Machine
             switch (type)
             {
                 case DataType.Boolean:
-
-                    if (String.Compare(presentation, "истина", StringComparison.OrdinalIgnoreCase) == 0 
-                        || String.Compare(presentation, "true", StringComparison.OrdinalIgnoreCase) == 0 
-                        || String.Compare(presentation, "да", StringComparison.OrdinalIgnoreCase) == 0)
-                        result = ValueFactory.Create(true);
-                    else if (String.Compare(presentation, "ложь", StringComparison.OrdinalIgnoreCase) == 0 
-                             || String.Compare(presentation, "false", StringComparison.OrdinalIgnoreCase) == 0
-                             || String.Compare(presentation, "нет", StringComparison.OrdinalIgnoreCase) == 0)
-                        result = ValueFactory.Create(false);
-                    else
-                        throw RuntimeException.ConvertToBooleanException();
-
+                    result = BslBooleanValue.Parse(presentation);
                     break;
                 case DataType.Date:
-                    string format;
-                    if (presentation.Length == 14)
-                        format = "yyyyMMddHHmmss";
-                    else if (presentation.Length == 8)
-                        format = "yyyyMMdd";
-                    else if (presentation.Length == 12)
-                        format = "yyyyMMddHHmm";
-                    else
-                        throw RuntimeException.ConvertToDateException();
-
-                    if (presentation == "00000000"
-                     || presentation == "000000000000"
-                     || presentation == "00000000000000")
-                    {
-                        result = ValueFactory.Create(new DateTime());
-                    }
-                    else
-                        try
-                        {
-                            result = ValueFactory.Create(DateTime.ParseExact(presentation, format, System.Globalization.CultureInfo.InvariantCulture));
-                        }
-                        catch (FormatException)
-                        {
-                            throw RuntimeException.ConvertToDateException();
-                        }
-
+                    result = BslDateValue.Parse(presentation);
                     break;
                 case DataType.Number:
-                    var numInfo = NumberFormatInfo.InvariantInfo;
-                    var numStyle = NumberStyles.AllowDecimalPoint
-                                |NumberStyles.AllowLeadingSign
-                                |NumberStyles.AllowLeadingWhite
-                                |NumberStyles.AllowTrailingWhite;
-
-                    try
-                    {
-                        result = ValueFactory.Create(Decimal.Parse(presentation, numStyle, numInfo));
-                    }
-                    catch (FormatException)
-                    {
-                        throw RuntimeException.ConvertToNumberException();
-                    }
+                    result = BslNumericValue.Parse(presentation);
                     break;
                 case DataType.String:
-                    result = ValueFactory.Create(presentation);
+                    result = BslStringValue.Create(presentation);
                     break;
                 case DataType.Undefined:
-                    result = ValueFactory.Create();
+                    result = BslUndefinedValue.Instance;
                     break;
                 case DataType.GenericValue:
                     if (string.Compare(presentation, "null", StringComparison.OrdinalIgnoreCase) == 0)
                         result = ValueFactory.CreateNullValue();
                     else
-                        throw new NotImplementedException("constant type is not supported");
+                        throw new NotSupportedException("constant type is not supported");
 
                     break;
                 default:
-                    throw new NotImplementedException("constant type is not supported");
+                    throw new NotSupportedException("constant type is not supported");
             }
 
             return result;
         }
 
-        class InvalidValue : IValue
-        {
-            private static IValue _instance = new InvalidValue();
-
-            internal static IValue Instance => _instance;
-
-            #region IValue Members
-
-            public DataType DataType => DataType.NotAValidValue;
-
-            public TypeDescriptor SystemType => throw new NotImplementedException();
-
-            public decimal AsNumber()
-            {
-                throw new NotImplementedException();
-            }
-
-            public DateTime AsDate()
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool AsBoolean()
-            {
-                throw new NotImplementedException();
-            }
-
-            public string AsString()
-            {
-                throw new NotImplementedException();
-            }
-
-            public IRuntimeContextInstance AsObject()
-            {
-                throw new NotImplementedException();
-            }
-
-            public IValue GetRawValue()
-            {
-                return this;
-            }
-
-            #endregion
-
-            #region IComparable<IValue> Members
-
-            public int CompareTo(IValue other)
-            {
-                throw new NotImplementedException();
-            }
-
-            #endregion
-
-            #region IEquatable<IValue> Members
-
-            public bool Equals(IValue other)
-            {
-                return ReferenceEquals(other, this);
-            }
-
-            #endregion
-        }
-
-
         public static IValue Add(IValue op1, IValue op2)
         {
-            var type1 = op1.DataType;
-
-            if (type1 == DataType.String)
+            // принимаем только RawValue
+            Debug.Assert(!(op1 is IVariable || op2 is IVariable));
+            
+            if (op1 is BslStringValue s)
             {
-                return Create(op1.AsString() + op2.AsString());
+                return Create(s + op2.AsString());
             }
 
-            if (type1 == DataType.Date && op2.DataType == DataType.Number)
+            if (op1 is BslDateValue date && op2.SystemType == BasicTypes.Number)
             {
-                var date = op1.AsDate();
-                return Create(date.AddSeconds((double)op2.AsNumber()));
+                return Create(date + op2.AsNumber());
             }
 
             // все к числовому типу.
@@ -225,20 +110,22 @@ namespace ScriptEngine.Machine
 
         public static IValue Sub(IValue op1, IValue op2)
         {
-            if (op1.DataType == DataType.Number)
+            // принимаем только RawValue
+            Debug.Assert(!(op1 is IVariable || op2 is IVariable));
+            
+            if (op1 is BslNumericValue n)
             {
-                return Create(op1.AsNumber() - op2.AsNumber());
+                return Create(n - op2.AsNumber());
             }
-            if (op1.DataType == DataType.Date && op2.DataType == DataType.Number)
+            if (op1 is BslDateValue date && op2 is BslNumericValue num)
             {
-                var date = op1.AsDate();
-                var result = date.AddSeconds(-(double)op2.AsNumber());
+                var result = date - num;
                 return Create(result);
             }
-            if (op1.DataType == DataType.Date && op2.DataType == DataType.Date)
+            if (op1 is BslDateValue d1 && op2 is BslDateValue d2)
             {
-                var span = op1.AsDate() - op2.AsDate();
-                return Create((decimal)span.TotalSeconds);
+                var diff = d1 - d2;
+                return Create(diff);
             }
 
             // все к числовому типу.
@@ -247,11 +134,17 @@ namespace ScriptEngine.Machine
 
         public static IValue Mul(IValue op1, IValue op2)
         {
+            // принимаем только RawValue
+            Debug.Assert(!(op1 is IVariable || op2 is IVariable));
+            
             return Create(op1.AsNumber() * op2.AsNumber());
         }
 
         public static IValue Div(IValue op1, IValue op2)
         {
+            // принимаем только RawValue
+            Debug.Assert(!(op1 is IVariable || op2 is IVariable));
+            
             if (op2.AsNumber() == 0)
             {
                 throw RuntimeException.DivideByZero();
@@ -261,6 +154,9 @@ namespace ScriptEngine.Machine
 
         public static IValue Mod(IValue op1, IValue op2)
         {
+            // принимаем только RawValue
+            Debug.Assert(!(op1 is IVariable || op2 is IVariable));
+            
             if (op2.AsNumber() == 0)
             {
                 throw RuntimeException.DivideByZero();
@@ -270,6 +166,9 @@ namespace ScriptEngine.Machine
 
         public static IValue Neg(IValue op1)
         {
+            // принимаем только RawValue
+            Debug.Assert(!(op1 is IVariable));
+            
             return Create(op1.AsNumber() * -1);
         }
     }

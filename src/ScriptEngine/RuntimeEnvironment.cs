@@ -6,140 +6,118 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using ScriptEngine.Compiler;
+using OneScript.Commons;
+using OneScript.Compilation.Binding;
+using OneScript.Contexts;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
+using SymbolScope = OneScript.Compilation.Binding.SymbolScope;
 
 namespace ScriptEngine
 {
     public class RuntimeEnvironment
     {
-        private readonly List<IAttachableContext> _objects = new List<IAttachableContext>();
-        private readonly CompilerContext _symbolScopes = new CompilerContext();
-        private SymbolScope _globalScope;
-        private PropertyBag _injectedProperties;
+        private readonly SymbolTable _symbols = new SymbolTable();
+        private SymbolScope _scopeOfGlobalProperties;
+
+//***        
+        //private readonly ICompilerContext _symbolScopes = new CompilerContext();
+        //private SymbolScope _globalScope;
+        private readonly PropertyBag _injectedProperties;
+
+        private readonly List<AttachedContext> _contexts = new List<AttachedContext>();
 
         private readonly List<ExternalLibraryDef> _externalLibs = new List<ExternalLibraryDef>();
+//***
+
+        public RuntimeEnvironment()
+        {
+            _injectedProperties = new PropertyBag();
+        }
+
+        private void CreateGlobalScopeIfNeeded()
+        {
+            if (_scopeOfGlobalProperties != null) 
+                return;
+            
+            lock (_injectedProperties)
+            {
+                _scopeOfGlobalProperties ??= _symbols.PushContext(_injectedProperties);
+                _contexts.Add(AttachedContext.Create(_injectedProperties));
+            }
+        }
 
         public void InjectObject(IAttachableContext context)
         {
+            // по факту DynamicScope нигде не пригодился, надо спилить
             InjectObject(context, false);
         }
 
-        public void InjectObject(IAttachableContext context, bool asDynamicScope)
+        private void InjectObject(IAttachableContext context, bool asDynamicScope)
         {
-            RegisterSymbolScope(context, asDynamicScope);
-            RegisterObject(context);
+            var injectedContext =
+                asDynamicScope ? AttachedContext.CreateDynamic(context) : AttachedContext.Create(context);
+            
+            RegisterObject(injectedContext);
         }
 
-        public void InjectGlobalProperty(IValue value, string identifier, bool readOnly)
+        public void InjectGlobalProperty(IValue value, string identifier, string alias, bool readOnly)
         {
             if(!Utils.IsValidIdentifier(identifier))
             {
-                throw new ArgumentException("Invalid identifier", "identifier");
+                throw new ArgumentException("Invalid identifier", nameof(identifier));
             }
 
-            if (_globalScope == null)
+            if (alias != default && !Utils.IsValidIdentifier(alias))
             {
-                _globalScope = new SymbolScope();
-                TypeManager.RegisterType("__globalPropertiesHolder", typeof(PropertyBag));
-                _injectedProperties = new PropertyBag();
-                _symbolScopes.PushScope(_globalScope);
-                RegisterObject(_injectedProperties);
+                throw new ArgumentException("Invalid identifier", nameof(alias));
             }
-            
-            _globalScope.DefineVariable(identifier, SymbolType.ContextProperty);
-            _injectedProperties.Insert(value, identifier, true, !readOnly);
+            CreateGlobalScopeIfNeeded();
+            var num = _injectedProperties.Insert(value, identifier, true, !readOnly);
+
+            var symbol = new WrappedPropertySymbol(_injectedProperties.GetPropertyInfo(num))
+            {
+                Name = identifier,
+                Alias = alias
+            };
+
+            _scopeOfGlobalProperties.DefineVariable(symbol);
+        }
+        
+        public void InjectGlobalProperty(IValue value, string identifier, bool readOnly)
+        {
+            InjectGlobalProperty(value, identifier, default, readOnly);
         }
 
+        private void RegisterObject(AttachedContext context)
+        {
+            _symbols.PushContext(context.Instance);
+            _contexts.Add(context);
+        }
+        
         public void SetGlobalProperty(string propertyName, IValue value)
         {
-            int propId = _injectedProperties.FindProperty(propertyName);
-            _injectedProperties.SetPropValue(propId, value);
+            _symbols.FindVariable(propertyName, out var binding);
+
+            var context = _contexts[binding.ScopeNumber];
+            context.Instance.SetPropValue(binding.MemberNumber, value);
         }
 
         public IValue GetGlobalProperty(string propertyName)
         {
-            int propId = _injectedProperties.FindProperty(propertyName);
-            return _injectedProperties.GetPropValue(propId);
+            _symbols.FindVariable(propertyName, out var binding);
+
+            var context = _contexts[binding.ScopeNumber];
+            return context.Instance.GetPropValue(binding.MemberNumber);
         }
 
-        internal CompilerContext SymbolsContext
-        {
-            get
-            {
-                return _symbolScopes;
-            }
-        }
+        internal SymbolTable Symbols => _symbols;
 
-        internal IList<IAttachableContext> AttachedContexts
-        {
-            get
-            {
-                return _objects;
-            }
-        }
+        internal IList<AttachedContext> AttachedContexts => _contexts;
 
-        // public void NotifyClassAdded(ModuleImage module, string symbol, string libraryName)
-        // {
-        //     _externalScripts.Add(new UserAddedScript()
-        //         {
-        //             Type = UserAddedScriptType.Class,
-        //             Symbol = symbol,
-        //             Image = module,
-        //             LibraryName = libraryName
-        //         });
-        // }
-        //
-        // public void NotifyModuleAdded(ModuleImage module, string symbol, string libraryName)
-        // {
-        //     var script = new UserAddedScript()
-        //     {
-        //         Type = UserAddedScriptType.Module,
-        //         Symbol = symbol,
-        //         Image = module,
-        //         LibraryName = libraryName
-        //     };
-        //
-        //     _externalScripts.Add(script);
-        // }
-        
-        public IEnumerable<ExternalLibraryDef> GetUserAddedScripts()
+        public IEnumerable<ExternalLibraryDef> GetLibraries()
         { 
             return _externalLibs.ToArray();
-        }
-
-        private void RegisterSymbolScope(IRuntimeContextInstance provider, bool asDynamicScope)
-        {
-            var scope = new SymbolScope();
-            scope.IsDynamicScope = asDynamicScope;
-            
-            _symbolScopes.PushScope(scope);
-            foreach (var item in provider.GetProperties())
-            {
-                _symbolScopes.DefineVariable(item.Identifier);
-            }
-
-            foreach (var item in provider.GetMethods())
-            {
-                _symbolScopes.DefineMethod(item);
-            }
-        }
-
-        private void RegisterObject(IAttachableContext context)
-        {
-            _objects.Add(context);
-        }
-
-        public void LoadMemory(MachineInstance machine)
-        {
-            machine.Cleanup();
-            foreach (var item in AttachedContexts)
-            {
-                machine.AttachContext(item);
-            }
-            machine.ContextsAttached();
         }
 
         public void InitExternalLibrary(ScriptingEngine runtime, ExternalLibraryDef library)
@@ -148,15 +126,29 @@ namespace ScriptEngine
             int i = 0;
             foreach (var module in library.Modules)
             {
-                var loaded = runtime.LoadModuleImage(module.Image);
-                var instance = runtime.CreateUninitializedSDO(loaded);
-                SetGlobalProperty(module.Symbol, instance);
-                module.InjectOrder = _injectedProperties.FindProperty(module.Symbol);
+                var instance = runtime.CreateUninitializedSDO(module.Module);
+                
+                var propId = _injectedProperties.GetPropertyNumber(module.Symbol);
+                _injectedProperties.SetPropValue(propId, instance);
+                module.InjectOrder = propId;
                 loadedObjects[i++] = instance;
             }
             
             _externalLibs.Add(library);
             loadedObjects.ForEach(runtime.InitializeSDO);
+        }
+
+        private class WrappedPropertySymbol : IPropertySymbol
+        {
+            public WrappedPropertySymbol(BslPropertyInfo propInfo)
+            {
+                Property = propInfo;
+            }
+
+            public string Name { get; set; }
+            public string Alias { get; set; }
+            public Type Type => Property.PropertyType;
+            public BslPropertyInfo Property { get; }
         }
     }
 }

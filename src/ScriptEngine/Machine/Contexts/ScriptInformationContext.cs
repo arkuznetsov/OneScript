@@ -5,7 +5,8 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using ScriptEngine.Environment;
+using OneScript.Contexts;
+using OneScript.Sources;
 
 namespace ScriptEngine.Machine.Contexts
 {
@@ -17,14 +18,9 @@ namespace ScriptEngine.Machine.Contexts
     {
         private readonly string _origin;
 
-        internal ScriptInformationContext(ModuleInformation info)
+        public ScriptInformationContext(SourceCode codeSrc)
         {
-            _origin = info.Origin;
-        }
-
-        public ScriptInformationContext(ICodeSource codeSrc)
-        {
-            _origin = codeSrc.SourceDescription;
+            _origin = codeSrc.Location;
         }
 
         /// <summary>

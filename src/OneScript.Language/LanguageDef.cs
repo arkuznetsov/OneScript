@@ -8,7 +8,6 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Text;
 using OneScript.Language.LexicalAnalysis;
 
 namespace OneScript.Language
@@ -16,12 +15,18 @@ namespace OneScript.Language
     public static class LanguageDef
     {
         static readonly Dictionary<Token, int> _priority = new Dictionary<Token, int>();
+        public const int MAX_OPERATION_PRIORITY = 8;
 
         private static readonly LexemTrie<Token> _stringToToken = new LexemTrie<Token>();
 
         private static readonly LexemTrie<bool> _undefined = new LexemTrie<bool>();
         private static readonly LexemTrie<bool> _booleans = new LexemTrie<bool>();
         private static readonly LexemTrie<bool> _logicalOp = new LexemTrie<bool>();
+
+        private static readonly LexemTrie<bool> _preprocRegion = new LexemTrie<bool>();
+        private static readonly LexemTrie<bool> _preprocEndRegion = new LexemTrie<bool>();
+        
+        private static readonly LexemTrie<bool> _preprocImport = new LexemTrie<bool>();
 
         const int BUILTINS_INDEX = (int)Token.ByValParam;
 
@@ -103,6 +108,8 @@ namespace OneScript.Language
             AddToken(Token.Not, "не", "not");
             AddToken(Token.AddHandler, "ДобавитьОбработчик", "AddHandler");
             AddToken(Token.RemoveHandler, "УдалитьОбработчик", "RemoveHandler");
+            AddToken(Token.Async, "Асинх", "Async");
+            AddToken(Token.Await, "Ждать", "Await");
 
             #endregion
 
@@ -168,6 +175,7 @@ namespace OneScript.Language
             AddToken(Token.Hour, "час", "hour");
             AddToken(Token.Minute, "минута", "minute");
             AddToken(Token.Second, "секунда", "second");
+            AddToken(Token.BegOfWeek, "началонедели", "begofweek");
             AddToken(Token.BegOfYear, "началогода", "begofyear");
             AddToken(Token.BegOfMonth, "началомесяца", "begofmonth");
             AddToken(Token.BegOfDay, "началодня", "begofday");
@@ -180,6 +188,7 @@ namespace OneScript.Language
             AddToken(Token.EndOfHour, "конецчаса", "endofhour");
             AddToken(Token.EndOfMinute, "конецминуты", "endofminute");
             AddToken(Token.EndOfQuarter, "конецквартала", "endofquarter");
+            AddToken(Token.EndOfWeek, "конецнедели", "endofweek");
             AddToken(Token.WeekOfYear, "неделягода", "weekofyear");
             AddToken(Token.DayOfYear, "деньгода", "dayofyear");
             AddToken(Token.DayOfWeek, "деньнедели", "dayofweek");
@@ -206,6 +215,14 @@ namespace OneScript.Language
             AddToken(Token.ModuleInfo, "текущийсценарий", "currentscript");
 
             #endregion
+
+            _preprocRegion.Add("Область",true);
+            _preprocRegion.Add("Region", true);
+            _preprocEndRegion.Add("КонецОбласти", true);
+            _preprocEndRegion.Add("EndRegion", true);
+
+            _preprocImport.Add("Использовать", true);
+            _preprocImport.Add("Use", true);
         }
 
         private static void AddToken(Token token, string name)
@@ -267,6 +284,12 @@ namespace OneScript.Language
         {
             return token == Token.And || token == Token.Or;
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsUnaryOperator(Token token)
+        {
+            return token == Token.Plus || token == Token.Minus || token == Token.Not;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsLiteral(ref Lexem lex)
@@ -280,7 +303,19 @@ namespace OneScript.Language
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsUserSymbol(ref Lexem lex)
+        public static bool IsValidPropertyName(in Lexem lex)
+        {
+            return lex.Type == LexemType.Identifier 
+                   || lex.Type == LexemType.BooleanLiteral
+                   || lex.Type == LexemType.NullLiteral
+                   || lex.Type == LexemType.UndefinedLiteral
+                   || lex.Token == Token.And
+                   || lex.Token == Token.Or
+                   || lex.Token == Token.Not;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsUserSymbol(in Lexem lex)
         {
             return lex.Type == LexemType.Identifier && lex.Token == Token.NotAToken;
         }
@@ -346,7 +381,9 @@ namespace OneScript.Language
                    || token == Token.EndLoop
                    || token == Token.EndTry
                    || token == Token.EndOfText
-                   || token == Token.ElseIf;
+                   || token == Token.ElseIf
+                   || token == Token.Exception
+                   ;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -371,6 +408,24 @@ namespace OneScript.Language
         public static bool IsLogicalOperatorString(string content)
         {
             return _logicalOp.TryGetValue(content, out var nodeIsFilled) && nodeIsFilled;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPreprocRegion(string value)
+        {
+            return _preprocRegion.TryGetValue(value, out var nodeIsFilled) && nodeIsFilled;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPreprocEndRegion(string value)
+        {
+            return _preprocEndRegion.TryGetValue(value, out var nodeIsFilled) && nodeIsFilled;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsImportDirective(string value)
+        {
+            return _preprocImport.TryGetValue(value, out var nodeIsFilled) && nodeIsFilled;
         }
     }
 }

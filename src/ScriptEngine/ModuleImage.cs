@@ -6,8 +6,11 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
 using System.Collections.Generic;
+using OneScript.Compilation.Binding;
+using OneScript.Contexts;
+using OneScript.Language;
+using OneScript.Sources;
 using ScriptEngine.Machine;
-using ScriptEngine.Environment;
 
 namespace ScriptEngine
 {
@@ -25,6 +28,7 @@ namespace ScriptEngine
             ExportedProperties = new List<ExportedSymbol>();
             ExportedMethods = new List<ExportedSymbol>();
             Variables = new VariablesFrame();
+            Annotations = new List<AnnotationDefinition>();
         }
 
         public VariablesFrame Variables { get; }
@@ -37,15 +41,29 @@ namespace ScriptEngine
         public IList<ExportedSymbol> ExportedProperties { get; set; }
         public IList<ExportedSymbol> ExportedMethods { get; set; }
         public int LoadAddress { get; set; }
+        
+        [Obsolete("Use Source")]
         public ModuleInformation ModuleInfo { get; set; }
+
+        [NonSerialized] private SourceCode _sourceBackField;
+
+        public SourceCode Source
+        {
+            get => _sourceBackField;
+            set => _sourceBackField = value;
+        }
+        public IList<AnnotationDefinition> Annotations { get; set; }
     }
 
     [Serializable]
     public struct MethodDescriptor
     {
-        public MethodInfo Signature;
+        public MethodSignature Signature;
         public VariablesFrame Variables;
         public int EntryPoint;
+        
+        [NonSerialized]
+        public BslMethodInfo MethodInfo;
     }
 
     [Serializable]

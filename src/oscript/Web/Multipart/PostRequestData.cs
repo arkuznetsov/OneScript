@@ -5,14 +5,14 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using HttpMultipartParser;
-using ScriptEngine.HostedScript.Library;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using System;
 using System.IO;
 using System.Text;
-
-using ScriptEngine.HostedScript.Library.Binary;
+using OneScript.Contexts;
+using OneScript.StandardLibrary.Binary;
+using OneScript.StandardLibrary.Collections;
 
 namespace oscript.Web.Multipart
 {
@@ -40,7 +40,7 @@ namespace oscript.Web.Multipart
                 {
                     m_files.Insert(
                         ValueFactory.Create(file.Name),
-                        ValueFactory.Create(new PostFileDescription(file))
+                        new PostFileDescription(file)
                     );
                 }
                 _files = new FixedMapImpl(m_files);

@@ -7,23 +7,31 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Dynamic;
 using System.Linq;
+using OneScript.Commons;
+using OneScript.Contexts;
+using OneScript.Types;
+using OneScript.Values;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    public abstract class ContextIValueImpl : DynamicObject, IRuntimeContextInstance, IValue
+    public abstract class ContextIValueImpl : BslObjectValue, IRuntimeContextInstance, ISystemTypeAcceptor
     {
         private TypeDescriptor _type;
 
-        public ContextIValueImpl()
+        protected ContextIValueImpl() : this(BasicTypes.UnknownType)
         {
-
+        }
+        
+        protected ContextIValueImpl(TypeDescriptor type)
+        {
+            _type = type;
         }
 
-        public ContextIValueImpl(TypeDescriptor type)
+        void ISystemTypeAcceptor.AssignType(TypeDescriptor type)
         {
-            DefineType(type);
+            _type = type;
         }
-
+        
         protected void DefineType(TypeDescriptor type)
         {
             _type = type;
@@ -31,71 +39,47 @@ namespace ScriptEngine.Machine.Contexts
 
         public override string ToString()
         {
-            return _type.Name ?? base.ToString();
+            if (_type == BasicTypes.UnknownType)
+                TryDetermineOwnType();
+            
+            return _type.Name;
         }
         
         #region IValue Members
 
-        public DataType DataType
-        {
-            get { return Machine.DataType.Object; }
-        }
-
-        public TypeDescriptor SystemType
+        public override TypeDescriptor SystemType
         {
             get
             {
-                if (_type.Name == null)
+                if (_type != BasicTypes.UnknownType) 
+                    return _type;
+                
+                if (!TryDetermineOwnType())
                 {
-                    if (TypeManager.IsKnownType(this.GetType()))
-                    {
-                        _type = TypeManager.GetTypeByFrameworkType(this.GetType());
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Type {GetType()} is not defined");
-                    }
+                    throw new InvalidOperationException($"Type {GetType()} is not defined");
                 }
 
                 return _type;
             }
         }
 
-        public decimal AsNumber()
+        private bool TryDetermineOwnType()
         {
-            throw RuntimeException.ConvertToNumberException();
-        }
+            var mgr = MachineInstance.Current?.TypeManager;
+            if (mgr?.IsKnownType(GetType()) ?? false)
+            {
+                _type = mgr.GetTypeByFrameworkType(GetType());
+                return true;
+            }
 
-        public DateTime AsDate()
-        {
-            throw RuntimeException.ConvertToDateException();
+            return false;
         }
-
-        public bool AsBoolean()
-        {
-            throw RuntimeException.ConvertToBooleanException();
-        }
-
-        public virtual string AsString()
-        {
-            return SystemType.Name;
-        }
-
-        public IRuntimeContextInstance AsObject()
-        {
-            return this;
-        }
-
-        public IValue GetRawValue()
-        {
-            return this;
-        }
-
+        
         #endregion
 
         #region IComparable<IValue> Members
 
-        public int CompareTo(IValue other)
+        public override int CompareTo(IValue other)
         {
             if (other.SystemType.Equals(this.SystemType))
             {
@@ -118,27 +102,21 @@ namespace ScriptEngine.Machine.Contexts
 
         #region IEquatable<IValue> Members
 
-        public virtual bool Equals(IValue other)
+        public override bool Equals(IValue other)
         {
-            if (other == null)
+            if (!(other is BslObjectValue _))
                 return false;
 
-            return other.SystemType.Equals(this.SystemType) && Object.ReferenceEquals(this.AsObject(), other.AsObject());
+            return ReferenceEquals(this, other);
         }
 
         #endregion
 
         #region IRuntimeContextInstance Members
 
-        public virtual bool IsIndexed
-        {
-            get { return false; }
-        }
+        public virtual bool IsIndexed => false;
 
-        public virtual bool DynamicMethodSignatures
-        {
-            get { return false; }
-        }
+        public virtual bool DynamicMethodSignatures => false;
 
         public virtual IValue GetIndexedValue(IValue index)
         {
@@ -150,9 +128,9 @@ namespace ScriptEngine.Machine.Contexts
             throw new NotImplementedException();
         }
 
-        public virtual int FindProperty(string name)
+        public virtual int GetPropertyNumber(string name)
         {
-            throw RuntimeException.PropNotFoundException(name);
+            throw PropertyAccessException.PropNotFoundException(name);
         }
         public virtual bool IsPropReadable(int propNum)
         {
@@ -187,14 +165,21 @@ namespace ScriptEngine.Machine.Contexts
             throw new NotImplementedException();
         }
 
-        public virtual int FindMethod(string name)
+        public virtual int GetMethodNumber(string name)
         {
             throw RuntimeException.MethodNotFoundException(name);
         }
-        public virtual MethodInfo GetMethodInfo(int methodNumber)
+        
+        public virtual BslMethodInfo GetMethodInfo(int methodNumber)
         {
             throw new NotImplementedException();
         }
+
+        public virtual BslPropertyInfo GetPropertyInfo(int propertyNumber)
+        {
+            throw new NotImplementedException();
+        }
+        
         public virtual void CallAsProcedure(int methodNumber, IValue[] arguments)
         {
             throw new NotImplementedException();
@@ -205,19 +190,21 @@ namespace ScriptEngine.Machine.Contexts
         }
 
         #endregion
+
+        #region DynamicObject members 
         
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
             try
             {
-                var propIdx = FindProperty(binder.Name);
+                var propIdx = GetPropertyNumber(binder.Name);
                 if (!IsPropReadable(propIdx))
                 {
                     result = null;
                     return false;
                 }
 
-                result = ContextValuesMarshaller.ConvertToCLRObject(GetPropValue(propIdx));
+                result = ContextValuesMarshaller.ConvertToClrObject(GetPropValue(propIdx));
                 return true;
             }
             catch (PropertyAccessException)
@@ -236,14 +223,13 @@ namespace ScriptEngine.Machine.Contexts
         {
             try
             {
-                var propIdx = FindProperty(binder.Name);
-                if (IsPropWritable(propIdx))
+                var propIdx = GetPropertyNumber(binder.Name);
+                if (!IsPropWritable(propIdx))
                 {
                     return false;
                 }
 
-                SetPropValue(propIdx, ContextValuesMarshaller.ConvertReturnValue(value, value.GetType()));
-
+                SetPropValue(propIdx, ContextValuesMarshaller.ConvertDynamicValue(value));
                 return true;
             }
             catch (PropertyAccessException)
@@ -264,8 +250,8 @@ namespace ScriptEngine.Machine.Contexts
                 return false;
             }
 
-            var index = ContextValuesMarshaller.ConvertReturnValue(indexes[0], indexes[0].GetType());
-            result = ContextValuesMarshaller.ConvertToCLRObject(GetIndexedValue(index));
+            var index = ContextValuesMarshaller.ConvertDynamicIndex(indexes[0]);
+            result = ContextValuesMarshaller.ConvertToClrObject(GetIndexedValue(index));
             return true;
         }
 
@@ -276,8 +262,8 @@ namespace ScriptEngine.Machine.Contexts
                 return false;
             }
 
-            var index = ContextValuesMarshaller.ConvertReturnValue(indexes[0], indexes[0].GetType());
-            SetIndexedValue(index, ContextValuesMarshaller.ConvertReturnValue(value, value.GetType()));
+            var index = ContextValuesMarshaller.ConvertDynamicIndex(indexes[0]);
+            SetIndexedValue(index, ContextValuesMarshaller.ConvertDynamicValue(value));
             return true;
         }
 
@@ -286,7 +272,7 @@ namespace ScriptEngine.Machine.Contexts
             int methIdx;
             try
             {
-                methIdx = FindMethod(binder.Name);
+                methIdx = GetMethodNumber(binder.Name);
             }
             catch (MethodAccessException)
             {
@@ -294,9 +280,13 @@ namespace ScriptEngine.Machine.Contexts
                 return false;
             }
 
-            var methInfo = GetMethodInfo(methIdx);
-            var valueArgs = new IValue[methInfo.Params.Length];
-            var passedArgs = args.Select(x => ContextValuesMarshaller.ConvertReturnValue(x, x.GetType())).ToArray();
+            var parameters = GetMethodInfo(methIdx).GetParameters();
+            if (args.Length > parameters.Length)
+                throw RuntimeException.TooManyArgumentsPassed();
+
+            var valueArgs = new IValue[parameters.Length];
+            var passedArgs = args.Select(x => ContextValuesMarshaller.ConvertDynamicValue(x)).ToArray();
+            
             for (int i = 0; i < valueArgs.Length; i++)
             {
                 if (i < passedArgs.Length)
@@ -305,19 +295,40 @@ namespace ScriptEngine.Machine.Contexts
                     valueArgs[i] = ValueFactory.CreateInvalidValueMarker();
             }
 
-            IValue methResult;
-            CallAsFunction(methIdx, valueArgs, out methResult);
-            result = methResult == null? null : ContextValuesMarshaller.ConvertToCLRObject(methResult);
+            CallAsFunction(methIdx, valueArgs, out IValue methResult);
+            result = methResult == null ? null : ContextValuesMarshaller.ConvertToClrObject(methResult);
 
             return true;
+        }
 
+        #endregion
+        
+        public override int CompareTo(BslValue other)
+        {
+            if (other.GetType() == GetType())
+            {
+                if (this.Equals(other))
+                {
+                    return 0;
+                }
+                else
+                {
+                    throw RuntimeException.ComparisonNotSupportedException();
+                }
+            }
+            else
+            {
+                return this.GetType().ToString().CompareTo(other.GetType().ToString());
+            }
+        }
+
+        public override bool Equals(BslValue other)
+        {
+            if (other == null)
+                return false;
+
+            return ReferenceEquals(this, other);
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method)]
-    public class ScriptConstructorAttribute : Attribute
-    {
-        public string Name { get; set; }
-        public bool ParametrizeWithClassName { get; set; }
-    }
 }

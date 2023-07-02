@@ -8,12 +8,19 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using OneScript.Commons;
+using OneScript.Compilation;
+using OneScript.Compilation.Binding;
+using OneScript.Contexts;
+using OneScript.Execution;
+using OneScript.Types;
+using OneScript.Values;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    public class UserScriptContextInstance : ScriptDrivenObject
+    [ContextClass("Сценарий", "Script")]
+    public class UserScriptContextInstance : ThisAwareScriptedObjectBase, IDebugPresentationAcceptor
     {
-        readonly LoadedModule _module;
         Dictionary<string, int> _ownPropertyIndexes;
         List<IValue> _ownProperties;
 
@@ -25,22 +32,20 @@ namespace ScriptEngine.Machine.Contexts
         
         public IValue[] ConstructorParams { get; private set; }
         
-        public UserScriptContextInstance(LoadedModule module) : base(module)
+        public UserScriptContextInstance(IExecutableModule module, bool deferred = false) : base(module, deferred)
         {
-            _module = module;
-            ConstructorParams = new IValue[0];
+            ConstructorParams = Array.Empty<IValue>();
         }
 
-        public UserScriptContextInstance(LoadedModule module, string asObjectOfType, IValue[] args = null)
+        public UserScriptContextInstance(IExecutableModule module, TypeDescriptor asObjectOfType, IValue[] args = null)
             : base(module, true)
         {
-            DefineType(TypeManager.GetTypeByName(asObjectOfType));
-            _module = module;
+            DefineType(asObjectOfType);
 
             ConstructorParams = args;
             if (args == null)
             {
-                ConstructorParams = new IValue[0];
+                ConstructorParams = Array.Empty<IValue>();
             }
 
         }
@@ -57,16 +62,16 @@ namespace ScriptEngine.Machine.Contexts
             {
                 var procInfo = GetMethodInfo(GetOwnMethodCount()+methId);
 
-                int procParamsCount = procInfo.Params.Count();
-
-                int reqParamsCount = procInfo.Params.Count(x => !x.HasDefaultValue);
+                var parameters = procInfo.GetParameters();
+                int procParamsCount = parameters.Length;
+                int reqParamsCount = parameters.Count(x => !x.HasDefaultValue);
 
                 if (constructorParamsCount < reqParamsCount || constructorParamsCount > procParamsCount)
                     throw new RuntimeException("Параметры конструктора: "
                         + "необходимых параметров: " + Math.Min(procParamsCount, reqParamsCount).ToString()
                         + ", передано параметров " + constructorParamsCount.ToString()
                         );
-                else if (procInfo.Params.Skip(constructorParamsCount).Any(param => !param.HasDefaultValue))
+                else if (parameters.Skip(constructorParamsCount).Any(param => !param.HasDefaultValue))
                     throw RuntimeException.TooFewArgumentsPassed();
 
                 CallScriptMethod(methId, ConstructorParams);
@@ -84,11 +89,11 @@ namespace ScriptEngine.Machine.Contexts
         {
             var methId = GetScriptMethod("ОбработкаПолученияПредставления", "PresentationGetProcessing");
             if (methId == -1)
-                _asStringOverride = base.AsString;
+                _asStringOverride = base.ConvertToString;
             else
             {
                 var signature = GetMethodInfo(methId);
-                if (signature.ArgCount != 2)
+                if (signature.GetParameters().Length != 2)
                     throw new RuntimeException("Обработчик получения представления должен иметь 2 параметра");
 
                 _asStringOverride = () => GetOverridenPresentation(methId);
@@ -109,7 +114,7 @@ namespace ScriptEngine.Machine.Contexts
             CallScriptMethod(methId, arguments);
 
             if (arguments[1].AsBoolean() == true)
-                return base.AsString();
+                return base.ConvertToString();
 
             return arguments[0].AsString();
         }
@@ -122,7 +127,7 @@ namespace ScriptEngine.Machine.Contexts
                 _ownPropertyIndexes = new Dictionary<string, int>();
             }
 
-            var newIndex = _ownProperties.Count;
+            var newIndex = _ownProperties.Count + base.GetOwnVariableCount();
             _ownPropertyIndexes.Add(name, newIndex);
             if (!string.IsNullOrEmpty(alias))
             {
@@ -153,38 +158,70 @@ namespace ScriptEngine.Machine.Contexts
             return base.FindOwnMethod(name);
         }
 
-        protected override MethodInfo GetOwnMethod(int index)
+        protected override int FindOwnProperty(string name)
+        {
+            if (_ownPropertyIndexes != default && _ownPropertyIndexes.TryGetValue(name, out var index))
+            {
+                return index;
+            }
+
+            return base.FindOwnProperty(name);
+        }
+
+        protected override BslMethodInfo GetOwnMethod(int index)
         {
             Debug.Assert(index == RAIZEEVENT_INDEX);
 
             return GetOwnMethodsDefinition()[RAIZEEVENT_INDEX];
         }
 
-        public static MethodInfo[] GetOwnMethodsDefinition()
+        protected override BslPropertyInfo GetOwnPropertyInfo(int index)
         {
-            return new []{
-                new MethodInfo {
-                    Name = RAISEEVENT_RU,
-                    Alias = RAISEEVENT_EN,
-                    IsFunction = false,
-                    IsExport = false,
-                    Annotations = new AnnotationDefinition[0],
-                    Params = new[]
-                    {
-                        new ParameterDefinition
-                        {
-                            Name = "eventName",
-                            HasDefaultValue = false
-                        },
-                        new ParameterDefinition
-                        {
-                            Name = "eventArgs",
-                            HasDefaultValue = true,
-                            DefaultValueIndex = ParameterDefinition.UNDEFINED_VALUE_INDEX
-                        }
-                    }
-                }
-            };
+            if (index == THISOBJ_VARIABLE_INDEX)
+                return base.GetOwnPropertyInfo(index);
+            
+            var names = _ownPropertyIndexes.Where(x => x.Value == index)
+                .Select(x => x.Key)
+                .ToArray();
+            
+            Debug.Assert(names.Length > 0 && names.Length <= 2);
+            
+            var builder = BslPropertyBuilder.Create()
+                .Name(names[0]);
+            if (names.Length == 2)
+            {
+                builder.Alias(names[1]);
+            }
+
+            builder.SetDispatchingIndex(index);
+
+            return builder.Build();
+        }
+
+        [SymbolsProvider]
+        private static void PrepareCompilation(CompileTimeSymbolsProvider provider, SymbolScope scope)
+        {
+            var baseSymbols = provider.Get<ThisAwareScriptedObjectBase>();
+            baseSymbols.FillSymbols(scope);
+            GetOwnMethodsDefinition().ForEach(x => scope.DefineMethod(x.ToSymbol()));
+        }
+        
+        private static BslMethodInfo[] GetOwnMethodsDefinition()
+        {
+            var methodBuilder = BslMethodBuilder.Create();
+            methodBuilder.SetNames(RAISEEVENT_RU, RAISEEVENT_EN)
+                .DeclaringType(typeof(UserScriptContextInstance));
+
+            methodBuilder.NewParameter()
+                .Name("eventName")
+                .ParameterType(typeof(string));
+
+            methodBuilder.NewParameter()
+                .Name("eventArgs")
+                .ParameterType(typeof(BslValue[]))
+                .DefaultValue(BslSkippedParameterValue.Instance);
+
+            return new BslMethodInfo[]{methodBuilder.Build()};
         }
 
         protected override void CallOwnProcedure(int index, IValue[] arguments)
@@ -209,10 +246,7 @@ namespace ScriptEngine.Machine.Contexts
 
         protected override int GetOwnVariableCount()
         {
-            if (_ownProperties == null)
-                return 0;
-            else
-                return _ownProperties.Count;
+            return base.GetOwnVariableCount() + (_ownProperties?.Count ?? 0);
         }
 
         protected override void UpdateState()
@@ -222,35 +256,64 @@ namespace ScriptEngine.Machine.Contexts
         protected override bool IsOwnPropReadable(int index)
         {
             if (_ownProperties == null)
-                return false;
+                return base.IsOwnPropReadable(index);
 
-            if (index >= 0 && index < _ownProperties.Count)
+            var baseProps = base.GetOwnVariableCount(); 
+            if (index >= baseProps)
                 return true;
             else
-                return false;
+                return base.IsOwnPropReadable(index);
+        }
+
+        protected override bool IsOwnPropWritable(int index)
+        {
+            if (_ownProperties == null)
+                return base.IsOwnPropWritable(index);
+
+            return false;
         }
 
         protected override IValue GetOwnPropValue(int index)
         {
-            return _ownProperties[index];
+            var baseProps = base.GetOwnVariableCount(); 
+            if (index >= baseProps)
+                return _ownProperties[index-baseProps];
+            else
+                return base.GetOwnPropValue(index);
         }
         
         protected override string GetOwnPropName(int index)
         {
-            if (_ownProperties == null)
-                throw new ArgumentException("Unknown property index");
-
-            return _ownPropertyIndexes.Where(x => x.Value == index).First().Key;
+            if (_ownProperties == null || index < base.GetOwnVariableCount())
+                return base.GetOwnPropName(index);
+            
+            return _ownPropertyIndexes.First(x => x.Value == index).Key;
         }
         
         public override int GetMethodsCount()
         {
-            return GetOwnMethodCount() + _module.Methods.Length;
+            return GetOwnMethodCount() + Module.Methods.Count;
         }
 
-        public override string AsString()
+        protected override string ConvertToString()
         {
             return _asStringOverride();
+        }
+
+        void IDebugPresentationAcceptor.Accept(IDebugValueVisitor visitor)
+        {
+            var thisId = GetPropertyNumber(THISOBJ_RU);
+            var total = GetPropCount();
+            var props = new List<IVariable>(total);
+            for (int i = 0; i < total; i++)
+            {
+                if (i != thisId)
+                {
+                    props.Add(Variable.Create(GetPropValue(i), GetPropName(i)));
+                }
+            }
+            
+            visitor.ShowCustom(props);
         }
     }
 }

@@ -33,9 +33,8 @@
 
         <MSBuild Projects="$(Solution)" Targets="Clean" Properties="ReleaseNumber=$(ReleaseNumber);Configuration=$(Configuration);Platform=%(PlatformItem.MSBuildName)"/>
         
-    </Target>
-    
-    <Target Name="Make">
+    </Target>  
+        <Target Name="Make">
         <MSBuild Projects="$(Solution)" Targets="restore;Build" Properties="ReleaseNumber=$(ReleaseNumber);Configuration=$(Configuration);Platform=%(PlatformItem.MSBuildName);"/>
     </Target>
 
@@ -76,22 +75,30 @@
         <ItemGroup>
             <BuiltProjects Include="oscript" />
             <BuiltProjects Include="TestApp" />
-            <BinaryFiles Include="$(MSBuildProjectDirectory)/src/%(BuiltProjects.Identity)/bin/$(Configuration)/net452/**">
+            <BinaryFiles Include="$(MSBuildProjectDirectory)/src/%(BuiltProjects.Identity)/bin/$(Configuration)/$(TargetFramework)/**">
                 <Dest>$(TempFolder)/bin</Dest>
             </BinaryFiles>
-            <BinaryFiles Include="$(MSBuildProjectDirectory)/src/%(BuiltProjects.Identity)/bin/x86/$(Configuration)/net452/**">
+            <BinaryFiles Include="$(MSBuildProjectDirectory)/src/%(BuiltProjects.Identity)/bin/x86/$(Configuration)/$(TargetFramework)/**">
                 <Dest>$(TempFolder)/bin32</Dest>
             </BinaryFiles>
-            <AspFiles Include="$(MSBuildProjectDirectory)/src/ASPNETHandler/bin/$(Configuration)/net452/ASPNETHandler.dll"/>
         </ItemGroup>
-        
+
+        <ItemGroup>
+            <BuiltProjects Include="ScriptEngine.NativeApi" />
+            <BinaryFiles Include="$(MSBuildProjectDirectory)/src/%(BuiltProjects.Identity)/bin/$(Configuration)/net452/*.dll">
+                <Dest>$(TempFolder)/bin</Dest>
+            </BinaryFiles>
+            <BinaryFiles Include="$(MSBuildProjectDirectory)/src/%(BuiltProjects.Identity)/bin/x86/$(Configuration)/net452/*.dll">
+                <Dest>$(TempFolder)/bin32</Dest>
+            </BinaryFiles>
+        </ItemGroup>
+           
         <Copy SourceFiles="@(BinaryFiles)" DestinationFiles="@(BinaryFiles->'%(Dest)/%(Filename)%(Extension)')" />
-        <Copy SourceFiles="@(AspFiles)" DestinationFolder="%(BinaryFiles.Dest)"/>
         <!-- Копирование скрипта запуска для opm -->
         <Copy SourceFiles="$(MSBuildProjectDirectory)\install\opm.bat" DestinationFolder="%(BinaryFiles.Dest)"/>
 
         <PropertyGroup>
-            <DebugSrc>$(MSBuildProjectDirectory)/src/DebugServer/bin/$(Configuration)/net452</DebugSrc>
+            <DebugSrc>$(MSBuildProjectDirectory)/src/VSCode.DebugAdapter/bin/$(Configuration)/net461</DebugSrc>
         </PropertyGroup>
         <ItemGroup>
             <DbgBinFiles Include="$(DebugSrc)/*.dll"/>
@@ -106,19 +113,23 @@
         <Copy SourceFiles="@(DbgPackageFiles)" DestinationFolder="$(DebugDest)"/>
         <Copy SourceFiles="@(DbgImageFiles)" DestinationFolder="$(DebugDest)/images"/>
 
-        <Exec WorkingDirectory="$(TempFolder)" Command="&quot;$(ToolFolder)/oscript.exe&quot; -version > VERSION"/>
+        <Message Text="Writing version $(ReleaseNumber).$(BuildNumber)"/>
+        <WriteLinesToFile File="$(TempFolder)/VERSION" Overwrite="true" Lines="$(ReleaseNumber).$(BuildNumber)"/>
     </Target>
 
     <!-- Собирает в целевой папке содержимое папки lib -->
     <Target Name="GatherLibrary" DependsOnTargets="Make;GatherBinaries">
         
         <MakeDir Directories="$(LibFolder)" />
-        <Exec Command="&quot;$(ToolFolder)/oscript.exe&quot; &quot;$(MSBuildProjectDirectory)\install\unicode-zipper.os&quot; unpack &quot;$(MSBuildProjectDirectory)\install\opm-0.16.0.ospx&quot; &quot;$(LibFolder)\tmp&quot;"/>
-        <Exec Command="&quot;$(ToolFolder)/oscript.exe&quot; &quot;$(MSBuildProjectDirectory)\install\unicode-zipper.os&quot; unpack &quot;$(LibFolder)\tmp\content.zip&quot; &quot;$(LibFolder)/opm&quot;"/>
-        <Copy SourceFiles="$(MSBuildProjectDirectory)\install\package-loader.os" DestinationFolder="$(LibFolder)"/>
-        <DeleteTree Directories="$(LibFolder)\tmp"/>
-
         <CallTarget Targets="InstallStdLib" Condition="'$(StandardLibraryPacks)' != ''"/>
+        <DeleteTree Directories="$(LibFolder)/opm" />
+
+        <Exec Command="&quot;$(ToolFolder)/oscript.exe&quot; &quot;$(MSBuildProjectDirectory)\install\unicode-zipper.os&quot; unpack &quot;$(MSBuildProjectDirectory)\install\opm.ospx&quot; &quot;$(LibFolder)\tmp&quot;"/>
+        <Exec Command="&quot;$(ToolFolder)/oscript.exe&quot; &quot;$(MSBuildProjectDirectory)\install\unicode-zipper.os&quot; unpack &quot;$(LibFolder)\tmp\content.zip&quot; &quot;$(LibFolder)/opm&quot;"/>
+        
+        <Copy SourceFiles="$(MSBuildProjectDirectory)\install\package-loader.os" DestinationFolder="$(LibFolder)"/>
+
+        <DeleteTree Directories="$(LibFolder)\tmp"/>
 
     </Target>
 
@@ -166,7 +177,7 @@
     </Target>
 
     <!-- Инсталлятор -->
-    <Target Name="CreateInstaller" DependsOnTargets="PrepareDistributionContent">
+    <Target Name="CreateInstaller" DependsOnTargets="PrepareArtifactsRoot">
         <Error Text="No installer path is specified" Condition="'$(InnoSetupPath)' == ''"/>
         <PropertyGroup>
             <InstallerStandardPath>"$(InnoSetupPath)\iscc.exe"</InstallerStandardPath>
@@ -183,6 +194,8 @@
             <NugetAbleProject Include="ScriptEngine"/>
             <NugetAbleProject Include="ScriptEngine.HostedScript"/>
             <NugetAbleProject Include="OneScript.Language"/>
+			<NugetAbleProject Include="OneScript.DebugServices"/>
+			<NugetAbleProject Include="OneScript.DebugProtocol"/>
         </ItemGroup>
         
         <MSBuild Projects="src/%(NugetAbleProject.Identity)/%(NugetAbleProject.Identity).csproj" Targets="pack" Properties="PackageOutputPath=$(ArtifactsRoot);ReleaseNumber=$(ReleaseNumber)"/>
@@ -215,6 +228,21 @@
 
         <Exec WorkingDirectory="$(MSBuildProjectDirectory)\tests" Command="&quot;$(ToolFolder)/oscript.exe&quot; &quot;$(MSBuildProjectDirectory)\tests\testrunner.os&quot; -runall . xddReportPath ." IgnoreExitCode="true"/>
 
+    </Target>
+
+    <Target Name="PublishNuget">
+        <ItemGroup>
+            <NugetAbleProject Include="OneScript"/>
+            <NugetAbleProject Include="OneScript.StandardLibrary"/>
+            <NugetAbleProject Include="OneScript.Language"/>
+			<NugetAbleProject Include="OneScript.DebugServices"/>
+			<NugetAbleProject Include="OneScript.DebugProtocol"/>
+        </ItemGroup>
+        
+        <Error Text="No nuget token (/p:NugetToken=) specified" Condition="'$(NugetToken)' == ''" />
+        <Exec WorkingDirectory="$(MSBuildProjectDirectory)\built"
+            Command="dotnet nuget push %(NugetAbleProject.Identity).$(ReleaseNumber).nupkg -k $(NugetToken) -s https://api.nuget.org/v3/index.json"/>
+        
     </Target>
     
 </Project>

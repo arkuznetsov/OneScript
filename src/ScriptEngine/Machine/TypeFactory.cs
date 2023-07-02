@@ -8,47 +8,85 @@ at http://mozilla.org/MPL/2.0/.
 using ScriptEngine.Machine.Contexts;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using OneScript.Types;
+using OneScript.Commons;
+using OneScript.Contexts;
+using ScriptEngine.Types;
 using Refl = System.Reflection;
 
 namespace ScriptEngine.Machine
 {
-    public delegate IValue InstanceConstructor(string typeName, IValue[] arguments);
-
-    public class TypeFactory
+    internal delegate IValue InstanceConstructor(TypeActivationContext context, IValue[] arguments);
+    
+    public class TypeFactory : ITypeFactory
     {
-        private readonly Type _clrType;
+        private readonly TypeDescriptor _systemType;
 
         private Dictionary<int, InstanceConstructor> _constructorsCache = new Dictionary<int, InstanceConstructor>();
 
-        public TypeFactory(Type clrType)
+        private static readonly Refl.MethodInfo _typeCast =
+            typeof(ContextValuesMarshaller).GetMethods()
+            .First(x => x.Name == "ConvertParam" && x.GetGenericArguments().Length == 0);
+
+        private static readonly Refl.MethodInfo _genTypeCast =
+            typeof(ContextValuesMarshaller).GetMethods()
+            .First(x => x.Name == "ConvertParamDef" && x.GetGenericArguments().Length == 1);
+        
+        public TypeFactory(TypeDescriptor type)
         {
-            _clrType = clrType;
+            System.Diagnostics.Debug.Assert(_typeCast != null);
+            System.Diagnostics.Debug.Assert(_genTypeCast != null);
+            
+            _systemType = type;
+        }
+        
+        public TypeFactory(Type type) : this(type.GetTypeFromClassMarkup())
+        {
         }
 
-        public InstanceConstructor GetConstructor(string typeName, IValue[] arguments)
+        private Type ClrType => _systemType.ImplementingClass;
+
+        public IValue Activate(TypeActivationContext context, IValue[] arguments)
+        {
+            var constructor = GetConstructor(arguments);
+            if (constructor == default)
+            {
+                throw RuntimeException.ConstructorNotFound(context.TypeName);
+            }
+            
+            var instance = constructor(context, arguments);
+            if (instance is ISystemTypeAcceptor typeAcceptor)
+            {
+                typeAcceptor.AssignType(_systemType);
+            }
+
+            return instance;
+        }
+        
+        private InstanceConstructor GetConstructor(IValue[] arguments)
         {
             if (_constructorsCache.TryGetValue(arguments.Length, out var constructor))
             {
                 return constructor;
             }
 
-            constructor = CreateConstructor(typeName, arguments);
+            constructor = CreateConstructor(arguments);
             if(constructor != null)
                 _constructorsCache[arguments.Length] = constructor;
 
             return constructor;
-
         }
 
-        private InstanceConstructor CreateConstructor(string typeName, IValue[] arguments)
+        private InstanceConstructor CreateConstructor(IValue[] arguments)
         {
-            var definition = FindConstructor(arguments);
-            if (definition == null)
+            var (success, definition) = FindConstructor(arguments);
+            if (!success)
                 return null;
 
-            var methodInfo = definition.Value.CtorInfo;
+            var methodInfo = definition.CtorInfo;
             if (!typeof(IValue).IsAssignableFrom(methodInfo.ReturnType))
             {
                 return FallbackConstructor(methodInfo);
@@ -57,16 +95,22 @@ namespace ScriptEngine.Machine
             var argsParam = Expression.Parameter(typeof(IValue[]), "args");
             var parameters = methodInfo.GetParameters();
             var argsToPass = new List<Expression>();
-            var typeNameParam = Expression.Parameter(typeof(string), "typeName");
+            var contextParam = Expression.Parameter(typeof(TypeActivationContext), "context");
+
             int paramIndex = 0;
-            if (definition.Value.Parametrized && parameters.Length > 0)
+            if (definition.Parametrized && parameters.Length > 0)
             {
-                argsToPass.Add(typeNameParam);
+                if (definition.InjectContext)
+                {
+                    argsToPass.Add(contextParam); 
+                }
+                else
+                {
+                    var propAccess = Expression.PropertyOrField(contextParam, nameof(TypeActivationContext.TypeName));
+                    argsToPass.Add(propAccess);
+                }   
                 ++paramIndex;
             }
-
-            var typeCast = typeof(ContextValuesMarshaller).GetMethod("ConvertParam", new[]{typeof(IValue),typeof(Type)});
-            System.Diagnostics.Debug.Assert(typeCast != null);
 
             for (int i = 0; i < arguments.Length; i++)
             {
@@ -87,17 +131,23 @@ namespace ScriptEngine.Machine
                     argsToPass.Add(Expression.ArrayIndex(argsParam, Expression.Constant(i)));
                 else
                 {
-                    var conversionArg = Expression.ArrayIndex(argsParam,
-                                                              Expression.Constant(i)
-                                                              );
-                    var marshalledArg = Expression.Call(typeCast, conversionArg, Expression.Constant(parameters[paramIndex].ParameterType));
-                    argsToPass.Add(
-                        Expression.Convert(marshalledArg, parameters[paramIndex].ParameterType)
-                        );
+                    var conversionArg = Expression.ArrayIndex(argsParam, Expression.Constant(i));
+                    if (parameters[i].HasDefaultValue)
+                    {
+                        var convertMethod = _genTypeCast.MakeGenericMethod(parameters[i].ParameterType);
+                        var defaultArg = Expression.Constant(parameters[i].DefaultValue);
+
+                        var marshalledArg = Expression.Call(convertMethod, conversionArg, defaultArg);
+                        argsToPass.Add(marshalledArg);
+                    }
+                    else
+                    {
+                        var marshalledArg = Expression.Call(_typeCast, conversionArg, Expression.Constant(parameters[paramIndex].ParameterType));
+                        argsToPass.Add(Expression.Convert(marshalledArg, parameters[paramIndex].ParameterType));
+                    }
                 }
 
                 ++paramIndex;
-
             }
 
             for (int i = paramIndex; i < parameters.Length; i++)
@@ -113,7 +163,7 @@ namespace ScriptEngine.Machine
             }
 
             var constructorCallExpression = Expression.Call(methodInfo, argsToPass);
-            var callLambda = Expression.Lambda<InstanceConstructor>(constructorCallExpression, typeNameParam, argsParam).Compile();
+            var callLambda = Expression.Lambda<InstanceConstructor>(constructorCallExpression, contextParam, argsParam).Compile();
 
             return callLambda;
         }
@@ -124,7 +174,7 @@ namespace ScriptEngine.Machine
         //
         private InstanceConstructor FallbackConstructor(Refl.MethodInfo methodInfo)
         {
-            return (typeName, args) =>
+            return (context, args) =>
             {
                 var methArgs = new IValue[methodInfo.GetParameters().Length];
                 for (int i = 0; i < methArgs.Length; i++)
@@ -132,7 +182,16 @@ namespace ScriptEngine.Machine
                     if (i < args.Length)
                         methArgs[i] = args[i];
                 }
-                return (IValue) methodInfo.Invoke(null, methArgs);
+
+                try
+                {
+                    return (IValue) methodInfo.Invoke(null, methArgs);
+                }
+                catch (Refl.TargetInvocationException e)
+                {
+                    Debug.Assert(e.InnerException != null, "e.InnerException != null");
+                    throw e.InnerException;
+                }
             };
         }
 
@@ -144,29 +203,17 @@ namespace ScriptEngine.Machine
             return newArray;
         }
 
-        private ConstructorDefinition? FindConstructor(IValue[] arguments)
+        private (bool, ConstructorDefinition) FindConstructor(IValue[] arguments)
         {
-            var ctors = _clrType.GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
-                            .Where(x => x.GetCustomAttributes(false).Any(y => y is ScriptConstructorAttribute))
-                            .Select(x => new ConstructorDefinition
-                            {
-                                CtorInfo = x,
-                                Parametrized = ((ScriptConstructorAttribute)x.GetCustomAttributes(typeof(ScriptConstructorAttribute), false)[0]).ParametrizeWithClassName
-                            });
-
+            var ctors = GetMarkedConstructors(ClrType);
 
             int argCount = arguments.Length;
             foreach (var ctor in ctors)
             {
                 var parameters = ctor.CtorInfo.GetParameters();
 
-                if (ctor.Parametrized && parameters.Length > 0)
+                if (ctor.Parametrized)
                 {
-                    if (parameters[0].ParameterType != typeof(string))
-                    {
-                        throw new InvalidOperationException("Type parametrized constructor must have first argument of type String");
-                    }
-
                     parameters = parameters.Skip(1).ToArray();
                 }
 
@@ -174,7 +221,7 @@ namespace ScriptEngine.Machine
                     || (parameters.Length > 0 && parameters[0].ParameterType.IsArray);
 
                 if (success)
-                    return ctor;
+                    return (true, ctor);
 
                 if (parameters.Length > 0 && parameters.Length < argCount
                     && !parameters[parameters.Length - 1].ParameterType.IsArray)
@@ -213,19 +260,47 @@ namespace ScriptEngine.Machine
                 }
 
                 if (success)
-                    return ctor;
-
+                    return (true, ctor);
             }
 
-            return null;
+            return (false, default);
         }
 
+        private IEnumerable<ConstructorDefinition> GetMarkedConstructors(Type type)
+        {
+            var staticMethods = ClrType.GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+            var constructors = new List<ConstructorDefinition>(4);
+            
+            foreach (var method in staticMethods)
+            {
+                var attribute = (ScriptConstructorAttribute) method.GetCustomAttributes(false)
+                    .FirstOrDefault(y => y is ScriptConstructorAttribute);
+                if(attribute == default)
+                    continue;
+                
+                var parameters = method.GetParameters();
+                var injectContext = parameters.Length > 0 &&
+                                    parameters[0].ParameterType == typeof(TypeActivationContext);
+
+                var definition = new ConstructorDefinition
+                {
+                    CtorInfo = method,
+                    Parametrized = injectContext,
+                    InjectContext = injectContext
+                };
+
+                constructors.Add(definition);
+            }
+            
+            return constructors;
+        }
+        
         private struct ConstructorDefinition
         {
             public Refl.MethodInfo CtorInfo { get; set; }
             public bool Parametrized { get; set; }
+            
+            public bool InjectContext { get; set; }
         }
-
     }
-
 }

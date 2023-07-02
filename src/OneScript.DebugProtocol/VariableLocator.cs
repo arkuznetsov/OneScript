@@ -7,8 +7,6 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace OneScript.DebugProtocol
 {
@@ -27,6 +25,7 @@ namespace OneScript.DebugProtocol
     {
 
         private int[] _path;
+        private readonly int _threadId;
         private readonly int _stackFrameIndex;
 
         private Variable[] _variables;
@@ -34,19 +33,15 @@ namespace OneScript.DebugProtocol
         private VariableLocator(VariableLocator parent, int variableIndex)
         {
             _stackFrameIndex = parent._stackFrameIndex;
+            _threadId = parent._threadId;
             _path = new int[parent._path.Length + 1];
             Array.Copy(parent._path, _path, parent._path.Length);
             _path[parent._path.Length] = variableIndex;
         }
 
-        public VariableLocator(int stackFrameIndex)
+        public VariableLocator(int threadId, int stackFrameIndex, int variableIndex)
         {
-            _stackFrameIndex = stackFrameIndex;
-            _path = new int[0];
-        }
-
-        public VariableLocator(int stackFrameIndex, int variableIndex)
-        {
+            _threadId = threadId;
             _stackFrameIndex = stackFrameIndex;
             _path = new int[] { variableIndex };
         }
@@ -92,7 +87,7 @@ namespace OneScript.DebugProtocol
         {
             if(_variables != null)
                 return;
-            var variables = process.GetVariables(1, _stackFrameIndex, _path);
+            var variables = process.GetVariables(_threadId, _stackFrameIndex, _path);
             _variables = variables;
         }
 
