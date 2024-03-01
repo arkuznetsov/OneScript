@@ -5,12 +5,13 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System;
 using System.Linq;
-using OneScript.Commons;
 using OneScript.Compilation;
 using OneScript.Compilation.Binding;
 using OneScript.Contexts;
 using OneScript.DependencyInjection;
+using OneScript.Exceptions;
 using OneScript.Language;
 using OneScript.Language.LexicalAnalysis;
 using OneScript.Language.SyntaxAnalysis;
@@ -166,8 +167,22 @@ namespace OneScript.Native.Compiler
             }
         }
 
+        protected override void VisitGotoNode(NonTerminalNode node)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void VisitLabelNode(LabelNode node)
+        {
+            throw new NotSupportedException();
+        }
+
         protected override void VisitMethod(MethodNode methodNode)
         {
+            if (methodNode.IsAsync)
+            {
+                AddError(LocalizedErrors.AsyncMethodsNotSupported(), methodNode.Location);
+            }
             var methodSymbol = Symbols.GetScope(Symbols.ScopeCount - 1).Methods[methodNode.Signature.MethodName];
             var methodInfo = (BslNativeMethodInfo)methodSymbol.Method;
 

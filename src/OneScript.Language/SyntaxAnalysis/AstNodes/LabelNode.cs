@@ -5,16 +5,17 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using System;
-using OneScript.Language;
+using OneScript.Language.LexicalAnalysis;
 
-namespace OneScript.Native.Runtime
+namespace OneScript.Language.SyntaxAnalysis.AstNodes
 {
-    public class ExternalSystemException : ScriptException
+    public class LabelNode : LineMarkerNode
     {
-        public ExternalSystemException(Exception reason)
-            : base(new ErrorPositionInfo(), $"Внешнее исключение ({reason.GetType().FullName}): {reason.Message}", reason)
+        public LabelNode(Lexem labelLexem) : base(labelLexem.Location, NodeKind.Label)
         {
+            LabelName = labelLexem.Content;
         }
+        
+        public string LabelName { get; }
     }
 }

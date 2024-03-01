@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------
+/*----------------------------------------------------------
 This Source Code Form is subject to the terms of the 
 Mozilla Public License, v.2.0. If a copy of the MPL 
 was not distributed with this file, You can obtain one 
@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using OneScript.Commons;
 using OneScript.Compilation.Binding;
 using OneScript.Contexts;
+using OneScript.Exceptions;
 using OneScript.Language;
 using OneScript.Sources;
 using OneScript.Types;
@@ -51,20 +52,7 @@ namespace ScriptEngine.Machine
         }
 
         public event EventHandler<MachineStoppedEventArgs> MachineStopped;
-        
-        private class EmptyExceptionInfo : ScriptException
-        {
-            public EmptyExceptionInfo() : base("")
-            {
-                LineNumber = 0;
-                ColumnNumber = 0;
-            }
 
-            public override string Message => "";
-
-            public override string ToString() => "";
-        }
-        
         public void AttachContext(IAttachableContext context)
         {
             _scopes.Add(CreateModuleScope(context));
@@ -108,6 +96,7 @@ namespace ScriptEngine.Machine
             ContextsAttached();
 
             _mem = memory;
+            _codeStatCollector = _mem.Services.TryResolve<ICodeStatCollector>();
         }
         
         internal MachineStoredState SaveState()
@@ -119,7 +108,6 @@ namespace ScriptEngine.Machine
                 CallStack = _callStack,
                 OperationStack = _operationStack,
                 StopManager = _stopManager,
-                CodeStatCollector = _codeStatCollector,
                 Memory = _mem
             };
         }
@@ -132,7 +120,6 @@ namespace ScriptEngine.Machine
             _callStack = state.CallStack;
             _exceptionsStack = state.ExceptionsStack;
             _stopManager = state.StopManager;
-            _codeStatCollector = state.CodeStatCollector;
             _mem = state.Memory; 
             
             SetFrame(_callStack.Peek());
@@ -532,8 +519,7 @@ namespace ScriptEngine.Machine
                 }
                 catch (ScriptException exc)
                 {
-                    if(exc.LineNumber == ErrorPositionInfo.OUT_OF_TEXT) 
-                        SetScriptExceptionSource(exc);
+                    SetScriptExceptionSource(exc);
 
                     if (ShouldRethrowException(exc))
                         throw;
@@ -584,11 +570,6 @@ namespace ScriptEngine.Machine
             return false;
         }
 
-        public void SetCodeStatisticsCollector(ICodeStatCollector collector)
-        {
-            _codeStatCollector = collector;
-        }
-
         private CodeStatEntry CurrentCodeEntry()
         {
             return new CodeStatEntry(CurrentScript?.Source, _currentFrame.MethodName, _currentFrame.LineNumber);
@@ -627,13 +608,11 @@ namespace ScriptEngine.Machine
             {
                 throw;
             }
-            catch (ScriptException)
+            catch (ScriptException exc)
             {
+                exc.SetPositionIfEmpty(GetPositionInfo());
+
                 throw;
-            }
-            catch (BslCoreException exc)
-            {
-                throw new ScriptException(GetPositionInfo(), exc);
             }
             catch (Exception exc)
             {
@@ -662,10 +641,7 @@ namespace ScriptEngine.Machine
 
         private void SetScriptExceptionSource(ScriptException exc)
         {
-            var epi = GetPositionInfo();
-            exc.Code = epi.Code;
-            exc.LineNumber = epi.LineNumber;
-            exc.ModuleName = epi.ModuleName;
+            exc.SetPositionIfEmpty(GetPositionInfo());
         }
 
         #region Commands
@@ -1172,7 +1148,7 @@ namespace ScriptEngine.Machine
                     var argValue = factArgs[i];
                     if (!argValue.IsSkippedArgument())
                     {
-                        argValues[i] = argValue.GetRawValue();
+                        argValues[i] = argValue;
                     }
                 }
             }
@@ -1192,7 +1168,9 @@ namespace ScriptEngine.Machine
                     if (!argValue.IsSkippedArgument())
                     {
                         if (methodParams[i].IsByRef())
-                            argValues[i] = argValue;
+                        {
+                            argValues[i] = argValue is IVariable? argValue : Variable.Create(argValue, "");
+                        }
                         else
                             argValues[i] = argValue.GetRawValue();
                     }
@@ -1407,9 +1385,9 @@ namespace ScriptEngine.Machine
             else
             {
                 var exceptionValue = _operationStack.Pop().GetRawValue();
-                if (exceptionValue is ExceptionTemplate excInfo)
+                if (exceptionValue is ExceptionInfoContext { IsErrorTemplate: true } excInfo)
                 {
-                    throw new ParametrizedRuntimeException(excInfo.Message, excInfo.Parameter);
+                    throw new ParametrizedRuntimeException(excInfo.Description, excInfo.Parameters);
                 }
                 else
                 {
@@ -2460,8 +2438,7 @@ namespace ScriptEngine.Machine
             }
             else
             {
-                var noDataException = new EmptyExceptionInfo();
-                _operationStack.Push(new ExceptionInfoContext(noDataException));
+                _operationStack.Push(ExceptionInfoContext.EmptyExceptionInfo());
             }
             NextInstruction();
         }

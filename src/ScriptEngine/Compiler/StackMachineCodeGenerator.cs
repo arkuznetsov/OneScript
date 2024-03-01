@@ -11,10 +11,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using OneScript.Commons;
 using OneScript.Compilation;
 using OneScript.Compilation.Binding;
 using OneScript.Contexts;
+using OneScript.Exceptions;
 using OneScript.Execution;
 using OneScript.Language;
 using OneScript.Language.Extensions;
@@ -224,9 +224,23 @@ namespace ScriptEngine.Compiler
             return localCtx.Variables.Select(v => v.Name).ToArray();
 
         }
+        
+        protected override void VisitGotoNode(NonTerminalNode node)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void VisitLabelNode(LabelNode node)
+        {
+            throw new NotSupportedException();
+        }
 
         protected override void VisitMethod(MethodNode methodNode)
         {
+            if (methodNode.IsAsync)
+            {
+                AddError(LocalizedErrors.AsyncMethodsNotSupported(), methodNode.Location);
+            }
             var signature = methodNode.Signature;
             var methodBuilder = NewMethod();
 
@@ -891,10 +905,23 @@ namespace ScriptEngine.Compiler
 
         protected override void VisitHandlerOperation(BslSyntaxNode node)
         {
-            var (srcValue, eventName) = SplitExpressionAndName(node.Children[0]);
-            VisitExpression(srcValue);
-            VisitConstant(eventName);
-
+            var eventNameNode = node.Children[0];
+            
+            // выражение источника события
+            VisitExpression(eventNameNode.Children[0]);
+            
+            if (eventNameNode.Kind == NodeKind.DereferenceOperation)
+            {
+                var eventName = eventNameNode.Children[1].AsTerminal().Lexem;
+                eventName.Type = LexemType.StringLiteral;
+                VisitConstant(eventName);
+            }
+            else
+            {
+                Debug.Assert(eventNameNode.Kind == NodeKind.IndexAccess);
+                VisitExpression(eventNameNode.Children[1]);
+            }
+            
             var handlerNode = node.Children[1];
             int commandArg;
             if (handlerNode.Kind == NodeKind.Identifier)
@@ -913,24 +940,23 @@ namespace ScriptEngine.Compiler
                 }
                 commandArg = 1;
             }
+            else if (handlerNode.Kind == NodeKind.DereferenceOperation)
+            {
+                var eventName = handlerNode.Children[1].AsTerminal().Lexem;
+                eventName.Type = LexemType.StringLiteral;
+                VisitExpression(handlerNode.Children[0]);
+                VisitConstant(eventName);
+                commandArg = 0;
+            }
             else
             {
-                var (handler, procedureName) = SplitExpressionAndName(node.Children[1]);
-                VisitExpression(handler);
-                VisitConstant(procedureName);
+                Debug.Assert(handlerNode.Kind == NodeKind.IndexAccess);
+                VisitExpression(handlerNode.Children[0]);
+                VisitExpression(handlerNode.Children[1]);
                 commandArg = 0;
             }
 
             AddCommand(node.Kind == NodeKind.AddHandler ? OperationCode.AddHandler : OperationCode.RemoveHandler, commandArg);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (BslSyntaxNode, Lexem) SplitExpressionAndName(BslSyntaxNode node)
-        {
-            var term = (TerminalNode) node.Children[1];
-            var lex = term.Lexem;
-            lex.Type = LexemType.StringLiteral;
-            return (node.Children[0], lex);
         }
 
         protected override void VisitNewObjectCreation(NewObjectNode node)

@@ -8,8 +8,9 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Diagnostics;
 using System.Linq;
-using OneScript.Commons;
+using System.Runtime.InteropServices;
 using OneScript.Contexts;
+using OneScript.Exceptions;
 using OneScript.StandardLibrary.Collections;
 using OneScript.StandardLibrary.Text;
 using ScriptEngine.Machine;
@@ -272,12 +273,31 @@ namespace OneScript.StandardLibrary.Processes
             int argsPosition;
             sInfo.UseShellExecute = true;
             sInfo.FileName = ExtractExecutableName(cmdLine, out argsPosition);
-            sInfo.Arguments = argsPosition >= cmdLine.Length ? "" : cmdLine.Substring(argsPosition);
             if (currentDir != null)
                 sInfo.WorkingDirectory = currentDir;
+
+            // Поведение под MacOS и остальные системы различается
+            // Страдает обратная совместимость и неясны до конца синтаксисы.
+            // См. https://github.com/EvilBeaver/OneScript/issues/1299
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                sInfo.Arguments = argsPosition >= cmdLine.Length ? "" : cmdLine.Substring(argsPosition);
+            }
+            else
+            {
+                var arguments = argsPosition >= cmdLine.Length 
+                    ? Array.Empty<string>() 
+                    : new ArgumentsParser(cmdLine[argsPosition..]).GetArguments();
+
+                foreach (var argument in arguments)
+                {
+                    sInfo.ArgumentList.Add(argument);
+                }
+            }
+            
             return sInfo;
         }
-
+        
         private static string ExtractExecutableName(string cmdLine, out int argsPosition)
         {
             bool inQuotes = false;

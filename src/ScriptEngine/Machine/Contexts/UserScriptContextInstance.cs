@@ -12,7 +12,9 @@ using OneScript.Commons;
 using OneScript.Compilation;
 using OneScript.Compilation.Binding;
 using OneScript.Contexts;
+using OneScript.Exceptions;
 using OneScript.Execution;
+using OneScript.Localization;
 using OneScript.Types;
 using OneScript.Values;
 
@@ -21,14 +23,21 @@ namespace ScriptEngine.Machine.Contexts
     [ContextClass("Сценарий", "Script")]
     public class UserScriptContextInstance : ThisAwareScriptedObjectBase, IDebugPresentationAcceptor
     {
+        public static readonly BilingualString OnInstanceCreationTerms =
+            new BilingualString("ПриСозданииОбъекта", "OnObjectCreate");
+        
+        public static readonly BilingualString PresentationGetProcessingTerms =
+            new BilingualString("ОбработкаПолученияПредставления", "PresentationGetProcessing");
+        
+        public static readonly BilingualString RaiseEventTerms =
+            new BilingualString("ВызватьСобытие", "RaiseEvent");
+
+        private const int RAIZEEVENT_INDEX = 0;
+        
         Dictionary<string, int> _ownPropertyIndexes;
         List<IValue> _ownProperties;
 
         private Func<string> _asStringOverride;
-
-        private const string RAISEEVENT_RU = "ВызватьСобытие";
-        private const string RAISEEVENT_EN = "RaiseEvent";
-        private const int RAIZEEVENT_INDEX = 0;
         
         public IValue[] ConstructorParams { get; private set; }
         
@@ -55,7 +64,7 @@ namespace ScriptEngine.Machine.Contexts
             ActivateAsStringOverride();
 
             base.OnInstanceCreation();
-            var methId = GetScriptMethod("ПриСозданииОбъекта", "OnObjectCreate");
+            var methId = GetScriptMethod(OnInstanceCreationTerms.Russian, OnInstanceCreationTerms.English);
             int constructorParamsCount = ConstructorParams.Count();
 
             if (methId > -1)
@@ -87,12 +96,12 @@ namespace ScriptEngine.Machine.Contexts
 
         private void ActivateAsStringOverride()
         {
-            var methId = GetScriptMethod("ОбработкаПолученияПредставления", "PresentationGetProcessing");
+            var methId = GetScriptMethod(PresentationGetProcessingTerms.Russian, PresentationGetProcessingTerms.English);
             if (methId == -1)
                 _asStringOverride = base.ConvertToString;
             else
             {
-                var signature = GetMethodInfo(methId);
+                var signature = GetMethodInfo(GetOwnMethodCount()+methId);
                 if (signature.GetParameters().Length != 2)
                     throw new RuntimeException("Обработчик получения представления должен иметь 2 параметра");
 
@@ -149,13 +158,7 @@ namespace ScriptEngine.Machine.Contexts
 
         protected override int FindOwnMethod(string name)
         {
-            if (string.Equals(RAISEEVENT_EN, name, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(RAISEEVENT_RU, name, StringComparison.OrdinalIgnoreCase))
-            {
-                return RAIZEEVENT_INDEX;
-            }
-
-            return base.FindOwnMethod(name);
+            return RaiseEventTerms.HasName(name) ? RAIZEEVENT_INDEX : base.FindOwnMethod(name);
         }
 
         protected override int FindOwnProperty(string name)
@@ -209,7 +212,7 @@ namespace ScriptEngine.Machine.Contexts
         private static BslMethodInfo[] GetOwnMethodsDefinition()
         {
             var methodBuilder = BslMethodBuilder.Create();
-            methodBuilder.SetNames(RAISEEVENT_RU, RAISEEVENT_EN)
+            methodBuilder.SetNames(RaiseEventTerms.Russian, RaiseEventTerms.English)
                 .DeclaringType(typeof(UserScriptContextInstance));
 
             methodBuilder.NewParameter()
@@ -302,17 +305,25 @@ namespace ScriptEngine.Machine.Contexts
 
         void IDebugPresentationAcceptor.Accept(IDebugValueVisitor visitor)
         {
-            var thisId = GetPropertyNumber(THISOBJ_RU);
-            var total = GetPropCount();
-            var props = new List<IVariable>(total);
-            for (int i = 0; i < total; i++)
-            {
-                if (i != thisId)
-                {
-                    props.Add(Variable.Create(GetPropValue(i), GetPropName(i)));
-                }
-            }
-            
+            var instanceProps = Module
+                .Properties
+                .OfType<BslScriptPropertyInfo>()
+                .OrderBy(x => x.DispatchId)
+                .ToDictionary(x => x.Name, x => x.DispatchId);
+
+            var instanceFields = Module
+                .Fields
+                .OfType<BslScriptFieldInfo>()
+                .OrderBy(x => x.DispatchId)
+                .Where(x => !instanceProps.ContainsKey(x.Name))
+                .ToDictionary(x => $"${x.Name}", x => x.DispatchId);
+
+            var props = instanceProps
+                .Concat(instanceFields)
+                .Select(x => 
+                    Variable.Create(GetPropValue(x.Value), x.Key))
+                .ToList();
+
             visitor.ShowCustom(props);
         }
     }

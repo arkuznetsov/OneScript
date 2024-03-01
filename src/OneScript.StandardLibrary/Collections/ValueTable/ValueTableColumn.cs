@@ -6,8 +6,8 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
-using OneScript.Commons;
 using OneScript.Contexts;
+using OneScript.Exceptions;
 using OneScript.StandardLibrary.TypeDescriptions;
 using OneScript.Types;
 using ScriptEngine.Machine.Contexts;
@@ -26,16 +26,18 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         private TypeDescription _valueType;
         private int _width;
         private readonly WeakReference _owner;
+        private readonly int _id;
         
         private static TypeDescriptor _instanceType = typeof(ValueTableColumn).GetTypeFromClassMarkup();
 
-        public ValueTableColumn(ValueTableColumnCollection owner, string name, string title, TypeDescription type, int width)
+        public ValueTableColumn(ValueTableColumnCollection owner, int id, string name, string title, TypeDescription type, int width)
             : base(_instanceType)
         {
             _name = name;
             _title = title;
             _valueType = type ?? new TypeDescription();
             _width = width;
+            _id = id;
 
             _owner = new WeakReference(owner);
         }
@@ -91,6 +93,11 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             get { return _width; }
             set { _width = value; }
+        }
+
+        public override int GetHashCode()
+        {
+            return _id;
         }
     }
 }

@@ -9,18 +9,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using OneScript.Commons;
 using OneScript.Contexts;
+using OneScript.Exceptions;
 using OneScript.Rcw;
 using OneScript.Values;
-using ScriptEngine.Machine.Rcw;
+using System.Reflection;
 
 namespace ScriptEngine.Machine.Contexts
 {
     public class UnmanagedCOMWrapperContext : COMWrapperContext, IDebugPresentationAcceptor
     {
-        private const uint E_DISP_MEMBERNOTFOUND = 0x80020003;
-
         private readonly RcwMembersMetadataCollection<RcwPropertyMetadata> _props;
         private readonly RcwMembersMetadataCollection<RcwMethodMetadata> _methods;
         private readonly bool _isCollection;
@@ -107,7 +105,7 @@ namespace ScriptEngine.Machine.Contexts
                     var result = DispatchUtility.Invoke(Instance, dispId, null);
                     return CreateIValue(result);
                 }
-                catch (System.Reflection.TargetInvocationException e)
+                catch (TargetInvocationException e)
                 {
                     throw e.InnerException ?? e;
                 }
@@ -151,18 +149,18 @@ namespace ScriptEngine.Machine.Contexts
                     }
                     DispatchUtility.InvokeSetProperty(Instance, dispId, argToPass);
                 }
-                catch (System.Reflection.TargetInvocationException e)
+                catch (TargetInvocationException e)
                 {
                     throw e.InnerException ?? e;
                 }
             }
-            catch (System.MissingMemberException)
+            catch (MissingMemberException)
             {
-                throw OneScript.Commons.PropertyAccessException.PropNotFoundException(prop.Name);
+                throw PropertyAccessException.PropNotFoundException(prop.Name);
             }
-            catch (System.MemberAccessException)
+            catch (MemberAccessException)
             {
-                throw OneScript.Commons.PropertyAccessException.PropIsNotWritableException(prop.Name);
+                throw PropertyAccessException.PropIsNotWritableException(prop.Name);
             }
         }
 
@@ -176,8 +174,11 @@ namespace ScriptEngine.Machine.Contexts
 
         public override BslMethodInfo GetMethodInfo(int methodNumber)
         {
-            //TODO: Доработать RcwMethodMetadata
-            return BslMethodBuilder.Create().Build();
+            var md = _methods[methodNumber];
+            return BslMethodBuilder.Create()
+                .Name(md.Name)
+                .ReturnType(md.IsFunction ?? true ? typeof(IValue) : typeof(void))
+                .Build();
         }
 
         private MethodSignature GetMethodDescription(int methodNumber)
@@ -196,14 +197,18 @@ namespace ScriptEngine.Machine.Contexts
             {
                 try
                 {
-                    DispatchUtility.Invoke(Instance, dispId, MarshalArguments(arguments));
+                    var argsData = MarshalArguments(arguments);
+                    var initialValues = new object[argsData.values.Length]; 
+                    Array.Copy(argsData.values, initialValues, initialValues.Length);
+                    DispatchUtility.Invoke(Instance, dispId, argsData.values, argsData.flags);
+                    RemapOutputParams(arguments, argsData.values, argsData.flags[0], initialValues);
                 }
-                catch (System.Reflection.TargetInvocationException e)
+                catch (TargetInvocationException e)
                 {
                     throw e.InnerException ?? e;
                 }
             }
-            catch (System.MissingMemberException)
+            catch (MissingMemberException)
             {
                 throw RuntimeException.MethodNotFoundException(method.Name);
             }
@@ -222,44 +227,64 @@ namespace ScriptEngine.Machine.Contexts
             {
                 try
                 {
-                    var result = DispatchUtility.Invoke(Instance, dispId, MarshalArguments(arguments));
+                    var argsData = MarshalArguments(arguments);
+                    var initialValues = new object[argsData.values.Length]; 
+                    Array.Copy(argsData.values, initialValues, initialValues.Length);
+                    var result = DispatchUtility.Invoke(Instance, dispId, argsData.values, argsData.flags);
+                    RemapOutputParams(arguments, argsData.values, argsData.flags[0], initialValues);
                     retValue = CreateIValue(result);
                 }
-                catch (System.Reflection.TargetInvocationException e)
+                catch (TargetInvocationException e)
                 {
                     throw e.InnerException ?? e;
                 }
             }
-            catch (System.MissingMemberException)
+            catch (MissingMemberException)
             {
                 throw RuntimeException.MethodNotFoundException(method.Name);
+            }
+        }
+        
+        private void RemapOutputParams(IValue[] arguments, object[] values, ParameterModifier flags,
+            object[] initialValues)
+        {
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                var initialValue = initialValues[i];
+                var valueAfterCall = values[i];
+                
+                if (flags[i] && !Equals(initialValue, valueAfterCall))
+                {
+                    var variable = (IVariable)arguments[i];
+                    variable.Value = CreateIValue(values[i]);
+                }
             }
         }
 
         private bool TryFindMethod(string name, out RcwMethodMetadata md)
         {
-            if (_methods.Names.TryGetValue(name, out md))
+            if (_methods.ByName.TryGetValue(name, out md))
                 return true;
 
             if (!DispatchUtility.TryGetDispId(Instance, name, out var dispatchId))
                 return false;
             
             _methods.Add(new RcwMethodMetadata(name, dispatchId, null));
-            md = _methods.DispatchIds[dispatchId];
+            md = _methods.ByDispatchId[dispatchId];
             
             return true;
         }
 
         private bool TryFindProperty(string name, out RcwPropertyMetadata md)
         {
-            if (_props.Names.TryGetValue(name, out md))
+            if (_props.ByName.TryGetValue(name, out md))
                 return true;
 
             if (!DispatchUtility.TryGetDispId(Instance, name, out var dispatchId))
                 return false;
             
             _props.Add(new RcwPropertyMetadata(name, dispatchId));
-            md = _props.DispatchIds[dispatchId];
+            md = _props.ByDispatchId[dispatchId];
             
             return true;
         }

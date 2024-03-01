@@ -6,8 +6,8 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System.Collections.Generic;
-using OneScript.Commons;
 using OneScript.Contexts;
+using OneScript.Exceptions;
 using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -71,6 +71,14 @@ namespace OneScript.StandardLibrary.Collections
         internal bool ContainsKey(IValue key)
         {
             return _content.ContainsKey(key);
+        }
+
+        public IEnumerable<IValue> Keys()
+        {
+            foreach (var key in _content.Keys)
+            {
+                yield return key;
+            }
         }
 
         #region ICollectionContext Members

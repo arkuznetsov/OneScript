@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildProjectDirectory)/../oscommon.targets" />
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
     <OutputType>Exe</OutputType>
     <StartupObject>VSCode.DebugAdapter.Program</StartupObject>
     <Configurations>Debug;Release;LinuxDebug</Configurations>
@@ -20,6 +20,9 @@
     <Optimize Condition=" '$(Optimize)' == '' ">false</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Serilog" Version="3.0.1" />
+    <PackageReference Include="Serilog.Settings.AppSettings" Version="2.2.2" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     <Reference Include="Microsoft.CSharp" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
   </ItemGroup>

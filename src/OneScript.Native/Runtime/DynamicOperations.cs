@@ -8,9 +8,9 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.DependencyInjection;
+using OneScript.Exceptions;
 using OneScript.Language;
 using OneScript.Localization;
 using OneScript.Types;
@@ -163,27 +163,15 @@ namespace OneScript.Native.Runtime
             return (T) ConstructorCall(typeManager, services, typeName, args);
         }
 
-        public static ExceptionInfoClass GetExceptionInfo(Exception e)
+        public static BslObjectValue GetExceptionInfo(IExceptionInfoFactory factory, Exception e)
         {
-            if (e is ScriptException s)
-                return new ExceptionInfoClass(s);
-
-            var wrapper = new ExternalSystemException(e);
-
-            return new ExceptionInfoClass(wrapper);
+            return factory.GetExceptionInfo(e);
         }
 
-        public static TypeDescriptor GetTypeByName(ITypeManager manager, string name)
+        public static BslTypeValue GetTypeByName(ITypeManager manager, string name)
         {
-            var firstTry = manager.GetTypeByName(name);
-            
-            // костыль подмены типа для Тип("ИнформацияОбОшибке")
-            if (firstTry.Name == ExceptionInfoClass.LanguageType.Name)
-            {
-                return ExceptionInfoClass.LanguageType;
-            }
-
-            return firstTry;
+            var foundType = manager.GetTypeByName(name);
+            return new BslTypeValue(foundType);
         }
 
         public static BslValue GetIndexedValue(object target, BslValue index)
@@ -206,13 +194,20 @@ namespace OneScript.Native.Runtime
             context.SetIndexedValue(index, value);
         }
 
-        public static BslValue GetPropertyValue(BslValue target, string propertyName)
+        public static BslValue GetPropertyValue(object target, string propertyName)
         {
             if (!(target is IRuntimeContextInstance context))
                 throw BslExceptions.ValueIsNotObjectException();
 
             var propIndex = context.GetPropertyNumber(propertyName);
             return (BslValue)context.GetPropValue(propIndex);
+        }
+
+        public static BslValue CallContextMethod(IRuntimeContextInstance instance, string methodName, BslValue[] arguments)
+        {
+            var idx = instance.GetMethodNumber(methodName);
+            instance.CallAsFunction(idx, arguments, out var result);
+            return (BslValue)result;
         }
     }
 }

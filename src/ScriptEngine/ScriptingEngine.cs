@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------
+/*----------------------------------------------------------
 This Source Code Form is subject to the terms of the 
 Mozilla Public License, v.2.0. If a copy of the MPL 
 was not distributed with this file, You can obtain one 
@@ -15,7 +15,6 @@ using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using ScriptEngine.Compiler;
-using ScriptEngine.Hosting;
 
 namespace ScriptEngine
 {
@@ -84,7 +83,7 @@ namespace ScriptEngine
         public void Initialize()
         {
             SetDefaultEnvironmentIfNeeded();
-
+            EnableCodeStatistics();
             UpdateContexts();
 
             _attachedScriptsFactory = new AttachedScriptsFactory(this);
@@ -187,16 +186,20 @@ namespace ScriptEngine
             }
         }
 
-        public void SetCodeStatisticsCollector(ICodeStatCollector collector)
+        private void EnableCodeStatistics()
         {
+            var collector = Services.TryResolve<ICodeStatCollector>();
+            if (collector == default)
+                return;
+            
             ProduceExtraCode |= CodeGenerationFlags.CodeStatistics;
-            MachineInstance.Current.SetCodeStatisticsCollector(collector);
         }
 
         #region IDisposable Members
 
         public void Dispose()
         {
+            DebugController?.Dispose();
             AttachedScriptsFactory.SetInstance(null);
         }
 

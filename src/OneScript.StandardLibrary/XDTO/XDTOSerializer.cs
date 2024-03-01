@@ -8,8 +8,8 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Xml;
 using System.Xml.Schema;
-using OneScript.Commons;
 using OneScript.Contexts;
+using OneScript.Exceptions;
 using OneScript.StandardLibrary.Xml;
 using OneScript.Types;
 using OneScript.Values;
@@ -20,16 +20,14 @@ using ScriptEngine.Machine.Contexts;
 namespace OneScript.StandardLibrary.XDTO
 {
     [ContextClass("СериализаторXDTO", "XDTOSerializer")]
-    public class XDTOSerializer : AutoContext<XDTOSerializer>
+    public sealed class XDTOSerializer : AutoContext<XDTOSerializer>
     {
-        private readonly ITypeManager _typeManager;
         private readonly XmlGlobalFunctions _xmlGlobalFunctions;
         private readonly XmlNodeTypeEnum _xmlNodeEnum;
 
 
-        private XDTOSerializer(ITypeManager typeManager, IGlobalsManager globalsManager)
+        private XDTOSerializer(IGlobalsManager globalsManager)
         {
-            _typeManager = typeManager;
             _xmlGlobalFunctions = globalsManager.GetInstance<XmlGlobalFunctions>();
             _xmlNodeEnum = globalsManager.GetInstance<XmlNodeTypeEnum>();
         }
@@ -223,7 +221,7 @@ namespace OneScript.StandardLibrary.XDTO
                 }
                 else if (xsiNil.SystemType == BasicTypes.String)
                     typeValue = new BslTypeValue(BasicTypes.Undefined);
-            };
+            }
 
             if (typeValue == null)
                 throw RuntimeException.InvalidArgumentValue();
@@ -263,7 +261,7 @@ namespace OneScript.StandardLibrary.XDTO
         public static XDTOSerializer CreateInstance(TypeActivationContext context)
         {
             var globalsManager = context.Services.Resolve<IGlobalsManager>();
-            return new XDTOSerializer(context.TypeManager, globalsManager);
+            return new XDTOSerializer(globalsManager);
         }
 
         #endregion

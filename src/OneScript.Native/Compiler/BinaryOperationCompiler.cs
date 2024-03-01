@@ -10,8 +10,6 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using OneScript.Language.SyntaxAnalysis.AstNodes;
-using OneScript.Native.Runtime;
-using OneScript.Values;
 
 namespace OneScript.Native.Compiler
 {
@@ -201,7 +199,7 @@ namespace OneScript.Native.Compiler
                 case ExpressionType.OrElse:
                     return MakeLogicalOperation(left, right);
                 default:
-                    throw new NativeCompilerException($"Operation {_opCode} is not defined for IValues");
+                    throw NativeCompilerException.OperationNotDefined(_opCode, left.Type, right.Type);
             }
         }
 

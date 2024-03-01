@@ -9,13 +9,12 @@ using System;
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using OneScript.Rcw;
 using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 using FUNCFLAGS = System.Runtime.InteropServices.ComTypes.FUNCFLAGS;
 using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
 using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
 
-namespace ScriptEngine.Machine.Rcw
+namespace OneScript.Rcw
 {
     public class RcwMetadata
     {
@@ -129,7 +128,7 @@ namespace ScriptEngine.Machine.Rcw
 
         private RcwPropertyMetadata GetOrAddProperty(string propName, int dispId)
         {
-            if (Properties.Names.TryGetValue(propName, out var md)) return md;
+            if (Properties.ByName.TryGetValue(propName, out var md)) return md;
 
             md = new RcwPropertyMetadata(propName, dispId);
             Properties.Add(md);

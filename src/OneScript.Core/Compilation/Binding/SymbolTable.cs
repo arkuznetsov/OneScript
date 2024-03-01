@@ -7,7 +7,6 @@ at http://mozilla.org/MPL/2.0/.
 
 using System.Collections.Generic;
 using OneScript.Contexts;
-using OneScript.Values;
 
 namespace OneScript.Compilation.Binding
 {
@@ -19,7 +18,7 @@ namespace OneScript.Compilation.Binding
             public IRuntimeContextInstance target;
         }
         
-        private List<BindingRecord> _bindings = new List<BindingRecord>();
+        private readonly List<BindingRecord> _bindings = new List<BindingRecord>();
         
         public SymbolScope GetScope(int index) => _bindings[index].scope;
 

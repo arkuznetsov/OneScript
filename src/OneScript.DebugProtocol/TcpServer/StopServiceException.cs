@@ -5,14 +5,14 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using OneScript.Localization;
+using System;
 
-namespace OneScript.Commons
+namespace OneScript.DebugProtocol.TcpServer
 {
-    public class DependencyResolveException : RuntimeException
+    /// <summary>
+    /// Прерывание сервера со стороны прикладного интерфейса. Кнопка "Выход" из диспетчера
+    /// </summary>
+    public class StopServiceException : ApplicationException
     {
-        public DependencyResolveException(BilingualString message) : base(message)
-        {
-        }
     }
 }
