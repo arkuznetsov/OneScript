@@ -255,7 +255,7 @@ namespace ScriptEngine.Machine.Contexts
             if (eventArgs == null)
                 eventArgs = new IValue[0];
             
-            MachineInstance.Current.EventProcessor?.HandleEvent(this, eventName, eventArgs);
+            MachineInstance.Current.Memory.Services.TryResolve<IEventProcessor>()?.HandleEvent(this, eventName, eventArgs);
         }
 
         protected override int GetOwnVariableCount()
