@@ -19,10 +19,44 @@ namespace OneScript.StandardLibrary.Text
     /// <summary>
     /// Класс представляет собой инструмент доступа к системной консоли.
     /// Предназначен для низкоуровнего манипулирования выводом в консоль.
+    ///
+    /// Поддерживается регистрация обработчика для нажатия Ctrl+C.
+    /// Обработчик регистрируется для события с именем CancelKeyPressed. Стоит учитывать, что обработчик вызывается
+    /// в отдельном потоке и необходимо помнить о потокобезопасности общих данных.
+    /// 
     /// </summary>
+    /// <example>
+    ///    Перем Хватит;
+    /// 
+    ///    Процедура Обработчик(Отказ)
+    ///        Сообщить("Обработчик остановки вызван", СтатусСообщения.Важное);
+    ///        Отказ = Истина; // не даем системе убить процесс
+    ///        Хватит = Истина; // выставим свой флаг завершения цикла
+    ///    КонецПроцедуры
+    ///
+    ///    Хватит = Ложь;
+    ///    ДобавитьОбработчик Консоль.CancelKeyPressed, Обработчик;
+    ///
+    ///    Пока Не Хватит Цикл
+    ///        Сообщить("Пинг", СтатусСообщения.Информация);
+    ///        Приостановить(1000);
+    ///        Сообщить("Понг", СтатусСообщения.Информация);
+    ///        Приостановить(1000);
+    ///    КонецЦикла;
+    ///
+    ///    Сообщить("Мягкая остановка процесса", СтатусСообщения.Информация);
+    /// </example>
     [ContextClass("Консоль", "Console")]
     public class ConsoleContext : AutoContext<ConsoleContext>
     {
+        private readonly ExecutionContext _executionContext;
+
+        public ConsoleContext(ExecutionContext executionContext)
+        {
+            _executionContext = executionContext;
+            Console.CancelKeyPress += ConsoleOnCancelKeyPress;
+        }
+
         [ContextProperty("НажатаКлавиша", "KeyPressed")]
         public bool HasKey => Console.KeyAvailable;
 
@@ -243,6 +277,32 @@ namespace OneScript.StandardLibrary.Text
             
             var writer = new StreamWriter(stream.GetUnderlyingStream());
             Console.SetError(writer);
+        }
+
+        public const string ConsoleCancelKeyEvent = "CancelKeyPressed";
+
+        private void ConsoleOnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            if (e.SpecialKey != ConsoleSpecialKey.ControlC) 
+                return;
+            
+            // Сначала проверим, что события вообще включены
+            var eventProcessor = _executionContext.Services.TryResolve<IEventProcessor>();
+            if (eventProcessor == null)
+                return;
+                
+            MachineInstance.Current.SetMemory(_executionContext);
+            var debugger = _executionContext.Services.TryResolve<IDebugController>();
+            debugger?.AttachToThread();
+
+            var cancelVar = Variable.Create(BslBooleanValue.False, "Cancel");
+            var reference = Variable.CreateReference(cancelVar, "Cancel");
+            var args = new IValue[] { reference };
+
+            // Вызываем обработчик. Исключение в обработчике никак отдельно не обрабатываем.
+            eventProcessor.HandleEvent(this, ConsoleCancelKeyEvent, args);
+
+            e.Cancel = reference.Value.AsBoolean();
         }
     }
 }

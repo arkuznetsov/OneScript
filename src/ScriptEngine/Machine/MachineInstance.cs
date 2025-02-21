@@ -48,7 +48,7 @@ namespace ScriptEngine.Machine
         private ScriptInformationContext _debugInfo;
         
         // кешированный обработчик событий
-        private Lazy<IEventProcessor> _eventProcessor; 
+        private readonly Lazy<IEventProcessor> _eventProcessor;
 
         private MachineInstance() 
         {
@@ -2526,7 +2526,7 @@ namespace ScriptEngine.Machine
         // multithreaded instance
         [ThreadStatic]
         private static MachineInstance _currentThreadWorker;
-
+        
         private static void SetCurrentMachineInstance(MachineInstance current)
             => _currentThreadWorker = current;
 
