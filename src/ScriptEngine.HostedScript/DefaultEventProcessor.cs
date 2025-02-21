@@ -26,7 +26,7 @@ namespace ScriptEngine.HostedScript
 
         private class HandlersList : IEnumerable<Handler>
         {
-            private List<Handler> _handlers = new List<Handler>();
+            private readonly List<Handler> _handlers = new List<Handler>();
             
             public void Add(ScriptDrivenObject target, string methodName)
             {
@@ -58,7 +58,10 @@ namespace ScriptEngine.HostedScript
             }
         }
         
-        private Dictionary<IRuntimeContextInstance, Dictionary<string, HandlersList>> _registeredHandlers = new Dictionary<IRuntimeContextInstance, Dictionary<string, HandlersList>>();
+        private readonly Dictionary<IRuntimeContextInstance, Dictionary<string, HandlersList>> _registeredHandlers 
+            = new Dictionary<IRuntimeContextInstance, Dictionary<string, HandlersList>>();
+
+        private readonly object _subscriptionLock = new object();
         
         public void AddHandler(
             IRuntimeContextInstance eventSource,
@@ -68,19 +71,23 @@ namespace ScriptEngine.HostedScript
         {
             if (!(handlerTarget is ScriptDrivenObject handlerScript))
                 throw RuntimeException.InvalidArgumentType("handlerTarget");
-            
-            if (!_registeredHandlers.TryGetValue(eventSource, out var handlers))
+
+            lock (_subscriptionLock)
             {
-                handlers = new Dictionary<string, HandlersList>();
-                _registeredHandlers[eventSource] = handlers;
+                if (!_registeredHandlers.TryGetValue(eventSource, out var handlers))
+                {
+                    handlers = new Dictionary<string, HandlersList>();
+                    _registeredHandlers[eventSource] = handlers;
+                }
+
+                if (!handlers.TryGetValue(eventName, out var handlersList))
+                {
+                    handlersList = new HandlersList();
+                    handlers[eventName] = handlersList;
+                }
+
+                handlersList.Add(handlerScript, handlerMethod);
             }
-            
-            if (!handlers.TryGetValue(eventName, out var handlersList)) {
-                handlersList = new HandlersList();
-                handlers[eventName] = handlersList;
-            }
-            
-            handlersList.Add(handlerScript, handlerMethod);
         }
 
         public void RemoveHandler(
@@ -92,26 +99,37 @@ namespace ScriptEngine.HostedScript
             if (!(handlerTarget is ScriptDrivenObject handlerScript))
                 throw RuntimeException.InvalidArgumentType("handlerTarget");
             
-            if (!_registeredHandlers.TryGetValue(eventSource, out var handlers))
+            lock (_subscriptionLock)
             {
-                return;
-            }
-            
-            if (handlers.TryGetValue(eventName, out var handlersList)) {
-                handlersList.Remove(handlerScript, handlerMethod);
+                if (!_registeredHandlers.TryGetValue(eventSource, out var handlers))
+                {
+                    return;
+                }
+
+                if (handlers.TryGetValue(eventName, out var handlersList))
+                {
+                    handlersList.Remove(handlerScript, handlerMethod);
+                }
             }
         }
 
         public void HandleEvent(IRuntimeContextInstance eventSource, string eventName, IValue[] eventArgs)
         {
-            if (!_registeredHandlers.TryGetValue(eventSource, out var handlers)) 
-                return;
-            
-            if (!handlers.TryGetValue(eventName, out var handlersList)) {
-                return;
+            HandlersList handlersLocalCopy;
+
+            lock (_subscriptionLock)
+            {
+
+                if (!_registeredHandlers.TryGetValue(eventSource, out var handlers))
+                    return;
+
+                if (!handlers.TryGetValue(eventName, out handlersLocalCopy))
+                {
+                    return;
+                }
             }
-            
-            foreach (var handler in handlersList)
+
+            foreach (var handler in handlersLocalCopy)
             {
                 handler.Method(eventArgs);
             }

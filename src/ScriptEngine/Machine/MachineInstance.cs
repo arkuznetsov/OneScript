@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using OneScript.Commons;
 using OneScript.Compilation.Binding;
@@ -45,11 +46,17 @@ namespace ScriptEngine.Machine
         // актуален в момент останова машины
         private IList<ExecutionFrameInfo> _fullCallstackCache;
         private ScriptInformationContext _debugInfo;
+        
+        // кешированный обработчик событий
+        private readonly Lazy<IEventProcessor> _eventProcessor;
 
         private MachineInstance() 
         {
             InitCommands();
             Reset();
+
+            _eventProcessor = new Lazy<IEventProcessor>(() => _mem.Services.TryResolve<IEventProcessor>(),
+                LazyThreadSafetyMode.None);
         }
 
         public event EventHandler<MachineStoppedEventArgs> MachineStopped;
@@ -68,6 +75,7 @@ namespace ScriptEngine.Machine
             _codeStatCollector = _mem.Services.TryResolve<ICodeStatCollector>();
             _globalContexts = _mem.GlobalNamespace.AttachedContexts.Select(x => new AttachedContext(x))
                 .ToArray();
+            
         }
 
         public void UpdateGlobals() 
@@ -302,11 +310,8 @@ namespace ScriptEngine.Machine
         }
         
         #endregion
-
-        /// <summary>
-        /// Обработчик событий, генерируемых классами прикладной логики.
-        /// </summary>
-        public IEventProcessor EventProcessor { get; set; }
+        
+        private IEventProcessor EventProcessor => _eventProcessor.Value ?? throw new InvalidOperationException("Host does not support events");
         
         private ScriptInformationContext CurrentScript
         {
@@ -2521,7 +2526,7 @@ namespace ScriptEngine.Machine
         // multithreaded instance
         [ThreadStatic]
         private static MachineInstance _currentThreadWorker;
-
+        
         private static void SetCurrentMachineInstance(MachineInstance current)
             => _currentThreadWorker = current;
 
