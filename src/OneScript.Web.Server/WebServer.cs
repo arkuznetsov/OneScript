@@ -77,15 +77,17 @@ namespace OneScript.Web.Server
 
         private void ConfigureApp()
         {
-            var builder = WebApplication.CreateBuilder();
+            var appOptions = new WebApplicationOptions
+            {
+                ContentRootPath = _contentRoot ?? "."
+            };
+            
+            var builder = WebApplication.CreateBuilder(appOptions);
             builder.WebHost.ConfigureKestrel(options =>
             {
                 options.AllowSynchronousIO = true;
                 options.ListenAnyIP(Port);
             });
-
-            if (_contentRoot != null)
-                builder.WebHost.UseContentRoot(_contentRoot);
 
             _app = builder.Build();
 
