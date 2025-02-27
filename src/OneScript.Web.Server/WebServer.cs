@@ -32,7 +32,10 @@ namespace OneScript.Web.Server
         private readonly ExecutionContext _executionContext;
         private WebApplication _app;
         private readonly List<(IRuntimeContextInstance Target, string MethodName)> _middlewares = new List<(IRuntimeContextInstance Target, string MethodName)>();
+        
         private string _contentRoot = null;
+        private string _wwwRoot;
+        
         private bool _useStaticFiles = false;
         private bool _useWebSockets = false;
         private (IRuntimeContextInstance Target, string MethodName)? _exceptionHandler = null;
@@ -79,7 +82,8 @@ namespace OneScript.Web.Server
         {
             var appOptions = new WebApplicationOptions
             {
-                ContentRootPath = _contentRoot ?? "."
+                ContentRootPath = _contentRoot,
+                WebRootPath = _wwwRoot
             };
             
             var builder = WebApplication.CreateBuilder(appOptions);
@@ -186,10 +190,16 @@ namespace OneScript.Web.Server
         public void SetExceptionsHandler(IRuntimeContextInstance target, string methodName)
             => _exceptionHandler = (target, methodName);
 
-        [ContextMethod("УстановитьКорневойПутьСодержимого", "SetContentRoot")]
+        [ContextMethod("УстановитьКаталогСервера", "SetServerDir")]
         public void SetContentRoot(IValue path)
         {
             _contentRoot = path.AsString();
+        }
+        
+        [ContextMethod("УстановитьКорневойПуть", "SetWebRoot")]
+        public void SetWebRoot(IValue path)
+        {
+            _wwwRoot = path.AsString();
         }
 
         [ContextMethod("ИспользоватьСтатическиеФайлы", "UseStaticFiles")]
