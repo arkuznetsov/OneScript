@@ -5,22 +5,12 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using Microsoft.AspNetCore.Http;
-using OneScript.Commons;
 using OneScript.Contexts;
-using OneScript.StandardLibrary;
 using OneScript.StandardLibrary.Binary;
-using OneScript.Web.Server;
-using OneScript.StandardLibrary.Http;
-using OneScript.StandardLibrary.Processes;
-using OneScript.StandardLibrary.Text;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
-using System;
-using System.Text;
-using System.Threading.Tasks;
 using OneScript.StandardLibrary.Collections;
-using OneScript.Types;
 
 namespace OneScript.Web.Server
 {
@@ -28,6 +18,7 @@ namespace OneScript.Web.Server
     public class HttpRequestWrapper : AutoContext<HttpRequestWrapper>
     {
         private readonly HttpRequest _request;
+        private readonly PropertyWrappersCollection _wrappers = new ();
 
         public HttpRequestWrapper(HttpRequest request)
         {
@@ -35,13 +26,13 @@ namespace OneScript.Web.Server
         }
 
         [ContextProperty("Параметры", "Parameters", CanWrite = false)]
-        public FixedMapImpl Query => _request.Query.ToFixedMap();
+        public FixedMapImpl Query => _wrappers.Get(nameof(Query), () => _request.Query.ToFixedMap());
 
         [ContextProperty("ЕстьФормыВТипеКонтента", "HasFormContentType", CanWrite = false)]
-        public IValue HasFormContentType => BslBooleanValue.Create(_request.HasFormContentType);
+        public bool HasFormContentType => _request.HasFormContentType;
 
         [ContextProperty("Тело", "Body", CanWrite = false)]
-        public GenericStream Body => new(_request.Body);
+        public GenericStream Body => _wrappers.Get(nameof(Body), () => new GenericStream(_request.Body));
 
         [ContextProperty("ТипКонтента", "ContentType", CanWrite = false)]
         public IValue ContentType
@@ -68,13 +59,13 @@ namespace OneScript.Web.Server
         }
 
         [ContextProperty("Куки", "Cookie", CanWrite = false)]
-        public RequestCookieCollectionWrapper Cookies => new(_request.Cookies);
+        public RequestCookieCollectionWrapper Cookies => _wrappers.Get(nameof(Cookies), () => new RequestCookieCollectionWrapper(_request.Cookies));
 
         [ContextProperty("Заголовки", "Headers", CanWrite = false)]
-        public HeaderDictionaryWrapper Headers => new(_request.Headers);
+        public HeaderDictionaryWrapper Headers => _wrappers.Get(nameof(Headers), () => new HeaderDictionaryWrapper(_request.Headers));
 
         [ContextProperty("Протокол", "Protocol", CanWrite = false)]
-        public IValue Protocol => BslStringValue.Create(_request.Protocol);
+        public string Protocol => _request.Protocol;
 
         [ContextProperty("СтрокаПараметров", "ParametersString", CanWrite = false)]
         public IValue QueryString
@@ -125,13 +116,13 @@ namespace OneScript.Web.Server
         }
 
         [ContextProperty("ЭтоHttps", "IsHttps", CanWrite = false)]
-        public IValue IsHttps => BslBooleanValue.Create(_request.IsHttps);
+        public bool IsHttps => _request.IsHttps;
 
         [ContextProperty("Схема", "Scheme", CanWrite = false)]
-        public IValue Scheme => BslStringValue.Create(_request.Scheme);
+        public string Scheme => _request.Scheme;
 
         [ContextProperty("Метод", "Method", CanWrite = false)]
-        public IValue Method => BslStringValue.Create(_request.Method);
+        public string Method => _request.Method;
 
         [ContextProperty("Форма", "Form", CanWrite = false)]
         public IValue Form
@@ -139,7 +130,7 @@ namespace OneScript.Web.Server
             get
             {
                 if (_request.HasFormContentType)
-                    return new FormCollectionWrapper(_request.Form);
+                    return _wrappers.Get(nameof(Form), () => new FormCollectionWrapper(_request.Form));
                 else
                     return BslUndefinedValue.Instance;
             }
