@@ -105,7 +105,7 @@ namespace OneScript.Web.Server
                     {
                         var args = new IValue[]
                         {
-                            new HttpContextWrapper(context),
+                            new HttpContextWrapper(_executionContext.TypeManager, context),
                         };
 
                         var methodNumber = _exceptionHandler?.Target.GetMethodNumber(_exceptionHandler?.MethodName);
@@ -142,7 +142,7 @@ namespace OneScript.Web.Server
                 {
                     var args = new IValue[]
                     {
-                        new HttpContextWrapper(context),
+                        new HttpContextWrapper(_executionContext.TypeManager, context),
                         new RequestDelegateWrapper(next)
                     };
 
