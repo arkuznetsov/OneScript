@@ -70,10 +70,10 @@ namespace OneScript.Web.Server
         }
 
         [ContextProperty("Безопасный", "Secure")]
-        public IValue Secure
+        public bool Secure
         {
-            get => BslBooleanValue.Create(_cookieOptions.Secure);
-            set => _cookieOptions.Secure = value.AsBoolean();
+            get => _cookieOptions.Secure;
+            set => _cookieOptions.Secure = value;
         }
 
         [ContextProperty("РежимSameSite", "SameSiteMode")]
@@ -84,10 +84,10 @@ namespace OneScript.Web.Server
         }
 
         [ContextProperty("ТолькоHttp", "HttpOnly")]
-        public IValue HttpOnly
+        public bool HttpOnly
         {
-            get => BslBooleanValue.Create(_cookieOptions.HttpOnly);
-            set => _cookieOptions.HttpOnly = value.AsBoolean();
+            get => _cookieOptions.HttpOnly;
+            set => _cookieOptions.HttpOnly = value;
         }
 
         [ContextProperty("МаксимальныйВозраст", "MaxAge")]
@@ -110,10 +110,16 @@ namespace OneScript.Web.Server
         }
 
         [ContextProperty("Важный", "IsEssential")]
-        public IValue IsEssential
+        public bool IsEssential
         {
-            get => BslBooleanValue.Create(_cookieOptions.IsEssential);
-            set => _cookieOptions.IsEssential = value.AsBoolean();
+            get => _cookieOptions.IsEssential;
+            set => _cookieOptions.IsEssential = value;
+        }
+
+        [ScriptConstructor]
+        public static CookieOptionsWrapper Create()
+        {
+            return new CookieOptionsWrapper();
         }
     }
 }
