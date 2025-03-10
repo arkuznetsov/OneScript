@@ -14,6 +14,7 @@ using ScriptEngine.Machine.Contexts;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Diagnostics;
 using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
 
 namespace OneScript.Web.Server
@@ -91,40 +92,14 @@ namespace OneScript.Web.Server
                 _app.UseStaticFiles();
 
             if (_exceptionHandler != null)
-                _app.UseExceptionHandler(handler =>
-                {
-                    handler.Run(context =>
-                    {
-                        var args = new IValue[]
-                        {
-                            new HttpContextWrapper(_executionContext.TypeManager, context),
-                        };
-
-                        var methodNumber = _exceptionHandler?.Target.GetMethodNumber(_exceptionHandler?.MethodName);
-
-                        var debugController = _executionContext.Services.TryResolve<IDebugController>();
-
-                        // Thread unsafe call!
-                        debugController?.AttachToThread();
-
-                        try
-                        {
-                            _exceptionHandler?.Target.CallAsProcedure((int)methodNumber, args);
-                        }
-                        catch (Exception ex)
-                        {
-                            WriteExceptionToResponse(context, ex);
-                        }
-                        finally
-                        {
-                            // Thread unsafe call!
-                            debugController?.DetachFromThread();
-                        }
-
-                        return Task.CompletedTask;
-                    });
-                });
-
+            {
+                UseBslExceptionHandler();
+            }
+            else
+            {
+                UseDefaultExceptionHandler();
+            }
+            
             if (_useWebSockets)
                 _app.UseWebSockets();
 
@@ -147,15 +122,64 @@ namespace OneScript.Web.Server
                     {
                         middleware.Target.CallAsProcedure(methodNumber, args);
                     }
+                    finally
+                    {
+                        debugController?.DetachFromThread();
+                    }
+
+                    return Task.CompletedTask;
+                });
+            });
+        }
+
+        private void UseDefaultExceptionHandler()
+        {
+            _app.UseExceptionHandler(errApp =>
+            {
+                errApp.Run(context =>
+                {
+                    var exceptionHandlerPathFeature =
+                        context.Features.Get<IExceptionHandlerPathFeature>();
+
+                    WriteExceptionToResponse(context, exceptionHandlerPathFeature?.Error);
+
+                    return Task.CompletedTask;
+                });
+            });
+        }
+
+        private void UseBslExceptionHandler()
+        {
+            _app.UseExceptionHandler(handler =>
+            {
+                handler.Run(context =>
+                {
+                    var args = new IValue[]
+                    {
+                        new HttpContextWrapper(_executionContext.TypeManager, context),
+                    };
+
+                    var methodNumber = _exceptionHandler?.Target.GetMethodNumber(_exceptionHandler?.MethodName);
+
+                    var debugController = _executionContext.Services.TryResolve<IDebugController>();
+
+                    // Thread unsafe call!
+                    debugController?.AttachToThread();
+
+                    try
+                    {
+                        _exceptionHandler?.Target.CallAsProcedure((int)methodNumber, args);
+                    }
                     catch (Exception ex)
                     {
-                        if (_exceptionHandler == null)
+                        if (!context.Response.HasStarted)
                             WriteExceptionToResponse(context, ex);
                         else
                             throw;
                     }
                     finally
                     {
+                        // Thread unsafe call!
                         debugController?.DetachFromThread();
                     }
 
