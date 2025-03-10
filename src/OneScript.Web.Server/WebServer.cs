@@ -7,21 +7,13 @@ at http://mozilla.org/MPL/2.0/.
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using OneScript.Contexts;
-using OneScript.StandardLibrary.Tasks;
 using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Threading;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
 
 namespace OneScript.Web.Server
