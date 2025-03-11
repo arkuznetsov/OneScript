@@ -71,6 +71,15 @@ namespace OneScript.Web.Server
             _app.Run();
         }
 
+        /// <summary>
+        /// Останавливает веб-сервер
+        /// </summary>
+        [ContextMethod("Остановить", "Stop")]
+        public void Stop()
+        {
+            _app?.StopAsync().Wait();
+        }
+
         private void ConfigureApp()
         {
             var appOptions = new WebApplicationOptions
