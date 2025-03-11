@@ -30,8 +30,8 @@ namespace ScriptEngine.HostedScript
 
             try
             {
-                _engine.UpdateContexts();
-                _engine.NewObject(_module);
+                var process = _engine.NewProcess();
+                _engine.NewObject(_module, process);
                 exitCode = 0;
             }
             catch (ScriptInterruptionException e)

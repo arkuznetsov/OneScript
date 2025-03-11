@@ -154,7 +154,7 @@ namespace ScriptEngine.Machine.Contexts
         public static IExecutableModule CompileModule(ICompilerFrontend compiler, SourceCode src, Type type)
         {
             compiler.FillSymbols(typeof(AutoScriptDrivenObject<T>));
-            return compiler.Compile(src, type);
+            return compiler.Compile(src, TODO, type);
         }
     }
 

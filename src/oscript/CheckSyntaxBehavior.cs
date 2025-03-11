@@ -47,10 +47,10 @@ namespace oscript
 				{
 					var envCompiler = hostedScript.GetCompilerService();
 					var envSrc = hostedScript.Loader.FromFile(_envFile);
-					envCompiler.Compile(envSrc);
+					envCompiler.Compile(envSrc, TODO);
 				}
 				var compiler = hostedScript.GetCompilerService();
-				compiler.Compile(source);
+				compiler.Compile(source, TODO);
 			}
 			catch (ScriptException e)
 			{

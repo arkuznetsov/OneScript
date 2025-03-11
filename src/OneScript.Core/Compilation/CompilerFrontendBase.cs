@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Collections.Generic;
 using OneScript.Compilation.Binding;
+using OneScript.Contexts;
 using OneScript.DependencyInjection;
 using OneScript.Execution;
 using OneScript.Language;
@@ -14,6 +15,8 @@ using OneScript.Language.LexicalAnalysis;
 using OneScript.Language.SyntaxAnalysis;
 using OneScript.Language.SyntaxAnalysis.AstNodes;
 using OneScript.Sources;
+using OneScript.Values;
+using ScriptEngine.Machine;
 
 namespace OneScript.Compilation
 {
@@ -27,6 +30,23 @@ namespace OneScript.Compilation
             PreprocessorHandlers = handlers;
             ErrorSink = errorSink;
             Services = services;
+        }
+        
+        /// <summary>
+        /// Класс процесса для компиляции выражений и батчей.
+        /// В них не может быть вызовов Использовать, а значит не может быть исполнен код в процессе компиляции
+        /// </summary>
+        protected class IllegalBslProcess : IBslProcess
+        {
+            public static IBslProcess Instance = new IllegalBslProcess();
+            
+            private IllegalBslProcess()
+            {}
+                
+            public BslValue Run(BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments) 
+                => throw new NotSupportedException();
+
+            public IServiceContainer Services => throw new NotSupportedException();
         }
 
         public IErrorSink ErrorSink { get; }
@@ -55,13 +75,13 @@ namespace OneScript.Compilation
         
         private SymbolScope ModuleSymbols { get; set; }
         
-        public IExecutableModule Compile(SourceCode source, Type classType = null)
+        public IExecutableModule Compile(SourceCode source, IBslProcess process, Type classType = null)
         {
             var lexer = CreatePreprocessor(source);
             var symbols = PrepareSymbols();
             var parsedModule = ParseSyntaxConstruction(lexer, source, p => p.ParseStatefulModule());
 
-            return CompileInternal(symbols, parsedModule, classType);
+            return CompileInternal(symbols, parsedModule, classType, process);
         }
 
         public IExecutableModule CompileExpression(SourceCode source)
@@ -85,7 +105,7 @@ namespace OneScript.Compilation
             return CompileBatchInternal(symbols, parsedModule);
         }
 
-        protected abstract IExecutableModule CompileInternal(SymbolTable symbols, ModuleNode parsedModule, Type classType);
+        protected abstract IExecutableModule CompileInternal(SymbolTable symbols, ModuleNode parsedModule, Type classType, IBslProcess process);
         
         protected abstract IExecutableModule CompileExpressionInternal(SymbolTable symbols, ModuleNode parsedModule);
         

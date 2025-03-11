@@ -49,7 +49,8 @@ namespace ScriptEngine.Compiler
 
         public IDependencyResolver DependencyResolver { get; set; }
         
-        public StackRuntimeModule CreateModule(ModuleNode moduleNode, SourceCode source, SymbolTable context)
+        public StackRuntimeModule CreateModule(ModuleNode moduleNode, SourceCode source, SymbolTable context,
+            IBslProcess process)
         {
             if (moduleNode.Kind != NodeKind.Module)
             {

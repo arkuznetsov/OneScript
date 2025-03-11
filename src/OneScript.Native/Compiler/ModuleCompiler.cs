@@ -12,6 +12,7 @@ using OneScript.Compilation.Binding;
 using OneScript.Contexts;
 using OneScript.DependencyInjection;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Language;
 using OneScript.Language.LexicalAnalysis;
 using OneScript.Language.SyntaxAnalysis;
@@ -37,11 +38,9 @@ namespace OneScript.Native.Compiler
             
         }
         
-        public DynamicModule Compile(
-            SourceCode moduleInfo,
+        public DynamicModule Compile(SourceCode moduleInfo,
             BslSyntaxNode moduleNode,
-            SymbolTable symbols
-            )
+            SymbolTable symbols, IBslProcess process)
         {
             InitContext(Errors, moduleInfo, symbols);
             

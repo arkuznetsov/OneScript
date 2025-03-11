@@ -258,7 +258,7 @@ namespace ScriptEngine.HostedScript
             var compiler = _engine.GetCompilerService();
             
             var source = _engine.Loader.FromFile(path);
-            var module = _engine.AttachedScriptsFactory.CompileModuleFromSource(compiler, source, null);
+            var module = _engine.AttachedScriptsFactory.CompileModuleFromSource(compiler, source, null, TODO);
 
             return module;
         }

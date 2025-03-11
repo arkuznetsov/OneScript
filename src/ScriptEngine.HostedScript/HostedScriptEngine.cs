@@ -38,6 +38,8 @@ namespace ScriptEngine.HostedScript
             SetGlobalContexts(engine.GlobalsManager);
         }
 
+        public ScriptingEngine Engine => _engine;
+
         private void SetGlobalContexts(IGlobalsManager manager)
         {
             _globalCtx = new SystemGlobalContext();
@@ -104,7 +106,8 @@ namespace ScriptEngine.HostedScript
             IExecutableModule module;
             try
             {
-                module = compilerSvc.Compile(src);
+                // Компилируем точку входа отдельным процессом
+                module = compilerSvc.Compile(src, _engine.NewProcess());
             }
             catch (CompilerException)
             {

@@ -11,6 +11,7 @@ using OneScript.Commons;
 using OneScript.Compilation;
 using OneScript.Compilation.Binding;
 using OneScript.DependencyInjection;
+using OneScript.Execution;
 using OneScript.Language;
 using OneScript.Language.LexicalAnalysis;
 using OneScript.Language.SyntaxAnalysis;
@@ -86,12 +87,12 @@ namespace OneScript.Dynamic.Tests
             return parser;
         }
 
-        public DynamicModule Compile(SymbolTable scopes)
+        public DynamicModule Compile(SymbolTable scopes, IBslProcess process)
         {
             if (scopes.ScopeCount == 0)
                 scopes.PushScope(new SymbolScope(), null);
             var compiler = new ModuleCompiler(_errors, _services, new DependencyResolverMock());
-            return compiler.Compile(_codeIndexer, _module, scopes);
+            return compiler.Compile(_codeIndexer, _module, scopes, process);
         }
         
         private class DependencyResolverMock : ICompileTimeDependencyResolver

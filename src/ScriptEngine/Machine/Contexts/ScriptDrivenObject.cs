@@ -125,7 +125,7 @@ namespace ScriptEngine.Machine.Contexts
             return Task.Run(() => ExecutionDispatcher.Current.ExecuteModuleBody(this, _module));
         }
 
-        public void Initialize()
+        public void Initialize(IBslProcess process)
         {
             OnInstanceCreation();
         }
