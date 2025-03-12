@@ -30,12 +30,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         private readonly ValueTable _owner;
         private int maxColumnId = 0;
 
-        private static readonly TypeDescriptor _objectType = typeof(ValueTableColumnCollection).GetTypeFromClassMarkup();
-
         public ValueTableColumnCollection(ValueTable owner)
         {
             _owner = owner;
-            DefineType(_objectType);
         }
 
         /// <summary>

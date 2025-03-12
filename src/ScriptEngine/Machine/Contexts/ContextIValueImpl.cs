@@ -39,10 +39,7 @@ namespace ScriptEngine.Machine.Contexts
 
         public override string ToString()
         {
-            if (_type == BasicTypes.UnknownType)
-                TryDetermineOwnType();
-            
-            return _type.Name;
+            return SystemType.Name;
         }
         
         #region IValue Members
@@ -51,30 +48,13 @@ namespace ScriptEngine.Machine.Contexts
         {
             get
             {
-                if (_type != BasicTypes.UnknownType) 
+                if (_type != BasicTypes.UnknownType)
                     return _type;
                 
-                if (!TryDetermineOwnType())
-                {
-                    throw new InvalidOperationException($"Type {GetType()} is not defined");
-                }
-
-                return _type;
+                throw new InvalidOperationException($"Type {GetType()} is not defined");
             }
         }
 
-        private bool TryDetermineOwnType()
-        {
-            var mgr = MachineInstance.Current?.TypeManager;
-            if (mgr?.IsKnownType(GetType()) ?? false)
-            {
-                _type = mgr.GetTypeByFrameworkType(GetType());
-                return true;
-            }
-
-            return false;
-        }
-        
         #endregion
 
         #region IComparable<IValue> Members

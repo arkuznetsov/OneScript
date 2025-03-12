@@ -25,13 +25,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
     public class ValueTreeColumnCollection : AutoContext<ValueTreeColumnCollection>, ICollectionContext<ValueTreeColumn>, IDebugPresentationAcceptor
     {
         private readonly List<ValueTreeColumn> _columns = new List<ValueTreeColumn>();
-        private static TypeDescriptor _instanceType = typeof(ValueTreeColumnCollection).GetTypeFromClassMarkup();
         
-        public ValueTreeColumnCollection()
-        {
-            DefineType(_instanceType);
-        }
-
         /// <summary>
         /// Добавляет новую колонку.
         /// </summary>

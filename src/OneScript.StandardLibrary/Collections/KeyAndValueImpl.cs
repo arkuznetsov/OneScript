@@ -16,9 +16,7 @@ namespace OneScript.StandardLibrary.Collections
     [ContextClass("КлючИЗначение", "KeyAndValue", TypeUUID = "2F949104-FC88-4ACD-A6A5-3B6C39A9C2C5")]
     public class KeyAndValueImpl : AutoContext<KeyAndValueImpl>
     {
-        private static TypeDescriptor _instanceType = typeof(KeyAndValueImpl).GetTypeFromClassMarkup();
-        
-        public KeyAndValueImpl(IValue key, IValue value) : base(_instanceType)
+        public KeyAndValueImpl(IValue key, IValue value)
         {
             Key = key;
             Value = value;

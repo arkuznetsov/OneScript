@@ -27,10 +27,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         private readonly int _level;
         private readonly ValueTreeRowCollection _rows;
         
-        private static TypeDescriptor _instanceType = typeof(ValueTreeRow).GetTypeFromClassMarkup();
-        
         public ValueTreeRow(ValueTree owner, ValueTreeRow parent, int level)
-            : base(_instanceType)
         {
             _owner = owner;
             _parent = parent;

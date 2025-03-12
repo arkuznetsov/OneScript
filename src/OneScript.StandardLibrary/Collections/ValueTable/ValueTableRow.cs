@@ -20,9 +20,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         private readonly Dictionary<IValue, IValue> _data = new Dictionary<IValue, IValue>();
         private readonly ValueTable _owner;
 
-        private static readonly TypeDescriptor _objectType = typeof(ValueTableRow).GetTypeFromClassMarkup();
-        
-        public ValueTableRow(ValueTable owner) : base(_objectType)
+        public ValueTableRow(ValueTable owner)
         {
             _owner = owner;
         }

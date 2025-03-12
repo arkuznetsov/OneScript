@@ -22,12 +22,10 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
     [ContextClass("ИндексыКоллекции", "CollectionIndexes", TypeUUID = "75983CBE-2ACC-4925-9CE0-23FC0C3E3211")]
     public class CollectionIndexes : AutoCollectionContext<CollectionIndexes, CollectionIndex>
     {
-        private static readonly TypeDescriptor _instanceType = typeof(CollectionIndexes).GetTypeFromClassMarkup();
-        
         readonly List<CollectionIndex> _indexes = new List<CollectionIndex>();
         private readonly IIndexCollectionSource _owner;
 
-        public CollectionIndexes(IIndexCollectionSource owner) : base(_instanceType)
+        public CollectionIndexes(IIndexCollectionSource owner)
         {
             _owner = owner;
         }

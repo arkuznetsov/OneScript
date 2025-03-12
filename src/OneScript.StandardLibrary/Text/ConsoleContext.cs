@@ -9,6 +9,7 @@ using System;
 using System.IO;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary.Binary;
 using OneScript.Values;
 using ScriptEngine.Machine;
@@ -151,7 +152,8 @@ namespace OneScript.StandardLibrary.Text
             {
                 try
                 {
-                    return GlobalsHelper.GetEnum<ConsoleColorEnum>().FromNativeValue(Console.BackgroundColor);
+                    return _executionContext.GlobalInstances.GetInstance<ConsoleColorEnum>()
+                        .FromNativeValue(Console.BackgroundColor);
                 }
                 catch (InvalidOperationException)
                 {
@@ -178,7 +180,7 @@ namespace OneScript.StandardLibrary.Text
         {
             get
             {
-                var encodingEnum = GlobalsHelper.GetEnum<TextEncodingEnum>();
+                var encodingEnum = _executionContext.GlobalInstances.GetInstance<TextEncodingEnum>();
                 return encodingEnum.GetValue(Console.InputEncoding);
             }
             set 
@@ -196,7 +198,7 @@ namespace OneScript.StandardLibrary.Text
         {
             get
             {
-                var encodingEnum = GlobalsHelper.GetEnum<TextEncodingEnum>();
+                var encodingEnum = _executionContext.GlobalInstances.GetInstance<TextEncodingEnum>();
                 return encodingEnum.GetValue(Console.OutputEncoding);
             }
             set 
@@ -290,8 +292,8 @@ namespace OneScript.StandardLibrary.Text
             var eventProcessor = _executionContext.Services.TryResolve<IEventProcessor>();
             if (eventProcessor == null)
                 return;
-                
-            MachineInstance.Current.SetMemory(_executionContext);
+
+            var process = _executionContext.Services.Resolve<IBslProcessFactory>().NewProcess();
             var debugger = _executionContext.Services.TryResolve<IDebugController>();
             debugger?.AttachToThread();
 
@@ -299,8 +301,15 @@ namespace OneScript.StandardLibrary.Text
             var reference = Variable.CreateReference(cancelVar, "Cancel");
             var args = new IValue[] { reference };
 
-            // Вызываем обработчик. Исключение в обработчике никак отдельно не обрабатываем.
-            eventProcessor.HandleEvent(this, ConsoleCancelKeyEvent, args);
+            try
+            {
+                // Вызываем обработчик. Исключение в обработчике никак отдельно не обрабатываем.
+                eventProcessor.HandleEvent(this, ConsoleCancelKeyEvent, args, process);
+            }
+            finally
+            {
+                debugger?.DetachFromThread();
+            }
 
             e.Cancel = reference.Value.AsBoolean();
         }

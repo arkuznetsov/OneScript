@@ -176,7 +176,7 @@ namespace ScriptEngine.Machine.Contexts
 
             if (type.IsEnum)
             {
-                return ConvertEnum(objParam, type);
+                throw new InvalidOperationException("Automatic conversion of simple clr enums to IValue is temporary dropped");
             }
             else if (typeof(IRuntimeContextInstance).IsAssignableFrom(type))
             {
@@ -194,28 +194,6 @@ namespace ScriptEngine.Machine.Contexts
             {
                 throw ValueMarshallingException.TypeNotSupported(type);
             }
-        }
-
-        private static IValue ConvertEnum(object objParam, Type type)
-        {
-            if (!type.IsInstanceOfType(objParam))
-                throw ValueMarshallingException.InvalidEnum(type);
-
-            var memberInfo = type.GetMember(objParam.ToString());
-            var valueInfo = memberInfo.FirstOrDefault(x => x.DeclaringType == type);
-            
-            if (valueInfo == null)
-                throw ValueMarshallingException.EnumWithNoAttribute(type);
-            
-            var attrs = valueInfo.GetCustomAttributes(typeof(EnumValueAttribute), false);
-
-            if (attrs.Length == 0)
-                throw ValueMarshallingException.EnumWithNoAttribute(type);
-
-            var itemName = ((EnumValueAttribute)attrs[0]).Name;
-            var enumImpl = GlobalsHelper.GetEnum(type);
-
-            return enumImpl.GetPropValue(itemName);
         }
 
         public static T ConvertWrappedEnum<T>(IValue enumeration, T defValue) where T : struct

@@ -26,10 +26,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         private int _width;
         private readonly ValueTreeColumnCollection _owner;
         
-        private static TypeDescriptor _instanceType = typeof(ValueTreeColumn).GetTypeFromClassMarkup();
-
         public ValueTreeColumn(ValueTreeColumnCollection owner, string name, string title, TypeDescription type, int width)
-            : base(_instanceType)
         {
             _name = name;
             _title = title ?? name;

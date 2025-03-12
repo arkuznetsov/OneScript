@@ -5,6 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System;
 using System.Text;
 using OneScript.Contexts.Enums;
 using OneScript.Exceptions;
@@ -142,25 +143,16 @@ namespace OneScript.StandardLibrary.Text
                 if (!(encoding.GetRawValue() is ClrEnumValueWrapper<TextEncodingValues> encValue))
                     throw RuntimeException.InvalidArgumentType();
 
-                var encodingEnum = GlobalsHelper.GetEnum<TextEncodingEnum>();
-
-                Encoding enc;
-                if (encValue == encodingEnum.Ansi)
-                    enc = Encoding.GetEncoding(1251);
-                else if (encValue == encodingEnum.Oem)
-                    enc = Encoding.GetEncoding(866);
-                else if (encValue == encodingEnum.Utf16)
-                    enc = new UnicodeEncoding(false, addBOM);
-                else if (encValue == encodingEnum.Utf8)
-                    enc = new UTF8Encoding(addBOM);
-                else if (encValue == encodingEnum.Utf8NoBOM)
-                    enc = new UTF8Encoding(false);
-                else if (encValue == encodingEnum.System)
-                    enc = Encoding.Default;
-                else
-                    throw RuntimeException.InvalidArgumentValue();
-
-                return enc;
+                return encValue.UnderlyingValue switch
+                {
+                    TextEncodingValues.System => Encoding.Default,
+                    TextEncodingValues.ANSI => Encoding.GetEncoding(1251),
+                    TextEncodingValues.OEM => Encoding.GetEncoding(866),
+                    TextEncodingValues.UTF16 => new UnicodeEncoding(false, addBOM),
+                    TextEncodingValues.UTF8 => new UTF8Encoding(addBOM),
+                    TextEncodingValues.UTF8NoBOM => new UTF8Encoding(false),
+                    _ => throw RuntimeException.InvalidArgumentValue()
+                };
             }
         }
     }

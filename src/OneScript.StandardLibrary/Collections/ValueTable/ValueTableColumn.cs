@@ -27,10 +27,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         private readonly WeakReference _owner;
         private readonly int _id;
         
-        private static TypeDescriptor _instanceType = typeof(ValueTableColumn).GetTypeFromClassMarkup();
-
         public ValueTableColumn(ValueTableColumnCollection owner, int id, string name, string title, TypeDescription type, int width)
-            : base(_instanceType)
         {
             _name = name;
             _title = title;
