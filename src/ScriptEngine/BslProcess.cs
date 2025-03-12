@@ -32,7 +32,7 @@ namespace ScriptEngine
             
         public BslValue Run(BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments)
         {
-            return _bslExecutorsByModule[module.GetType()](target, module, method, arguments);
+            return _bslExecutorsByModule[module.GetType()](this, target, module, method, arguments);
         }
     }
 }

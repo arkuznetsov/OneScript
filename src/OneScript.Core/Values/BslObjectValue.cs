@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Localization;
 
 namespace OneScript.Values
@@ -18,6 +19,11 @@ namespace OneScript.Values
                 "Comparison for less/greater is not supported for this type");
             
             throw new RuntimeException(msg);
+        }
+        
+        public virtual string ConvertToString(IBslProcess process)
+        {
+            return ConvertToString();
         }
 
         public override bool Equals(BslValue other)

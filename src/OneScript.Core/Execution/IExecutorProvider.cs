@@ -12,7 +12,12 @@ using ScriptEngine.Machine;
 
 namespace OneScript.Execution
 {
-    public delegate BslValue Invoker(BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments);
+    public delegate BslValue Invoker(
+        IBslProcess process,
+        BslObjectValue target,
+        IExecutableModule module,
+        BslScriptMethodInfo method,
+        IValue[] arguments);
     
     public interface IExecutorProvider
     {

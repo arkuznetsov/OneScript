@@ -142,16 +142,17 @@ namespace OneScript.Native.Compiler
             }
 
             var annotations = CompilerHelpers.GetAnnotations(varNode.Annotations).ToArray();
-            var varSymbol = BslFieldBuilder.Create()
+            var field = BslFieldBuilder.Create()
                 .Name(varNode.Name)
                 .IsExported(varNode.IsExported)
                 .SetAnnotations(annotations)
                 .ValueType(typeof(BslValue))
-                .Build()
-                .ToSymbol();
+                .Build();
+
+            var varSymbol = field.ToSymbol();
 
             var id = Symbols.GetScope(Symbols.ScopeCount - 1).DefineVariable(varSymbol);
-            _module.Fields.Add(varSymbol.Field);
+            _module.Fields.Add(field);
             
             if (varNode.IsExported)
             {

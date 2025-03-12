@@ -25,9 +25,10 @@ namespace OneScript.Native.Runtime
         }
 
         private static BslValue Executor(
+            IBslProcess process,
             BslObjectValue target,
             IExecutableModule module,
-            BslMethodInfo method,
+            BslScriptMethodInfo method,
             IValue[] arguments)
         {
             if (!(module is DynamicModule))

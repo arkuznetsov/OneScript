@@ -10,6 +10,7 @@ using System.Diagnostics;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Types;
+using ScriptEngine.Types;
 
 namespace ScriptEngine.Machine.Contexts
 {
@@ -18,8 +19,9 @@ namespace ScriptEngine.Machine.Contexts
         private static readonly ContextPropertyMapper<TInstance> _properties = new ContextPropertyMapper<TInstance>();
         private static readonly ContextMethodsMapper<TInstance> _methods = new ContextMethodsMapper<TInstance>();
         private static readonly HashSet<int> _warnedDeprecatedMethods = new HashSet<int>();
+        private static readonly TypeDescriptor _objectType = typeof(TInstance).GetTypeFromClassMarkup(true);
         
-        protected AutoContext()
+        protected AutoContext() : base(_objectType)
         {
         }
         

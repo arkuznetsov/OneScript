@@ -115,24 +115,14 @@ namespace ScriptEngine.Machine.Contexts
             return indexInContext - METHOD_COUNT;
         }
 
-        protected virtual void OnInstanceCreation()
+        protected virtual void OnInstanceCreation(IBslProcess process)
         {
-            ExecutionDispatcher.Current.ExecuteModuleBody(this, _module);
+            process.Run(this, _module, _module.ModuleBody, Array.Empty<IValue>());
         }
         
-        protected virtual Task OnInstanceCreationAsync()
-        {
-            return Task.Run(() => ExecutionDispatcher.Current.ExecuteModuleBody(this, _module));
-        }
-
         public void Initialize(IBslProcess process)
         {
-            OnInstanceCreation();
-        }
-        
-        public Task InitializeAsync()
-        {
-            return OnInstanceCreationAsync();
+            OnInstanceCreation(process);
         }
 
         protected int GetScriptMethod(string methodName, string alias = null)
@@ -153,20 +143,20 @@ namespace ScriptEngine.Machine.Contexts
             return index;
         }
 
-        protected IValue CallScriptMethod(int methodIndex, IValue[] parameters)
+        protected IValue CallScriptMethod(int methodIndex, IValue[] parameters, IBslProcess process)
         {
-            var returnValue = ExecutionDispatcher.Current.Execute(this, _module, _module.Methods[methodIndex], parameters);
+            var returnValue = process.Run(this, _module, _module.Methods[methodIndex], parameters);
 
             return returnValue;
         }
 
-        public Action<IValue[]> GetMethodExecutor(string methodName)
+        public Action<IBslProcess, IValue[]> GetMethodExecutor(string methodName)
         {
             var id = GetScriptMethod(methodName);
             if (id == -1)
                 throw RuntimeException.MethodNotFoundException(methodName, SystemType.Name);
 
-            return (args) => CallScriptMethod(id, args);
+            return (process, args) => CallScriptMethod(id, args, process);
         }
         
         #region Own Members Call
@@ -216,12 +206,12 @@ namespace ScriptEngine.Machine.Contexts
             throw new NotImplementedException();
         }
 
-        protected virtual void CallOwnProcedure(int index, IValue[] arguments)
+        protected virtual void CallOwnProcedure(int index, IValue[] arguments, IBslProcess process)
         {
             throw new NotImplementedException();
         }
 
-        protected virtual IValue CallOwnFunction(int index, IValue[] arguments)
+        protected virtual IValue CallOwnFunction(int index, IValue[] arguments, IBslProcess process)
         {
             throw new NotImplementedException();
         }
@@ -375,29 +365,38 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
 
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
+        public void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
         {
             if (MethodDefinedInScript(methodNumber))
             {
-                ExecutionDispatcher.Current.Execute(this, _module, _module.Methods[methodNumber - METHOD_COUNT], arguments);
+                process.Run(this, _module, _module.Methods[methodNumber - METHOD_COUNT], arguments);
             }
             else
             {
-                CallOwnProcedure(methodNumber, arguments);
+                CallOwnProcedure(methodNumber, arguments, process);
             }
+        }
+
+        public void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
+        {
+            if (MethodDefinedInScript(methodNumber))
+            {
+                retValue = process.Run(this, _module, _module.Methods[methodNumber - METHOD_COUNT], arguments);
+            }
+            else
+            {
+                retValue = CallOwnFunction(methodNumber, arguments, process);
+            }
+        }
+
+        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
+        {
+            throw new NotSupportedException("Implementation requires IBslProcess");
         }
 
         public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
         {
-            if (MethodDefinedInScript(methodNumber))
-            {
-                retValue = ExecutionDispatcher.Current.Execute(this, _module, _module.Methods[methodNumber - METHOD_COUNT], arguments);
-            }
-            else
-            {
-                retValue = CallOwnFunction(methodNumber, arguments);
-            }
-            
+            throw new NotSupportedException("Implementation requires IBslProcess");
         }
 
         public override int GetPropCount()

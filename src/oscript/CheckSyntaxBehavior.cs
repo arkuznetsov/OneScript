@@ -43,14 +43,15 @@ namespace oscript
 
 			try
 			{
+				var compilerProcess = hostedScript.Engine.NewProcess();
 				if (_envFile != null)
 				{
 					var envCompiler = hostedScript.GetCompilerService();
 					var envSrc = hostedScript.Loader.FromFile(_envFile);
-					envCompiler.Compile(envSrc, TODO);
+					envCompiler.Compile(envSrc, compilerProcess);
 				}
 				var compiler = hostedScript.GetCompilerService();
-				compiler.Compile(source, TODO);
+				compiler.Compile(source, compilerProcess);
 			}
 			catch (ScriptException e)
 			{

@@ -121,12 +121,12 @@ namespace ScriptEngine.Machine.Contexts
             return _ownMethods.GetRuntimeMethod(index);
         }
 
-        protected override IValue CallOwnFunction(int index, IValue[] arguments)
+        protected override IValue CallOwnFunction(int index, IValue[] arguments, IBslProcess process)
         {
             return _ownMethods.GetCallableDelegate(index)((T)this, arguments);
         }
 
-        protected override void CallOwnProcedure(int index, IValue[] arguments)
+        protected override void CallOwnProcedure(int index, IValue[] arguments, IBslProcess process)
         {
             _ownMethods.GetCallableDelegate(index)((T)this, arguments);
         }

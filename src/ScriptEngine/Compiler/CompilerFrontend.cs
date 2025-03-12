@@ -82,14 +82,14 @@ namespace ScriptEngine.Compiler
         {
             var backend = _backendSelector.Select(parsedModule);
             backend.Symbols = symbols;
-            return backend.Compile(parsedModule, typeof(UserScriptContextInstance), IllegalBslProcess.Instance);
+            return backend.Compile(parsedModule, typeof(UserScriptContextInstance), ForbiddenBslProcess.Instance);
         }
 
         protected override IExecutableModule CompileBatchInternal(SymbolTable symbols, ModuleNode parsedModule)
         {
             var backend = _backendSelector.Select(parsedModule);
             backend.Symbols = symbols;
-            return backend.Compile(parsedModule, typeof(UserScriptContextInstance), IllegalBslProcess.Instance);
+            return backend.Compile(parsedModule, typeof(UserScriptContextInstance), ForbiddenBslProcess.Instance);
         }
     }
 }

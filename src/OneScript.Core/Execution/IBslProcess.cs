@@ -29,6 +29,9 @@ namespace OneScript.Execution
         /// <returns>Возвращаемое значение. default если вызывалась процедура</returns>
         public BslValue? Run(BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments); 
             
+        /// <summary>
+        /// Сервисы текущего процесса
+        /// </summary>
         public IServiceContainer Services { get; }
     }
 }

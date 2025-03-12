@@ -15,6 +15,7 @@ namespace ScriptEngine.Machine
     public class StackMachineExecutor : IExecutorProvider
     {
         private readonly ExecutionContext _environment;
+        private readonly MachineInstance machine;
 
         public StackMachineExecutor(ExecutionContext environment)
         {
@@ -28,7 +29,7 @@ namespace ScriptEngine.Machine
             return Executor;
         }
 
-        private BslValue Executor(BslObjectValue target, IExecutableModule module, BslMethodInfo method, IValue[] arguments)
+        private BslValue Executor(IBslProcess process, BslObjectValue target, IExecutableModule module, BslMethodInfo method, IValue[] arguments)
         {
             if (!(method is MachineMethodInfo scriptMethodInfo))
             {

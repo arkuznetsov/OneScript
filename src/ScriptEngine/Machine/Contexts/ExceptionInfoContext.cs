@@ -23,17 +23,15 @@ namespace ScriptEngine.Machine.Contexts
     [ContextClass("ИнформацияОбОшибке", "ErrorInfo", TypeUUID = "E0EDED59-D37A-42E7-9796-D6C061934B5D")]
     public class ExceptionInfoContext : AutoContext<ExceptionInfoContext>
     {
-        private static readonly TypeDescriptor ObjectType = typeof(ExceptionInfoContext).GetTypeFromClassMarkup();
-        
         private ScriptException _exc;
         private IValue _innerException;
 
-        public ExceptionInfoContext(ScriptException source) : base(ObjectType)
+        public ExceptionInfoContext(ScriptException source)
         {
             SetActualException(source);
         }
 
-        private ExceptionInfoContext(string message, IValue parameters, ExceptionInfoContext cause) : base(ObjectType)
+        private ExceptionInfoContext(string message, IValue parameters, ExceptionInfoContext cause)
         {
             Description = message;
             Parameters = parameters;
