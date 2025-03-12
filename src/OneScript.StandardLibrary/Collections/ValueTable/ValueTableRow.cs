@@ -15,7 +15,7 @@ using ScriptEngine.Types;
 namespace OneScript.StandardLibrary.Collections.ValueTable
 {
     [ContextClass("СтрокаТаблицыЗначений", "ValueTableRow", TypeUUID = "DBFCD195-4B87-4AB7-9BA7-AE2E791E04ED")]
-    public class ValueTableRow : PropertyNameIndexAccessor, ICollectionContext<IValue>, IDebugPresentationAcceptor
+    public class ValueTableRow : AutoContext<ValueTableRow>, ICollectionContext<IValue>, IDebugPresentationAcceptor
     {
         private readonly Dictionary<IValue, IValue> _data = new Dictionary<IValue, IValue>();
         private readonly ValueTable _owner;
@@ -172,45 +172,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 			_data[C] = C.ValueType.AdjustValue(val);
 		}
 
-
-        private static readonly ContextMethodsMapper<ValueTableRow> _methods = new ContextMethodsMapper<ValueTableRow>();
-
-        public override BslMethodInfo GetMethodInfo(int methodNumber)
-        {
-            return _methods.GetRuntimeMethod(methodNumber);
-        }
-
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
-        {
-            var binding = _methods.GetCallableDelegate(methodNumber);
-            try
-            {
-                binding(this, arguments);
-            }
-            catch (System.Reflection.TargetInvocationException e)
-            {
-                throw e.InnerException;
-            }
-        }
-
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-        {
-            var binding = _methods.GetCallableDelegate(methodNumber);
-            try
-            {
-                retValue = binding(this, arguments);
-            }
-            catch (System.Reflection.TargetInvocationException e)
-            {
-                throw e.InnerException;
-            }
-        }
-
-        public override int GetMethodNumber(string name)
-        {
-            return _methods.FindMethod(name);
-        }
-        
         void IDebugPresentationAcceptor.Accept(IDebugValueVisitor visitor)
         {
             visitor.ShowProperties(this);

@@ -12,6 +12,7 @@ using OneScript.Contexts;
 using OneScript.StandardLibrary.Collections.Indexes;
 using OneScript.Exceptions;
 using OneScript.Types;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -406,15 +407,14 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             {
                 var value1 = GetNumeric(source, column);
                 var value2 = GetNumeric(dest, column);
-                dest.Set(column, ValueFactory.Add(value1, value2));
+                dest.Set(column, BslNumericValue.Create(value1 + value2));
             }
         }
 
-        private static IValue GetNumeric(ValueTableRow row, ValueTableColumn column)
+        private static decimal GetNumeric(ValueTableRow row, ValueTableColumn column)
         {
             var value = row.Get(column);
-            if (value.SystemType == BasicTypes.Number) return value;
-            return ValueFactory.Create(0);
+            return value.SystemType == BasicTypes.Number ? value.AsNumber() : 0;
         }
 
         private class RowsByColumnsEqComparer : IEqualityComparer<ValueTableRow>

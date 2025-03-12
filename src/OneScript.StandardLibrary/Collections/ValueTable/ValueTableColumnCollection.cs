@@ -23,7 +23,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
     /// Коллекция колонок таблицы значений
     /// </summary>
     [ContextClass("КоллекцияКолонокТаблицыЗначений", "ValueTableColumnCollection", TypeUUID = "E1584766-C053-4644-B4C2-9642C0F53EFA")]
-    public class ValueTableColumnCollection : DynamicPropertiesAccessor, ICollectionContext<ValueTableColumn>, IDebugPresentationAcceptor
+    public class ValueTableColumnCollection : AutoContext<ValueTableColumnCollection>, ICollectionContext<ValueTableColumn>, IDebugPresentationAcceptor
     {
         private readonly List<ValueTableColumn> _columns = new List<ValueTableColumn>();
         private readonly StringComparer _namesComparer = StringComparer.OrdinalIgnoreCase;
@@ -170,6 +170,13 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             return GetEnumerator();
         }
 
+        public override bool IsIndexed => true;
+
+        public override IValue GetIndexedValue(IValue index)
+        {
+            return GetColumnByIIndex(index);
+        }
+        
         public override int GetPropertyNumber(string name)
         {
             int idx = _columns.FindIndex(column => _namesComparer.Equals(name, column.Name));
@@ -249,47 +256,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             }
 
             throw RuntimeException.InvalidArgumentType();
-        }
-
-        public override IValue GetIndexedValue(IValue index)
-        {
-            return GetColumnByIIndex(index);
-        }
-
-        private static readonly ContextMethodsMapper<ValueTableColumnCollection> _methods = new ContextMethodsMapper<ValueTableColumnCollection>();
-
-        public override BslMethodInfo GetMethodInfo(int methodNumber)
-        {
-            return _methods.GetRuntimeMethod(methodNumber);
-        }
-
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
-        {
-            var binding = _methods.GetCallableDelegate(methodNumber);
-            try
-            {
-                binding(this, arguments);
-            } catch (System.Reflection.TargetInvocationException e)
-            {
-                throw e.InnerException;
-            }
-        }
-
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-        {
-            var binding = _methods.GetCallableDelegate(methodNumber);
-            try
-            {
-                retValue = binding(this, arguments);
-            } catch (System.Reflection.TargetInvocationException e)
-            {
-                throw e.InnerException;
-            }
-        }
-
-        public override int GetMethodNumber(string name)
-        {
-            return _methods.FindMethod(name);
         }
 
         void IDebugPresentationAcceptor.Accept(IDebugValueVisitor visitor)
