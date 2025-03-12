@@ -52,7 +52,7 @@ namespace ScriptEngine.Machine
         // кешированный обработчик событий
         private readonly Lazy<IEventProcessor> _eventProcessor;
 
-        private MachineInstance() 
+        internal MachineInstance() 
         {
             InitCommands();
             Reset();

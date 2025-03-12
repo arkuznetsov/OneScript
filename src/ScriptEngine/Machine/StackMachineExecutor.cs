@@ -14,14 +14,8 @@ namespace ScriptEngine.Machine
 {
     public class StackMachineExecutor : IExecutorProvider
     {
-        private readonly ExecutionContext _environment;
-        private readonly MachineInstance machine;
+        private MachineInstance _machine;
 
-        public StackMachineExecutor(ExecutionContext environment)
-        {
-            _environment = environment;
-        }
-        
         public Type SupportedModuleType => typeof(StackRuntimeModule);
         
         public Invoker GetInvokeDelegate()
@@ -29,7 +23,7 @@ namespace ScriptEngine.Machine
             return Executor;
         }
 
-        private BslValue Executor(IBslProcess process, BslObjectValue target, IExecutableModule module, BslMethodInfo method, IValue[] arguments)
+        private BslValue Executor(IBslProcess process, BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments)
         {
             if (!(method is MachineMethodInfo scriptMethodInfo))
             {
@@ -40,14 +34,20 @@ namespace ScriptEngine.Machine
             {
                 throw new InvalidOperationException();
             }
-            
-            var currentMachine = MachineInstance.Current;
-            if (!currentMachine.IsRunning)
+
+            if (_machine == null)
             {
-                currentMachine.SetMemory(_environment);
+                _machine = new MachineInstance();
+                _machine.Setup(process);
+
+                var debugger = process.Services.TryResolve<IDebugController>();
+                if (debugger != default)
+                {
+                    _machine.SetDebugMode(debugger.BreakpointManager);
+                }
             }
             
-            return (BslValue)currentMachine.ExecuteMethod(runnable, scriptMethodInfo, arguments);
+            return (BslValue)_machine.ExecuteMethod(runnable, scriptMethodInfo, arguments);
         }
     }
 }

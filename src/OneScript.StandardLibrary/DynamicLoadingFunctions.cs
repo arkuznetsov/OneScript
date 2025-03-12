@@ -46,7 +46,7 @@ namespace OneScript.StandardLibrary
             var compiler = _engine.GetCompilerService();
             try
             {
-                _engine.AttachedScriptsFactory.AttachByPath(compiler, path, typeName);
+                _engine.AttachedScriptsFactory.AttachByPath(compiler, path, typeName, _engine.NewProcess());
             }
             catch (SyntaxErrorException e)
             {

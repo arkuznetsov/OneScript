@@ -20,7 +20,7 @@ public class NativeExecutableProcess : IBslProcess
 
     public BslValue Run(BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments)
     {
-        return _executorProvider.GetInvokeDelegate()(target, module, method, arguments);
+        return _executorProvider.GetInvokeDelegate()(this, target, module, method, arguments);
     }
 
     public IServiceContainer Services { get; set; }
