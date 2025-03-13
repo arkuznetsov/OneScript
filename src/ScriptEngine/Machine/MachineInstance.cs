@@ -13,7 +13,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using OneScript.Commons;
 using OneScript.Compilation.Binding;
 using OneScript.Contexts;
@@ -61,8 +60,6 @@ namespace ScriptEngine.Machine
                 LazyThreadSafetyMode.None);
         }
 
-        public event EventHandler<MachineStoppedEventArgs> MachineStopped;
-
         public void Setup(IBslProcess process)
         {
             Cleanup();
@@ -72,6 +69,8 @@ namespace ScriptEngine.Machine
             _globalContexts = process.Services.Resolve<IRuntimeEnvironment>().AttachedContexts.Select(x => new AttachedContext(x))
                 .ToArray();
         }
+
+        internal IBslProcess Process => _process;
 
         public void UpdateGlobals() 
         {
@@ -173,9 +172,9 @@ namespace ScriptEngine.Machine
 
         #region Debug protocol methods
 
-        public void SetDebugMode(IBreakpointManager breakpointManager)
+        public void SetDebugMode(IThreadManager threadManager, IBreakpointManager breakpointManager)
         {
-            _stopManager ??= new MachineStopManager(this, breakpointManager);
+            _stopManager ??= new MachineStopManager(this, threadManager, breakpointManager);
         }
         
         public void UnsetDebugMode()
@@ -390,7 +389,7 @@ namespace ScriptEngine.Machine
 
                     var shouldRethrow = ShouldRethrowException(exc);
 
-                    if (MachineStopped != null && _stopManager != null)
+                    if (_stopManager != null)
                         if (_stopManager.Breakpoints.StopOnAnyException(exc.MessageWithoutCodeFragment) || 
                             shouldRethrow && _stopManager.Breakpoints.StopOnUncaughtException(exc.MessageWithoutCodeFragment))
                             EmitStopOnException();
@@ -1305,22 +1304,21 @@ namespace ScriptEngine.Machine
 
         private void EmitStopOnException()
         {
-            if (MachineStopped != null && _stopManager != null)
+            if (_stopManager != null)
             {
                 CreateFullCallstack();
                 var args = new MachineStoppedEventArgs(MachineStopReason.Exception, Environment.CurrentManagedThreadId, "");
-                MachineStopped?.Invoke(this, args);
+                _stopManager.NotifyStop(MachineStopReason.Exception, "");
             }
         }
 
         private void EmitStopEventIfNecessary()
         {
-            if (MachineStopped != null && _stopManager != null && _stopManager.ShouldStopAtThisLine(_module.Source.Location, _currentFrame))
+            if (_stopManager != null && _stopManager.ShouldStopAtThisLine(_module.Source.Location, _currentFrame))
             {
                 CreateFullCallstack();
-                var args = new MachineStoppedEventArgs(_stopManager.LastStopReason, Environment.CurrentManagedThreadId, _stopManager.LastStopErrorMessage);
+                _stopManager.NotifyStop();
                 _stopManager.LastStopErrorMessage = string.Empty;
-                MachineStopped?.Invoke(this, args);
             }
         }
 

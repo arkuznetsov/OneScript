@@ -92,7 +92,7 @@ namespace OneScript.Dynamic.Tests
 
         private IBslProcess GetProcess(IServiceContainer serviceContainer)
         {
-            return new NativeExecutableProcess
+            return new NativeExecutableTestProcess
             {
                 Services = serviceContainer
             };

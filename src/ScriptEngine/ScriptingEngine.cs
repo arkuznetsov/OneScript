@@ -177,7 +177,6 @@ namespace ScriptEngine
                 if (value != null)
                 {
                     ProduceExtraCode |= CodeGenerationFlags.DebugCode;
-                    MachineInstance.Current.SetDebugMode(_debugController.BreakpointManager);
                 }
             }
         }

@@ -29,5 +29,7 @@ namespace OneScript.Execution
             => throw new NotSupportedException();
 
         public IServiceContainer Services => throw new NotSupportedException();
+
+        public int VirtualThreadId => -1;
     }
 }

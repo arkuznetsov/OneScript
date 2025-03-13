@@ -33,5 +33,7 @@ namespace OneScript.Execution
         /// Сервисы текущего процесса
         /// </summary>
         public IServiceContainer Services { get; }
+        
+        public int VirtualThreadId { get; }
     }
 }

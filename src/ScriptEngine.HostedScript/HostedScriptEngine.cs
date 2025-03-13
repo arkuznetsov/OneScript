@@ -97,24 +97,23 @@ namespace ScriptEngine.HostedScript
             if (_engine.DebugController != null)
             {
                 _engine.DebugController.Init();
-                _engine.DebugController.AttachToThread();
                 _engine.DebugController.Wait();
             }
 
             var compilerSvc = GetCompilerService();
             DefineConstants(compilerSvc);
             IExecutableModule module;
+            var bslProcess = _engine.NewProcess();
             try
             {
-                // Компилируем точку входа отдельным процессом
-                module = compilerSvc.Compile(src, _engine.NewProcess());
+                module = compilerSvc.Compile(src, bslProcess);
             }
             catch (CompilerException)
             {
                 _engine.DebugController?.NotifyProcessExit(1);
                 throw;
             }
-            return InitProcess(host, module);
+            return InitProcess(bslProcess, host, module);
         }
 
         private void DefineConstants(ICompilerFrontend compilerSvc)
@@ -140,11 +139,11 @@ namespace ScriptEngine.HostedScript
             _globalCtx.InitInstance();
         }
 
-        private Process InitProcess(IHostApplication host, IExecutableModule module)
+        private Process InitProcess(IBslProcess bslProcess, IHostApplication host, IExecutableModule module)
         {
             Initialize();
             
-            var process = new Process(host, module, _engine);
+            var process = new Process(bslProcess, host, module, _engine);
             return process;
         }
 

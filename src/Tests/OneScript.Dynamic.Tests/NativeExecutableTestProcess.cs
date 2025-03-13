@@ -14,7 +14,7 @@ using ScriptEngine.Machine;
 
 namespace OneScript.Dynamic.Tests;
 
-public class NativeExecutableProcess : IBslProcess
+public class NativeExecutableTestProcess : IBslProcess
 {
     private readonly IExecutorProvider _executorProvider = new NativeExecutorProvider();
 
@@ -24,4 +24,6 @@ public class NativeExecutableProcess : IBslProcess
     }
 
     public IServiceContainer Services { get; set; }
+
+    public int VirtualThreadId => 0;
 }

@@ -35,19 +35,36 @@ namespace ScriptEngine.Machine
                 throw new InvalidOperationException();
             }
 
+            var mustNotifyExit = false;
+            var debugger = process.Services.TryResolve<IDebugController>();
             if (_machine == null)
             {
                 _machine = new MachineInstance();
                 _machine.Setup(process);
 
-                var debugger = process.Services.TryResolve<IDebugController>();
                 if (debugger != default)
                 {
-                    _machine.SetDebugMode(debugger.BreakpointManager);
+                    _machine.SetDebugMode(debugger.ThreadManager, debugger.BreakpointManager);
+                    mustNotifyExit = true;
                 }
             }
-            
-            return (BslValue)_machine.ExecuteMethod(runnable, scriptMethodInfo, arguments);
+
+            try
+            {
+                if (mustNotifyExit)
+                {
+                    debugger.ThreadManager.ThreadStarted(process.VirtualThreadId, _machine);
+                }
+                
+                return (BslValue)_machine.ExecuteMethod(runnable, scriptMethodInfo, arguments);
+            }
+            finally
+            {
+                if (mustNotifyExit)
+                {
+                    debugger.ThreadManager.ThreadExited(process.VirtualThreadId);
+                }
+            }
         }
     }
 }

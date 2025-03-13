@@ -294,23 +294,12 @@ namespace OneScript.StandardLibrary.Text
                 return;
 
             var process = _executionContext.Services.Resolve<IBslProcessFactory>().NewProcess();
-            var debugger = _executionContext.Services.TryResolve<IDebugController>();
-            debugger?.AttachToThread();
-
+            
             var cancelVar = Variable.Create(BslBooleanValue.False, "Cancel");
             var reference = Variable.CreateReference(cancelVar, "Cancel");
             var args = new IValue[] { reference };
 
-            try
-            {
-                // Вызываем обработчик. Исключение в обработчике никак отдельно не обрабатываем.
-                eventProcessor.HandleEvent(this, ConsoleCancelKeyEvent, args, process);
-            }
-            finally
-            {
-                debugger?.DetachFromThread();
-            }
-
+            eventProcessor.HandleEvent(this, ConsoleCancelKeyEvent, args, process);
             e.Cancel = reference.Value.AsBoolean();
         }
     }

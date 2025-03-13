@@ -21,15 +21,18 @@ namespace ScriptEngine
         private readonly ExecutionContext _context;
         private readonly IDictionary<Type, Invoker> _bslExecutorsByModule;
 
-        public BslProcess(ExecutionContext context, IEnumerable<IExecutorProvider> executorProviders)
+        public BslProcess(int id, ExecutionContext context, IEnumerable<IExecutorProvider> executorProviders)
         {
+            VirtualThreadId = id;
             _context = context;
             _bslExecutorsByModule =
                 executorProviders.ToDictionary(item => item.SupportedModuleType, item => item.GetInvokeDelegate());
         }
 
         public IServiceContainer Services => _context.Services;
-            
+
+        public int VirtualThreadId { get; }
+
         public BslValue Run(BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments)
         {
             return _bslExecutorsByModule[module.GetType()](this, target, module, method, arguments);

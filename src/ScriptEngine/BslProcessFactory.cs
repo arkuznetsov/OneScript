@@ -5,9 +5,10 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System.Threading;
 using OneScript.DependencyInjection;
 using OneScript.Execution;
-using ScriptEngine.Machine;
+using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
 
 namespace ScriptEngine
 {
@@ -17,6 +18,7 @@ namespace ScriptEngine
     public class BslProcessFactory : IBslProcessFactory
     {
         private readonly IServiceContainer _services;
+        private int _threadIdCounter = 0;
 
         public BslProcessFactory(IServiceContainer services)
         {
@@ -29,7 +31,7 @@ namespace ScriptEngine
             var context = _services.Resolve<ExecutionContext>();
             var executors = _services.ResolveEnumerable<IExecutorProvider>();
                 
-            return new BslProcess(context, executors);
+            return new BslProcess(Interlocked.Increment(ref _threadIdCounter), context, executors);
         }
     }
 }
