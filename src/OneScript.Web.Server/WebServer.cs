@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Diagnostics;
 using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
+using Microsoft.Extensions.Configuration;
 
 namespace OneScript.Web.Server
 {
@@ -91,6 +92,10 @@ namespace OneScript.Web.Server
             var builder = WebApplication.CreateBuilder(appOptions);
             builder.WebHost.ConfigureKestrel(options =>
             {
+                var kestrelSection = builder.Configuration.GetSection("Kestrel");
+                options.Configure(kestrelSection);
+                kestrelSection.Bind(options);
+
                 options.AllowSynchronousIO = true;
                 options.ListenAnyIP(Port);
             });
