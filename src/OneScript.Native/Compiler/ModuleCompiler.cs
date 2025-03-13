@@ -29,6 +29,7 @@ namespace OneScript.Native.Compiler
         private readonly ICompileTimeDependencyResolver _dependencyResolver;
         private DynamicModule _module;
         private readonly BslMethodInfoFactory<BslNativeMethodInfo> _methodsFactory;
+        private IBslProcess _compilerProcess;
 
         public ModuleCompiler(IErrorSink errors, IServiceContainer runtimeServices, ICompileTimeDependencyResolver dependencyResolver) : base(errors)
         {
@@ -43,6 +44,7 @@ namespace OneScript.Native.Compiler
             SymbolTable symbols, IBslProcess process)
         {
             InitContext(Errors, moduleInfo, symbols);
+            _compilerProcess = process;
             
             _module = new DynamicModule
             {
@@ -228,7 +230,7 @@ namespace OneScript.Native.Compiler
             
             try
             {
-                _dependencyResolver.Resolve(_module.Source, libName);
+                _dependencyResolver.Resolve(_module.Source, libName, _compilerProcess);
             }
             catch (DependencyResolveException e)
             {

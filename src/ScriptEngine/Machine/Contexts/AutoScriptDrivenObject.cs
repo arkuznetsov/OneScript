@@ -151,10 +151,10 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
         
-        public static IExecutableModule CompileModule(ICompilerFrontend compiler, SourceCode src, Type type)
+        public static IExecutableModule CompileModule(ICompilerFrontend compiler, SourceCode src, Type type, IBslProcess process)
         {
             compiler.FillSymbols(typeof(AutoScriptDrivenObject<T>));
-            return compiler.Compile(src, TODO, type);
+            return compiler.Compile(src, process, type);
         }
     }
 

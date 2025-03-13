@@ -39,6 +39,8 @@ namespace ScriptEngine.Compiler
         private readonly List<ForwardedMethodDecl> _forwardedMethods = new List<ForwardedMethodDecl>();
         private readonly Stack<NestedLoopInfo> _nestedLoops = new Stack<NestedLoopInfo>();
 
+        private IBslProcess _compilerProcess; 
+
         public StackMachineCodeGenerator(IErrorSink errorSink)
         {
             _errorSink = errorSink;
@@ -59,6 +61,7 @@ namespace ScriptEngine.Compiler
 
             _ctx = context;
             _sourceCode = source;
+            _compilerProcess = process;
 
             return CreateImageInternal(moduleNode);
         }
@@ -96,7 +99,7 @@ namespace ScriptEngine.Compiler
             
             try
             {
-                DependencyResolver.Resolve(_sourceCode, libName);
+                DependencyResolver.Resolve(_sourceCode, libName, _compilerProcess);
                 // TODO: решить проблему с импортами
                 // if(_ctx is ModuleCompilerContext moduleContext)
                 //     moduleContext.Update();

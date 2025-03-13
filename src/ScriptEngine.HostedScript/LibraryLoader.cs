@@ -36,18 +36,17 @@ namespace ScriptEngine.HostedScript
             public bool asClass;
         }
         
-        private LibraryLoader(
-            IExecutableModule moduleHandle,
+        private LibraryLoader(IExecutableModule moduleHandle,
             IRuntimeEnvironment env,
             ILibraryManager libManager,
-            ScriptingEngine engine): base(moduleHandle)
+            ScriptingEngine engine, IBslProcess process): base(moduleHandle)
         {
             _env = env;
             _libManager = libManager;
             _engine = engine;
             _customized = true;
             
-            _engine.InitializeSDO(this);
+            _engine.InitializeSDO(this, process);
 
         }
 
@@ -63,17 +62,17 @@ namespace ScriptEngine.HostedScript
         
         #region Static part
         
-        public static LibraryLoader Create(ScriptingEngine engine, string processingScript)
+        public static LibraryLoader Create(ScriptingEngine engine, string processingScript, IBslProcess process)
         {
             var compiler = engine.GetCompilerService();
             var code = engine.Loader.FromFile(processingScript);
-            var module = CompileModule(compiler, code, typeof(LibraryLoader));
+            var module = CompileModule(compiler, code, typeof(LibraryLoader), process);
             
-            return new LibraryLoader(module, engine.Environment, engine.LibraryManager, engine);
+            return new LibraryLoader(module, engine.Environment, engine.LibraryManager, engine, process);
 
         }
 
-        public static LibraryLoader Create(ScriptingEngine engine)
+        public static LibraryLoader Create(ScriptingEngine engine, IBslProcess process)
         {
             return new LibraryLoader(engine.Environment, engine.LibraryManager, engine);
         }
@@ -138,7 +137,7 @@ namespace ScriptEngine.HostedScript
             manager.RegisterTemplate(file, name, kind);
         }
 
-        public ExternalLibraryDef ProcessLibrary(string libraryPath)
+        public ExternalLibraryDef ProcessLibrary(string libraryPath, IBslProcess process)
         {
             bool success;
             _delayLoadedScripts.Clear();
@@ -159,7 +158,7 @@ namespace ScriptEngine.HostedScript
                                 $"en = 'Use CUSTOMIZED package loader for library {libraryPath}'")
                 );
 
-                success = CustomizedProcessing(libraryPath);
+                success = CustomizedProcessing(libraryPath, process);
             }
 
             if (!success)
@@ -167,12 +166,12 @@ namespace ScriptEngine.HostedScript
             
             
             var library = new ExternalLibraryDef(Path.GetFileName(libraryPath));
-            CompileDelayedModules(library);
+            CompileDelayedModules(library, process);
 
             return library;
         }
 
-        private bool CustomizedProcessing(string libraryPath)
+        private bool CustomizedProcessing(string libraryPath, IBslProcess process)
         {
             var libPathValue = ValueFactory.Create(libraryPath);
             var defaultLoading = Variable.Create(ValueFactory.Create(true), "$internalDefaultLoading");
@@ -184,7 +183,7 @@ namespace ScriptEngine.HostedScript
                 return DefaultProcessing(libraryPath);
             }
 
-            CallScriptMethod(eventIdx, new[] { libPathValue, defaultLoading, cancelLoading });
+            CallScriptMethod(eventIdx, new[] { libPathValue, defaultLoading, cancelLoading }, process);
 
             if (cancelLoading.AsBoolean()) // Отказ = Ложь
                 return false;
@@ -223,7 +222,7 @@ namespace ScriptEngine.HostedScript
             return hasFiles;
         }
 
-        private void CompileDelayedModules(ExternalLibraryDef library)
+        private void CompileDelayedModules(ExternalLibraryDef library, IBslProcess process)
         {
             foreach (var scriptFile in _delayLoadedScripts)
             {
@@ -239,26 +238,26 @@ namespace ScriptEngine.HostedScript
 
             library.Modules.ForEach(moduleFile =>
             {
-                var module = CompileFile(moduleFile.FilePath);
+                var module = CompileFile(moduleFile.FilePath, process);
                 moduleFile.Module = module;
             });
             
             library.Classes.ForEach(classFile =>
             {
-                var module = CompileFile(classFile.FilePath);
+                var module = CompileFile(classFile.FilePath, process);
                 _engine.AttachedScriptsFactory.RegisterTypeModule(classFile.Symbol, module);
                 classFile.Module = module;
             });
 
-            _libManager.InitExternalLibrary(_engine, library);
+            _libManager.InitExternalLibrary(_engine, library, process);
         }
 
-        private IExecutableModule CompileFile(string path)
+        private IExecutableModule CompileFile(string path, IBslProcess process)
         {
             var compiler = _engine.GetCompilerService();
             
             var source = _engine.Loader.FromFile(path);
-            var module = _engine.AttachedScriptsFactory.CompileModuleFromSource(compiler, source, null, TODO);
+            var module = _engine.AttachedScriptsFactory.CompileModuleFromSource(compiler, source, null, process);
 
             return module;
         }
