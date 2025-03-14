@@ -18,24 +18,46 @@ namespace ScriptEngine
 {
     internal class BslProcess : IBslProcess
     {
-        private readonly ExecutionContext _context;
+        private readonly IExecutorProvider[] _executorProviders;
         private readonly IDictionary<Type, Invoker> _bslExecutorsByModule;
 
+        private bool _isRunning;
+        
         public BslProcess(int id, ExecutionContext context, IEnumerable<IExecutorProvider> executorProviders)
         {
-            VirtualThreadId = id;
-            _context = context;
+            _executorProviders = executorProviders.ToArray();
             _bslExecutorsByModule =
-                executorProviders.ToDictionary(item => item.SupportedModuleType, item => item.GetInvokeDelegate());
+                _executorProviders.ToDictionary(item => item.SupportedModuleType, item => item.GetInvokeDelegate());
+            
+            VirtualThreadId = id;
+            Services = context.Services.CreateScope();
         }
 
-        public IServiceContainer Services => _context.Services;
+        public IServiceContainer Services { get; }
 
         public int VirtualThreadId { get; }
 
         public BslValue Run(BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments)
         {
-            return _bslExecutorsByModule[module.GetType()](this, target, module, method, arguments);
+            var notifyExecutors = !_isRunning;
+            if (notifyExecutors)
+            {
+                Array.ForEach(_executorProviders, e => e.BeforeProcessStart(this));
+            }
+
+            _isRunning = true;
+
+            try
+            {
+                return _bslExecutorsByModule[module.GetType()](this, target, module, method, arguments);
+            }
+            finally
+            {
+                if (notifyExecutors)
+                {
+                    Array.ForEach(_executorProviders, e => e.AfterProcessExit(this));
+                }
+            }
         }
     }
 }

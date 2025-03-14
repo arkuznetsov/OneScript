@@ -9,6 +9,7 @@ using System.Dynamic;
 using System.Linq;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using OneScript.Values;
 
@@ -147,6 +148,15 @@ namespace ScriptEngine.Machine.Contexts
         public virtual void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
         {
             throw new NotImplementedException();
+        }
+        
+        public virtual void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
+        {
+            CallAsProcedure(methodNumber, arguments);
+        }
+        public virtual void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
+        {
+            CallAsFunction(methodNumber, arguments, out retValue);
         }
 
         #endregion

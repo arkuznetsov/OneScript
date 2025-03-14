@@ -18,11 +18,20 @@ namespace OneScript.Execution
         IExecutableModule module,
         BslScriptMethodInfo method,
         IValue[] arguments);
-    
+
     public interface IExecutorProvider
     {
         Type SupportedModuleType { get; }
 
         Invoker GetInvokeDelegate();
+        
+        void BeforeProcessStart(IBslProcess process)
+        {
+        }
+
+        void AfterProcessExit(IBslProcess process)
+        {
+        }
+
     }
 }

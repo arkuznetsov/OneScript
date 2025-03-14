@@ -94,7 +94,7 @@ namespace ScriptEngine.HostedScript
         }
 
         [ContextMethod("ДобавитьМодуль", "AddModule")]
-        public void AddModule(string file, string moduleName)
+        public void AddModule(string file, string moduleName, IBslProcess process)
         {
             if (!Utils.IsValidIdentifier(moduleName))
                 throw RuntimeException.InvalidArgumentValue();
@@ -113,12 +113,12 @@ namespace ScriptEngine.HostedScript
                                 $"en = 'Load module ={moduleName}= in to context from file {file}'")    
                 );
                 _env.InjectGlobalProperty(null, moduleName, true);
-                MachineInstance.Current.UpdateGlobals();
+                process.Services.TryResolve<StackMachineProvider>()?.Machine.UpdateGlobals();
             }
             catch (InvalidOperationException e)
 	        {
                 // символ уже определен
-                throw new RuntimeException(String.Format("Невозможно загрузить модуль {0}. Такой символ уже определен.", moduleName), e);
+                throw new RuntimeException($"Невозможно загрузить модуль {moduleName}. Такой символ уже определен.", e);
             }
         }
 
@@ -149,7 +149,7 @@ namespace ScriptEngine.HostedScript
                                 $"en = 'Use NOT customized package loader for library {libraryPath}'")    
                 );
 
-                success = DefaultProcessing(libraryPath);
+                success = DefaultProcessing(libraryPath, process);
             }
             else
             {
@@ -180,7 +180,7 @@ namespace ScriptEngine.HostedScript
             int eventIdx = GetScriptMethod("ПриЗагрузкеБиблиотеки", "OnLibraryLoad");
             if(eventIdx == -1)
             {
-                return DefaultProcessing(libraryPath);
+                return DefaultProcessing(libraryPath, process);
             }
 
             CallScriptMethod(eventIdx, new[] { libPathValue, defaultLoading, cancelLoading }, process);
@@ -189,13 +189,13 @@ namespace ScriptEngine.HostedScript
                 return false;
 
             if (defaultLoading.AsBoolean())
-                return DefaultProcessing(libraryPath);
+                return DefaultProcessing(libraryPath, process);
 
             return true;
 
         }
 
-        private bool DefaultProcessing(string libraryPath)
+        private bool DefaultProcessing(string libraryPath, IBslProcess process)
         {
             var files = Directory.EnumerateFiles(libraryPath, "*.os")
                 .Select(x => new { Name = Path.GetFileNameWithoutExtension(x), Path = x })
@@ -216,7 +216,7 @@ namespace ScriptEngine.HostedScript
                                 $"en = 'Load library module from {file.Path}'")    
                 );
                 hasFiles = true;
-                AddModule(file.Path, file.Name);
+                AddModule(file.Path, file.Name, process);
             }
 
             return hasFiles;

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using ScriptEngine.Types;
 
@@ -123,11 +124,17 @@ namespace ScriptEngine.Machine.Contexts
         }
 
         public override void CallAsProcedure(int methodNumber, IValue[] arguments)
+            => CallAsProcedure(methodNumber, arguments, ForbiddenBslProcess.Instance);
+        
+        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
+            => CallAsFunction(methodNumber, arguments, out retValue, ForbiddenBslProcess.Instance);
+        
+        public override void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
         {
             CheckIfCallIsPossible(methodNumber, arguments);
             try
             {
-                _methods.GetCallableDelegate(methodNumber)((TInstance)this, arguments);
+                _methods.GetCallableDelegate(methodNumber)((TInstance)this, arguments, process);
             }
             catch (System.Reflection.TargetInvocationException e)
             {
@@ -136,12 +143,12 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
 
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
+        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
         {
             CheckIfCallIsPossible(methodNumber, arguments);
             try
             {
-                retValue = _methods.GetCallableDelegate(methodNumber)((TInstance)this, arguments);
+                retValue = _methods.GetCallableDelegate(methodNumber)((TInstance)this, arguments, process);
             }
             catch (System.Reflection.TargetInvocationException e)
             {

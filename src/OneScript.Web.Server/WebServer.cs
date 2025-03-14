@@ -15,7 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Diagnostics;
-using ExecutionContext = ScriptEngine.Machine.ExecutionContext;
+using OneScript.Execution;
 
 namespace OneScript.Web.Server
 {
@@ -112,6 +112,13 @@ namespace OneScript.Web.Server
             if (_useWebSockets)
                 _app.UseWebSockets();
 
+            _app.Use((context, next) =>
+            {
+                var process = _executionContext.Services.Resolve<IBslProcessFactory>().NewProcess();
+                context.Items.Add(typeof(IBslProcess), process);
+                return next();
+            });
+
             _middlewares.ForEach(middleware =>
             {
                 _app.Use((context, next) =>
@@ -122,19 +129,10 @@ namespace OneScript.Web.Server
                         new RequestDelegateWrapper(next)
                     };
 
+                    var process = (IBslProcess)context.Items[typeof(IBslProcess)];
+                    
                     var methodNumber = middleware.Target.GetMethodNumber(middleware.MethodName);
-
-                    var debugController = _executionContext.Services.TryResolve<IDebugController>();
-                    debugController?.AttachToThread();
-
-                    try
-                    {
-                        middleware.Target.CallAsProcedure(methodNumber, args);
-                    }
-                    finally
-                    {
-                        debugController?.DetachFromThread();
-                    }
+                    middleware.Target.CallAsProcedure(methodNumber, args, process);
 
                     return Task.CompletedTask;
                 });
@@ -168,16 +166,14 @@ namespace OneScript.Web.Server
                         new HttpContextWrapper(_executionContext.TypeManager, context),
                     };
 
-                    var methodNumber = _exceptionHandler?.Target.GetMethodNumber(_exceptionHandler?.MethodName);
+                    var methodNumber = _exceptionHandler?.Target.GetMethodNumber(_exceptionHandler?.MethodName)
+                        ?? throw new InvalidOperationException();
 
-                    var debugController = _executionContext.Services.TryResolve<IDebugController>();
-
-                    // Thread unsafe call!
-                    debugController?.AttachToThread();
+                    var process = _executionContext.Services.Resolve<IBslProcessFactory>().NewProcess();
 
                     try
                     {
-                        _exceptionHandler?.Target.CallAsProcedure((int)methodNumber, args);
+                        _exceptionHandler?.Target.CallAsProcedure(methodNumber, args, process);
                     }
                     catch (Exception ex)
                     {
@@ -186,12 +182,7 @@ namespace OneScript.Web.Server
                         else
                             throw;
                     }
-                    finally
-                    {
-                        // Thread unsafe call!
-                        debugController?.DetachFromThread();
-                    }
-
+                    
                     return Task.CompletedTask;
                 });
             });

@@ -56,6 +56,8 @@ namespace ScriptEngine.Hosting
             services.RegisterSingleton<IExceptionInfoFactory, ExceptionInfoFactory>();
             services.RegisterSingleton<IBslProcessFactory, BslProcessFactory>();
 
+            services.RegisterScoped<StackMachineProvider>();
+            
             services.Register<IDependencyResolver, NullDependencyResolver>();
             
             services.RegisterEnumerable<IExecutorProvider, StackMachineExecutor>();

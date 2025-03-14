@@ -23,6 +23,27 @@ namespace ScriptEngine.Machine
             return Executor;
         }
 
+        public void BeforeProcessStart(IBslProcess process)
+        {
+            _machine = new MachineInstance();
+            _machine.Setup(process);
+            
+            var debugger = process.Services.TryResolve<IDebugController>();
+            if (debugger != default)
+            {
+                _machine.SetDebugMode(debugger.ThreadManager, debugger.BreakpointManager);
+                debugger.ThreadManager.ThreadStarted(process.VirtualThreadId, _machine);
+            }
+
+            process.Services.Resolve<StackMachineProvider>().Machine = _machine;
+        }
+
+        public void AfterProcessExit(IBslProcess process)
+        {
+            var debugger = process.Services.TryResolve<IDebugController>();
+            debugger?.ThreadManager.ThreadExited(process.VirtualThreadId);
+        }
+
         private BslValue Executor(IBslProcess process, BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments)
         {
             if (!(method is MachineMethodInfo scriptMethodInfo))
@@ -35,36 +56,12 @@ namespace ScriptEngine.Machine
                 throw new InvalidOperationException();
             }
 
-            var mustNotifyExit = false;
-            var debugger = process.Services.TryResolve<IDebugController>();
-            if (_machine == null)
+            if (_machine?.Process == default)
             {
-                _machine = new MachineInstance();
-                _machine.Setup(process);
-
-                if (debugger != default)
-                {
-                    _machine.SetDebugMode(debugger.ThreadManager, debugger.BreakpointManager);
-                    mustNotifyExit = true;
-                }
+                throw new InvalidOperationException("Machine is not initialized by process");
             }
-
-            try
-            {
-                if (mustNotifyExit)
-                {
-                    debugger.ThreadManager.ThreadStarted(process.VirtualThreadId, _machine);
-                }
-                
-                return (BslValue)_machine.ExecuteMethod(runnable, scriptMethodInfo, arguments);
-            }
-            finally
-            {
-                if (mustNotifyExit)
-                {
-                    debugger.ThreadManager.ThreadExited(process.VirtualThreadId);
-                }
-            }
+            
+            return (BslValue)_machine.ExecuteMethod(runnable, scriptMethodInfo, arguments);
         }
     }
 }
