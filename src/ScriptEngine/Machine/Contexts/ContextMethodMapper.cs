@@ -120,7 +120,7 @@ namespace ScriptEngine.Machine.Contexts
                 _method = new Lazy<ContextCallableDelegate<TInstance>>(() =>
                 {
                     var isFunc = target.ReturnType != typeof(void);
-                    return isFunc ? CreateFunction(target) : CreateProcedure(target);
+                    return isFunc ? CreateFunction(_clrMethod) : CreateProcedure(_clrMethod);
                 });
             }
 
@@ -173,12 +173,11 @@ namespace ScriptEngine.Machine.Contexts
                 return scriptMethInfo;
             }
 
-            private static ContextCallableDelegate<TInstance> CreateFunction(MethodInfo target)
+            private static ContextCallableDelegate<TInstance> CreateFunction(ContextMethodInfo target)
             {
                 var methodCall = MethodCallExpression(target, out var instParam, out var argsParam, out var processParam);
 
                 var convertRetMethod = _genConvertReturnMethod.MakeGenericMethod(target.ReturnType);
-                //System.Diagnostics.Debug.Assert(convertRetMethod != null);
                 var convertReturnCall = Expression.Call(convertRetMethod, methodCall);
                 var body = convertReturnCall;
 
@@ -187,7 +186,7 @@ namespace ScriptEngine.Machine.Contexts
                 return l.Compile();
 
             }
-            private static ContextCallableDelegate<TInstance> CreateProcedure(MethodInfo target)
+            private static ContextCallableDelegate<TInstance> CreateProcedure(ContextMethodInfo target)
             {
                 var methodCall = MethodCallExpression(target, out var instParam, out var argsParam, out var processParam);
                 var returnLabel = Expression.Label(typeof(IValue));
@@ -209,7 +208,7 @@ namespace ScriptEngine.Machine.Contexts
             }
 
             private static InvocationExpression MethodCallExpression(
-                MethodInfo target, 
+                ContextMethodInfo contextMethod, 
                 out ParameterExpression instParam,
                 out ParameterExpression argsParam,
                 out ParameterExpression processParam)
@@ -224,11 +223,12 @@ namespace ScriptEngine.Machine.Contexts
                 //        ConvertParam<TypeOfArgN>(args[i], defaults[i]));
                 // }
 
+                var target = contextMethod.GetWrappedMethod();
                 var methodClojure = CreateDelegateExpr(target);
 
                 instParam = Expression.Parameter(typeof(TInstance), "inst");
                 argsParam = Expression.Parameter(typeof(IValue[]), "args");
-                processParam = default;
+                processParam = Expression.Parameter(typeof(IBslProcess), "process");
 
                 var argsPass = new List<Expression>();
                 argsPass.Add(instParam);
@@ -237,14 +237,10 @@ namespace ScriptEngine.Machine.Contexts
                 object[] defaultValues = new object[parameters.Length];
                 var defaultsClojure = Expression.Constant(defaultValues);
 
-                for (int i = 0; i < parameters.Length; i++)
+                var argsLen = contextMethod.InjectsProcess ? parameters.Length - 1 : parameters.Length;
+                
+                for (int i = 0; i < argsLen; i++)
                 {
-                    if (i == parameters.Length - 1 && parameters[i].ParameterType == typeof(IBslProcess))
-                    {
-                        processParam = Expression.Parameter(typeof(IBslProcess), "process");
-                        continue;
-                    }
-                    
                     var convertMethod = _genConvertParamMethod.MakeGenericMethod(parameters[i].ParameterType);
 
                     if (parameters[i].HasDefaultValue)

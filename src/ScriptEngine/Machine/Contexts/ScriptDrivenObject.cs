@@ -117,6 +117,9 @@ namespace ScriptEngine.Machine.Contexts
 
         protected virtual void OnInstanceCreation(IBslProcess process)
         {
+            if (_module.ModuleBody == null)
+                return;
+            
             process.Run(this, _module, _module.ModuleBody, Array.Empty<IValue>());
         }
         

@@ -48,12 +48,12 @@ namespace ScriptEngine.Machine
         {
             if (!(method is MachineMethodInfo scriptMethodInfo))
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Method has type {method?.GetType()} but expected {typeof(MachineMethodInfo)}");
             }
             
             if (!(target is IRunnable runnable))
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Target must implement {typeof(IRunnable)}");
             }
 
             if (_machine?.Process == default)
