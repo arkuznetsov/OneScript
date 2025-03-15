@@ -8,6 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Linq;
 using OneScript.Contexts;
+using OneScript.Execution;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -20,7 +21,7 @@ namespace OneScript.StandardLibrary
     [ContextClass("Действие","Action")]
     public class DelegateAction : ContextIValueImpl
     {
-        private readonly Func<IValue[], IValue> _action;
+        private readonly Func<IBslProcess, IValue[], IValue> _action;
         private const string MethodName_Ru = "Выполнить";
         private const string MethodName_En = "Execute";
 
@@ -36,14 +37,14 @@ namespace OneScript.StandardLibrary
             ExecuteMethodInfo = builder.Build();
         }
         
-        public DelegateAction(Func<IValue[], IValue> action)
+        public DelegateAction(Func<IBslProcess, IValue[], IValue> action)
         {
             _action = action;
         }
 
-        public DelegateAction(Func<BslValue[], BslValue> action)
+        public DelegateAction(Func<IBslProcess, BslValue[], BslValue> action)
         {
-            _action = parameters => action( parameters.Select(x=>x.GetRawValue())
+            _action = (process, parameters) => action(process, parameters.Select(x=>x.GetRawValue())
                 .Cast<BslValue>().ToArray() );
         }
         
@@ -72,12 +73,22 @@ namespace OneScript.StandardLibrary
 
         public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
         {
-            retValue = _action(arguments);
+            retValue = _action(ForbiddenBslProcess.Instance, arguments);
         }
 
         public override void CallAsProcedure(int methodNumber, IValue[] arguments)
         {
-            _action(arguments);
+            _action(ForbiddenBslProcess.Instance, arguments);
+        }
+        
+        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
+        {
+            retValue = _action(process, arguments);
+        }
+
+        public override void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
+        {
+            _action(process, arguments);
         }
 
         [ScriptConstructor]
@@ -85,9 +96,9 @@ namespace OneScript.StandardLibrary
         {
             var method = target.GetMethodNumber(methodName);
 
-            Func<IValue[], IValue> action = (parameters) =>
+            Func<IBslProcess, IValue[], IValue> action = (process, parameters) =>
             {
-                target.CallAsFunction(method, parameters, out var retVal);
+                target.CallAsFunction(method, parameters, out var retVal, process);
                 return retVal;
             };
             

@@ -41,7 +41,7 @@ namespace OneScript.Native.Compiler
         private readonly Stack<Expression> _statementBuildParts = new Stack<Expression>();
         private BslParameterInfo[] _declaredParameters;
         private ParameterExpression _thisParameter;
-        private readonly ParameterExpression _processParameter = Expression.Parameter(typeof(IBslProcess));
+        private readonly ParameterExpression _processParameter = Expression.Parameter(typeof(IBslProcess), "bslProcess");
         
         private readonly BinaryOperationCompiler _binaryOperationCompiler = new BinaryOperationCompiler();
         private ITypeManager _typeManager;
@@ -122,10 +122,10 @@ namespace OneScript.Native.Compiler
                 Expression.Constant(BslUndefinedValue.Instance)));
 
             var parameters = new List<ParameterExpression>();
+            parameters.Add(_processParameter);
+            
             if (_method.IsInstance)
                 parameters.Add(_thisParameter);
-            
-            parameters.Add(_processParameter);
             
             parameters.AddRange(_localVariables.Take(_declaredParameters.Length));
             var blockVariables = _localVariables.Skip(_declaredParameters.Length);
@@ -1262,6 +1262,7 @@ namespace OneScript.Native.Compiler
             {
                 return ExpressionHelpers.InvokeBslNativeMethod(
                     nativeMethod,
+                    _processParameter,
                     IsModuleScope(binding.ScopeNumber) ? _thisParameter : GetMethodBinding(binding, symbol),
                     args);
             }

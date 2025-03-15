@@ -652,7 +652,7 @@ namespace OneScript.Native.Compiler
             return Expression.Call(null, method, target, ConvertToBslValue(index), ConvertToBslValue(value));
         }
         
-        public static Expression InvokeBslNativeMethod(BslNativeMethodInfo nativeMethod, object target, List<Expression> args)
+        public static Expression InvokeBslNativeMethod(BslNativeMethodInfo nativeMethod, ParameterExpression process, object target, List<Expression> args)
         {
             var helperMethod = OperationsCache.GetOrAdd(
                 typeof(CallableMethod),
@@ -663,6 +663,7 @@ namespace OneScript.Native.Compiler
             return Expression.Call(
                 Expression.Constant(nativeMethod.GetCallable()),
                 helperMethod,
+                process,
                 nativeMethod.IsInstance ?
                     InvocationTargetExpression(target) :
                     Expression.Constant(null, typeof(object)),

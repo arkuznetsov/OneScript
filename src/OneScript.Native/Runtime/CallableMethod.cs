@@ -95,10 +95,10 @@ namespace OneScript.Native.Runtime
             var processParam = Expression.Parameter(typeof(IBslProcess));
             var convertedAccessList = new List<Expression>();
 
+            convertedAccessList.Add(processParam);
+            
             if (method.IsInstance)
                 convertedAccessList.Add(targetParam);
-            
-            convertedAccessList.Add(processParam);
             
             int index = 0;
             foreach (var parameter in method.GetBslParameters())
