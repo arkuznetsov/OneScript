@@ -131,15 +131,15 @@ namespace ScriptEngine.Machine.Contexts
                 var parameters = target.GetParameters();
                 var isFunc = target.ReturnType != typeof(void);
                 
-                var argNum = hasProcessParam ? parameters.Length - 1 : parameters.Length;
+                var (startIndex, argNum) = hasProcessParam ? (1, parameters.Length - 1) : (0, parameters.Length);
 
                 var paramDefs = new ParameterDefinition[argNum];
-                for (int i = 0; i < argNum; i++)
+                for (int i = 0, j = startIndex; i < argNum; i++, j++)
                 {
                     var pd = new ParameterDefinition();
-                    if (parameters[i].GetCustomAttributes(typeof(ByRefAttribute), false).Length != 0)
+                    if (parameters[j].GetCustomAttributes(typeof(ByRefAttribute), false).Length != 0)
                     {
-                        if (parameters[i].ParameterType != typeof(IVariable))
+                        if (parameters[j].ParameterType != typeof(IVariable))
                         {
                             throw new InvalidOperationException("Attribute ByRef can be applied only on IVariable parameters");
                         }
@@ -150,7 +150,7 @@ namespace ScriptEngine.Machine.Contexts
                         pd.IsByValue = true;
                     }
 
-                    if (parameters[i].IsOptional)
+                    if (parameters[j].IsOptional)
                     {
                         pd.HasDefaultValue = true;
                         pd.DefaultValueIndex = ParameterDefinition.UNDEFINED_VALUE_INDEX;

@@ -437,6 +437,38 @@ namespace OneScript.Dynamic.Tests
             sdo.Initialize(GetProcess(testServices.CreateContainer()));
         }
 
+        [Fact(Skip = "Выходные параметры не поддерживаются нативной средой")]
+        public void NativeSdoToStringOverride()
+        {
+            var code = @"//#native
+
+            Процедура ОбработкаПолученияПредставления(Представление, СтандартнаяОбработка)
+                СтандартнаяОбработка = Ложь;
+                Представление = ""Привет""	
+            КонецПроцедуры";
+            
+            var symbols = new SymbolTable();
+
+            testServices.UseNativeRuntime();
+            var serviceContainer = testServices.CreateContainer();
+            var discoverer = serviceContainer.Resolve<ContextDiscoverer>();
+            discoverer.DiscoverClasses(typeof(RegExpImpl).Assembly);
+            var module = CreateModule(code, serviceContainer, symbols);
+
+            var sdo = new UserScriptContextInstance(module,
+                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+            sdo.InitOwnData();
+            var process = GetProcess(testServices.CreateContainer());
+            sdo.Initialize(process);
+            sdo.ConvertToString(process).Should().Be("Привет");
+        }
+        
+        [Fact(Skip = "Выходные параметры не поддерживаются нативной средой")]
+        public void NativeSdoConcatenationWithToStringOverride()
+        {
+            Assert.True(false);
+        }
+
         private DynamicModule CreateModule(string code) => CreateModule(code, testServices.CreateContainer(), new SymbolTable());
         
         private DynamicModule CreateModule(string code, IServiceContainer services, SymbolTable symbols)

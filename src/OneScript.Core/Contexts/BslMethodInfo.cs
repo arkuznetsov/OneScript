@@ -57,6 +57,8 @@ namespace OneScript.Contexts
         {
             return Annotations.IsDefined(attributeType, inherit);
         }
+        
+        public abstract BslParameterInfo[] GetBslParameters();
 
         public override string ToString()
         {

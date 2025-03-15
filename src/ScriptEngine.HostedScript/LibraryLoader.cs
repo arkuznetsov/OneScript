@@ -94,7 +94,7 @@ namespace ScriptEngine.HostedScript
         }
 
         [ContextMethod("ДобавитьМодуль", "AddModule")]
-        public void AddModule(string file, string moduleName, IBslProcess process)
+        public void AddModule(IBslProcess process, string file, string moduleName)
         {
             if (!Utils.IsValidIdentifier(moduleName))
                 throw RuntimeException.InvalidArgumentValue();
@@ -216,7 +216,7 @@ namespace ScriptEngine.HostedScript
                                 $"en = 'Load library module from {file.Path}'")    
                 );
                 hasFiles = true;
-                AddModule(file.Path, file.Name, process);
+                AddModule(process, file.Path, file.Name);
             }
 
             return hasFiles;

@@ -69,14 +69,15 @@ namespace OneScript.StandardLibrary
         /// Загруженный сценарий возвращается, как самостоятельный объект. 
         /// Экспортные свойства и методы скрипта доступны для вызова.
         /// </summary>
-        /// <param name="code">Текст сценария</param>
         /// <param name="process"></param>
+        /// <param name="code">Текст сценария</param>
         /// <param name="externalContext">Структура. Глобальные свойства, которые будут инжектированы в область видимости загружаемого скрипта. (Необязательный)</param>
         /// <example>
         /// Контекст = Новый Структура("ЧислоПи", 3.1415); // 4 знака хватит всем
         /// ЗагрузитьСценарийИзСтроки("Сообщить(ЧислоПи);", Контекст);</example>
         [ContextMethod("ЗагрузитьСценарийИзСтроки", "LoadScriptFromString")]
-        public IRuntimeContextInstance LoadScriptFromString(string code, IBslProcess process,
+        public IRuntimeContextInstance LoadScriptFromString(IBslProcess process,
+            string code,
             StructureImpl externalContext = null)
         {
             var compiler = _engine.GetCompilerService();

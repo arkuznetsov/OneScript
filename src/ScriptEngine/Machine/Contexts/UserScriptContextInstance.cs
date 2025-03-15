@@ -57,7 +57,6 @@ namespace ScriptEngine.Machine.Contexts
             {
                 ConstructorParams = Array.Empty<IValue>();
             }
-
         }
         
         private IValue[] ConstructorParams { get; }

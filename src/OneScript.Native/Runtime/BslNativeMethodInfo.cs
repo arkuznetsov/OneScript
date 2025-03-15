@@ -51,9 +51,13 @@ namespace OneScript.Native.Runtime
                     else
                         throw RuntimeException.MissedArgument();
                 }
-                else
+                else if(param is BslValue bslVal)
                 {
-                    bslArguments[i] = (BslValue)param;
+                    bslArguments[i] = bslVal;
+                }
+                else if (param is IVariable variable)
+                {
+                    bslArguments[i] = variable.BslValue;
                 }
             }
 

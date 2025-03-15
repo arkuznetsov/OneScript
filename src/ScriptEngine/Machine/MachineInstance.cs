@@ -958,12 +958,12 @@ namespace ScriptEngine.Machine
  
             if (asFunc)
             {
-                instance.CallAsFunction(index, realArgs, out IValue retVal);
+                instance.CallAsFunction(index, realArgs, out IValue retVal, _process);
                 _operationStack.Push(retVal);
             }
             else
             {
-                instance.CallAsProcedure(index, realArgs);
+                instance.CallAsProcedure(index, realArgs, _process);
             }
             NextInstruction();
         }
