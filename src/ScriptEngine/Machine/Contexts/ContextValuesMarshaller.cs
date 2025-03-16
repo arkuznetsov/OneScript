@@ -5,10 +5,8 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
-using System.Linq;
 using OneScript.Commons;
 using OneScript.Contexts;
-using OneScript.Contexts.Enums;
 using OneScript.Exceptions;
 using OneScript.Values;
 
@@ -176,7 +174,7 @@ namespace ScriptEngine.Machine.Contexts
 
             if (type.IsEnum)
             {
-                throw new InvalidOperationException("Automatic conversion of simple clr enums to IValue is temporary dropped");
+                return ConvertEnum(objParam, type);
             }
             else if (typeof(IRuntimeContextInstance).IsAssignableFrom(type))
             {
@@ -194,6 +192,11 @@ namespace ScriptEngine.Machine.Contexts
             {
                 throw ValueMarshallingException.TypeNotSupported(type);
             }
+        }
+
+        private static IValue ConvertEnum(object objParam, Type type)
+        {
+            return SimpleEnumsMarshaller.ConvertEnum(objParam, type);
         }
 
         public static T ConvertWrappedEnum<T>(IValue enumeration, T defValue) where T : struct
