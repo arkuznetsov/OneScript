@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 
 using System.Collections.Generic;
 using OneScript.Contexts;
+using OneScript.Execution;
 using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -29,6 +30,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             return Owner().Columns.Count();
         }
+        
+        public int Count(IBslProcess process) => Count();
         
         /// <summary>
         /// Владелец строки

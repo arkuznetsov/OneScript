@@ -394,12 +394,12 @@ namespace ScriptEngine.Machine.Contexts
 
         public override void CallAsProcedure(int methodNumber, IValue[] arguments)
         {
-            throw new NotSupportedException("Implementation requires IBslProcess");
+            throw BslProcessRequired();
         }
 
         public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
         {
-            throw new NotSupportedException("Implementation requires IBslProcess");
+            throw BslProcessRequired();
         }
 
         public override int GetPropCount()
@@ -433,6 +433,11 @@ namespace ScriptEngine.Machine.Contexts
                 return index;
             else
                 throw PropertyAccessException.PropNotFoundException(name);
+        }
+
+        protected static Exception BslProcessRequired()
+        {
+            return new NotSupportedException("Implementation requires IBslProcess");
         }
     }
 }

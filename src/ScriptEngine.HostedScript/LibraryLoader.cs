@@ -113,7 +113,7 @@ namespace ScriptEngine.HostedScript
                                 $"en = 'Load module ={moduleName}= in to context from file {file}'")    
                 );
                 _env.InjectGlobalProperty(null, moduleName, true);
-                process.Services.TryResolve<StackMachineProvider>()?.Machine.UpdateGlobals();
+                process.Services.TryResolve<StackMachineProvider>()?.Machine?.UpdateGlobals();
             }
             catch (InvalidOperationException e)
 	        {

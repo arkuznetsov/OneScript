@@ -66,6 +66,7 @@ namespace ScriptEngine.Machine
 
             _process = process;
             _codeStatCollector = process.Services.TryResolve<ICodeStatCollector>();
+            _typeManager = process.Services.Resolve<ITypeManager>();
             _globalContexts = process.Services.Resolve<IRuntimeEnvironment>().AttachedContexts.Select(x => new AttachedContext(x))
                 .ToArray();
         }
@@ -892,7 +893,7 @@ namespace ScriptEngine.Machine
 
             IValue[] argValues = PopArguments();
 
-            var definedParameters = methodSignature.GetParameters();
+            var definedParameters = methodSignature.GetBslParameters();
             bool needsDiscarding;
 
             if (scope == _currentFrame.ThisScope) // local call
@@ -997,7 +998,7 @@ namespace ScriptEngine.Machine
         {
             PrepareContextCallArguments(arg, out IRuntimeContextInstance context, out int methodId, out IValue[] argValues);
 
-            context.CallAsProcedure(methodId, argValues);
+            context.CallAsProcedure(methodId, argValues, _process);
             NextInstruction();
         }
 
@@ -1010,7 +1011,7 @@ namespace ScriptEngine.Machine
                 throw RuntimeException.UseProcAsAFunction();
             }
 
-            context.CallAsFunction(methodId, argValues, out IValue retVal);
+            context.CallAsFunction(methodId, argValues, out IValue retVal, _process);
             _operationStack.Push(retVal);
             NextInstruction();
         }
@@ -1040,7 +1041,7 @@ namespace ScriptEngine.Machine
             else
             {
                 var methodInfo = context.GetMethodInfo(methodId);
-                var methodParams = methodInfo.GetParameters();
+                var methodParams = methodInfo.GetBslParameters();
 
                 if (argCount > methodParams.Length)
                     throw RuntimeException.TooManyArgumentsPassed();
@@ -1176,7 +1177,8 @@ namespace ScriptEngine.Machine
             {
                 TypeName = typeName,
                 TypeManager = _typeManager,
-                Services = _process.Services
+                Services = _process.Services,
+                CurrentProcess = _process
             };
             
             var instance = (IValue)factory.Activate(context, argValues);
@@ -1194,7 +1196,7 @@ namespace ScriptEngine.Machine
             var rci = collection.AsObject();
             if (rci is ICollectionContext<IValue> context)
             {
-                var iterator = context.GetManagedIterator();
+                var iterator = new CollectionEnumerator(context.GetEnumerator(_process));
                 _currentFrame.LocalFrameStack.Push(iterator);
                 NextInstruction();
 
@@ -2386,7 +2388,8 @@ namespace ScriptEngine.Machine
             {
                 TypeName = typeName,
                 TypeManager = _typeManager,
-                Services = _process.Services
+                Services = _process.Services,
+                CurrentProcess = _process
             };
 
             var instance = factory.Activate(context, argValues);

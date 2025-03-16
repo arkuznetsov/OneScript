@@ -11,6 +11,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
@@ -114,7 +115,7 @@ namespace OneScript.StandardLibrary
         /// <param name="inValue"></param>
         /// <returns></returns>
         [ContextMethod("ЗначениеЗаполнено","ValueIsFilled")]
-        public bool ValueIsFilled(IValue inValue)
+        public bool ValueIsFilled(IBslProcess process, IValue inValue)
         {
             var value = inValue?.GetRawValue();
             if (value == null)
@@ -129,7 +130,7 @@ namespace OneScript.StandardLibrary
                 case BslStringValue v:
                     return !string.IsNullOrWhiteSpace(v.ToString());
                 case ICollectionContext<IValue> collection:
-                    return collection.Count() != 0;
+                    return collection.Count(process) != 0;
                 case BslNumericValue v:
                     return v != 0;
                 case BslUndefinedValue _:

@@ -11,7 +11,6 @@ using System.Linq;
 using System.Reflection;
 using OneScript.Commons;
 using OneScript.Execution;
-using OneScript.Values;
 
 namespace OneScript.Contexts
 {
@@ -22,8 +21,6 @@ namespace OneScript.Contexts
     {
         private readonly MethodInfo _realMethod;
         private readonly ContextMethodAttribute _scriptMark;
-
-        private readonly Lazy<BslParameterInfo[]> _bslParameters;
 
         public ContextMethodInfo(MethodInfo realMethod)
         {
@@ -37,9 +34,6 @@ namespace OneScript.Contexts
             {
                 throw new ArgumentException("Method is not marked with ContextMethodAttribute", e);
             }
-
-            _bslParameters =
-                new Lazy<BslParameterInfo[]>(() => _realMethod.GetParameters().Select(MapRealParameter).ToArray());
         }
 
         public ContextMethodInfo(MethodInfo realMethod, ContextMethodAttribute binding)
@@ -75,19 +69,6 @@ namespace OneScript.Contexts
         public override ParameterInfo[] GetParameters()
         {
             return _realMethod.GetParameters();
-        }
-
-        public override BslParameterInfo[] GetBslParameters() => _bslParameters.Value;
-
-        private BslParameterInfo MapRealParameter(ParameterInfo parameterInfo)
-        {
-            var builder = new BslParameterBuilder();
-            return builder.Name(parameterInfo.Name)
-                .ParameterType(parameterInfo.ParameterType)
-                .ByValue(parameterInfo.GetCustomAttribute<ByRefAttribute>() != null)
-                .DefaultValue(BslUndefinedValue
-                    .Instance) // TODO: сейчас этого достаточно для установки флага HasDefaultValue но вообще, это плохо
-                .Build();
         }
 
         public override MethodImplAttributes GetMethodImplementationFlags()

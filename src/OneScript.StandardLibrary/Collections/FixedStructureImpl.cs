@@ -8,6 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System.Collections.Generic;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -126,6 +127,8 @@ namespace OneScript.StandardLibrary.Collections
         {
         	return _structure.Count();
         }
+        
+        public int Count(IBslProcess process) => Count();
 
         #endregion
 

@@ -91,7 +91,7 @@ namespace OneScript.Contexts
         // ReSharper disable once CoVariantArrayConversion
         public override ParameterInfo[] GetParameters() => CopyParams();
         
-        public override BslParameterInfo[] GetBslParameters() => CopyParams();
+        public BslParameterInfo[] GetBslParameters() => CopyParams();
 
         private BslParameterInfo[] CopyParams()
         {

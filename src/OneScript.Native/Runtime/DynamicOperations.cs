@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using OneScript.Contexts;
 using OneScript.DependencyInjection;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Language;
 using OneScript.Localization;
 using OneScript.Types;
@@ -142,7 +143,7 @@ namespace OneScript.Native.Runtime
             };
         }
         
-        public static BslValue ConstructorCall(ITypeManager typeManager, IServiceContainer services, string typeName, BslValue[] args)
+        public static BslValue ConstructorCall(ITypeManager typeManager, IServiceContainer services, string typeName, IBslProcess process, BslValue[] args)
         {
             var type = typeManager.GetTypeByName(typeName);
             var factory = typeManager.GetFactoryFor(type);
@@ -150,17 +151,18 @@ namespace OneScript.Native.Runtime
             {
                 TypeManager = typeManager,
                 Services = services,
-                TypeName = type.Name
+                TypeName = type.Name,
+                CurrentProcess = process
             };
             
             return (BslValue) factory.Activate(context, args.Cast<IValue>().ToArray());
         }
         
         // TODO: Сделать прямой маппинг на статические фабрики-методы, а не через Factory.Activate
-        public static T StrictConstructorCall<T>(ITypeManager typeManager, IServiceContainer services, string typeName, BslValue[] args)
+        public static T StrictConstructorCall<T>(ITypeManager typeManager, IServiceContainer services, string typeName, IBslProcess process, BslValue[] args)
             where T : BslValue
         {
-            return (T) ConstructorCall(typeManager, services, typeName, args);
+            return (T) ConstructorCall(typeManager, services, typeName, process, args);
         }
 
         public static BslObjectValue GetExceptionInfo(IExceptionInfoFactory factory, Exception e)
@@ -203,10 +205,10 @@ namespace OneScript.Native.Runtime
             return (BslValue)context.GetPropValue(propIndex);
         }
 
-        public static BslValue CallContextMethod(IRuntimeContextInstance instance, string methodName, BslValue[] arguments)
+        public static BslValue CallContextMethod(IRuntimeContextInstance instance, string methodName, IBslProcess process, BslValue[] arguments)
         {
             var idx = instance.GetMethodNumber(methodName);
-            instance.CallAsFunction(idx, arguments, out var result);
+            instance.CallAsFunction(idx, arguments, out var result, process);
             return (BslValue)result;
         }
     }

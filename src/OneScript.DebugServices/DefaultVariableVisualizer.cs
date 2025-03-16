@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using OneScript.Contexts;
 using OneScript.DebugProtocol;
+using OneScript.Execution;
 using ScriptEngine.Machine;
 using Variable = OneScript.DebugProtocol.Variable;
 using MachineVariable = OneScript.Contexts.Variable;
@@ -101,7 +102,15 @@ namespace OneScript.DebugServices
 
         private bool HasIndexes(ICollectionContext<IValue> collection)
         {
-            return collection?.Count() > 0;
+            try
+            {
+                return collection?.Count(ForbiddenBslProcess.Instance) > 0;
+            }
+            catch (NotSupportedException)
+            {
+                // TODO разобраться с bsl-процессом для вычисления пользовательских скриптовых коллекций
+                return false;
+            }
         }
 
         private static bool HasProperties(IRuntimeContextInstance value)

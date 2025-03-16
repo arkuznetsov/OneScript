@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -195,6 +196,8 @@ namespace OneScript.StandardLibrary.Collections
         {
             return _values.Count;
         }
+
+        public int Count(IBslProcess process) => Count();
 
         [ContextMethod("Очистить", "Clear")]
         public void Clear()

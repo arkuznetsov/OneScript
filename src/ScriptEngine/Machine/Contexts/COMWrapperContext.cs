@@ -15,6 +15,7 @@ using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Types;
 using System.Reflection;
+using OneScript.Execution;
 
 namespace ScriptEngine.Machine.Contexts
 {
@@ -278,6 +279,8 @@ namespace ScriptEngine.Machine.Contexts
         #region ICollectionContext Members
 
         public virtual int Count() => 0;
+
+        public int Count(IBslProcess process) => Count();
 
         bool IEmptyValueCheck.IsEmpty => false;
 

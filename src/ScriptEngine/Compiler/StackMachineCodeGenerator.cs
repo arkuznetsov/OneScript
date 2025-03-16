@@ -639,7 +639,11 @@ namespace ScriptEngine.Compiler
 
         private void CheckFactArguments(BslMethodInfo method, BslSyntaxNode argList)
         {
-            CheckFactArguments(method.GetParameters(), argList);
+            var argsToCheck = method is ContextMethodInfo { InjectsProcess: true } ? 
+                method.GetParameters().Skip(1).ToArray() : 
+                method.GetParameters();
+            
+            CheckFactArguments(argsToCheck, argList);
         }
 
         private void FullCheckFactArguments(ParameterInfo[] parameters, BslSyntaxNode argList)

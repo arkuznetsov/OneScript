@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary.TypeDescriptions;
 using OneScript.Types;
 using ScriptEngine.Machine;
@@ -87,6 +88,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             return _columns.Count;
         }
+        
+        public int Count(IBslProcess process) => Count();
 
         /// <summary>
         /// Ищет колонку по имени.

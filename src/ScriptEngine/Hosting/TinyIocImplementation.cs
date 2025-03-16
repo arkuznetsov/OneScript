@@ -152,7 +152,7 @@ namespace ScriptEngine.Hosting
             var child = new TinyIocImplementation(_container.GetChildContainer());
             foreach (var scopedRegistration in _scopedRegistrations)
             {
-                child._container.Register(scopedRegistration);
+                child._container.Register(scopedRegistration).AsSingleton();
             }
 
             return child;

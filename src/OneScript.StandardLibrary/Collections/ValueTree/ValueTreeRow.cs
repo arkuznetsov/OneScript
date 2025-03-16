@@ -8,6 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System.Collections.Generic;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -39,6 +40,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             return base.GetPropCount() + _owner.Columns.Count();
         }
+        
+        public int Count(IBslProcess process) => Count();
         
         [ContextProperty("Родитель", "Parent")]
         public IValue Parent

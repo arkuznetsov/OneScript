@@ -11,6 +11,7 @@ using System.Linq;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary.TypeDescriptions;
 using OneScript.Types;
 using ScriptEngine.Machine;
@@ -96,6 +97,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             return _columns.Count;
         }
+        
+        public int Count(IBslProcess process) => Count();
 
         /// <summary>
         /// Поиск колонки по имени

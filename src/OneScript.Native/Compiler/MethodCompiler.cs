@@ -1161,7 +1161,7 @@ namespace OneScript.Native.Compiler
             }
             else if (targetType.IsContext())
             {
-                _statementBuildParts.Push(ExpressionHelpers.CallContextMethod(target, name, PrepareDynamicCallArguments(call.ArgumentList)));
+                _statementBuildParts.Push(ExpressionHelpers.CallContextMethod(target, name, _processParameter, PrepareDynamicCallArguments(call.ArgumentList)));
             }
             else if (targetType.IsValue() || target is DynamicExpression)
             {
@@ -1510,7 +1510,7 @@ namespace OneScript.Native.Compiler
             if (node.IsDynamic)
             {
                 var typeName = ConvertToExpressionTree(node.TypeNameNode);
-                var call = ExpressionHelpers.ConstructorCall(CurrentTypeManager, services, typeName, parameters);
+                var call = ExpressionHelpers.ConstructorCall(CurrentTypeManager, services, typeName, _processParameter, parameters);
                 _statementBuildParts.Push(call);
             }
             else
@@ -1519,13 +1519,13 @@ namespace OneScript.Native.Compiler
                 var isKnownType = CurrentTypeManager.TryGetType(typeNameString, out var typeDef);
                 if (isKnownType)
                 {
-                    var call = ExpressionHelpers.ConstructorCall(CurrentTypeManager, services, typeDef, parameters);
+                    var call = ExpressionHelpers.ConstructorCall(CurrentTypeManager, services, typeDef, _processParameter, parameters);
                     _statementBuildParts.Push(call);
                 }
                 else // это может быть тип, подключенный через ПодключитьСценарий
                 {
                     var typeName = Expression.Constant(typeNameString);
-                    var call = ExpressionHelpers.ConstructorCall(CurrentTypeManager, services, typeName, parameters);
+                    var call = ExpressionHelpers.ConstructorCall(CurrentTypeManager, services, typeName, _processParameter, parameters);
                     _statementBuildParts.Push(call);
                 }
             }

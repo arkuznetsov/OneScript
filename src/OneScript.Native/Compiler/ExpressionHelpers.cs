@@ -516,6 +516,7 @@ namespace OneScript.Native.Compiler
         }
 
         public static Expression ConstructorCall(ITypeManager typeManager, Expression services, Expression type,
+            Expression process,
             Expression[] argsArray)
         {
             var method = OperationsCache.GetOrAdd(
@@ -528,10 +529,12 @@ namespace OneScript.Native.Compiler
                 Expression.Constant(typeManager),
                 services,
                 type,
+                process,
                 arrayOfArgs);
         }
         
         public static Expression ConstructorCall(ITypeManager typeManager, Expression services, TypeDescriptor knownType,
+            Expression process,
             Expression[] argsArray)
         {
             MethodInfo method;
@@ -557,6 +560,7 @@ namespace OneScript.Native.Compiler
                 Expression.Constant(typeManager),
                 services,
                 Expression.Constant(knownType.Name),
+                process,
                 arrayOfArgs);
         }
 
@@ -724,7 +728,8 @@ namespace OneScript.Native.Compiler
                    && memberExpr.Member.Name == nameof(IVariable.BslValue);
         }
 
-        public static Expression CallContextMethod(Expression target, string name, IEnumerable<Expression> arguments)
+        public static Expression CallContextMethod(Expression target, string name, ParameterExpression processParameter,
+            IEnumerable<Expression> arguments)
         {
             var methodInfo = OperationsCache.GetOrAdd(
                 typeof(DynamicOperations),
@@ -735,6 +740,7 @@ namespace OneScript.Native.Compiler
             {
                 target,
                 Expression.Constant(name),
+                processParameter,
                 PackArgsToArgsArray(arguments)
             };
 

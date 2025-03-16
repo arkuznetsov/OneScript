@@ -126,8 +126,7 @@ namespace OneScript.StandardLibrary
         /// // В коде скрипта somescript.os будет доступна глобальная переменная "ЧислоПи"
         /// Объект = ЗагрузитьСценарий("somescript.os", Контекст);</example>
         [ContextMethod("ЗагрузитьСценарий", "LoadScript")]
-        public IRuntimeContextInstance LoadScript(string path, IBslProcess process,
-            StructureImpl externalContext = null)
+        public IRuntimeContextInstance LoadScript(IBslProcess process, string path, StructureImpl externalContext = null)
         {
             var compiler = _engine.GetCompilerService();
             if(externalContext == null)

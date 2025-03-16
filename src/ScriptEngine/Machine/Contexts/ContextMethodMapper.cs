@@ -230,26 +230,29 @@ namespace ScriptEngine.Machine.Contexts
                 argsParam = Expression.Parameter(typeof(IValue[]), "args");
                 processParam = Expression.Parameter(typeof(IBslProcess), "process");
 
+                var parameters = target.GetParameters();
+
+                var (clrIndexStart, argsLen) = contextMethod.InjectsProcess ? (1, parameters.Length - 1) : (0, parameters.Length);
+                object[] defaultValues = new object[argsLen];
+                var defaultsClojure = Expression.Constant(defaultValues);
+                
                 var argsPass = new List<Expression>();
                 argsPass.Add(instParam);
-
-                var parameters = target.GetParameters();
-                object[] defaultValues = new object[parameters.Length];
-                var defaultsClojure = Expression.Constant(defaultValues);
-
-                var argsLen = contextMethod.InjectsProcess ? parameters.Length - 1 : parameters.Length;
                 
-                for (int i = 0; i < argsLen; i++)
+                if (contextMethod.InjectsProcess)
+                    argsPass.Add(processParam);
+                
+                for (int bslIndex = 0,clrIndex = clrIndexStart; bslIndex < argsLen; bslIndex++, clrIndex++)
                 {
-                    var convertMethod = _genConvertParamMethod.MakeGenericMethod(parameters[i].ParameterType);
+                    var convertMethod = _genConvertParamMethod.MakeGenericMethod(parameters[clrIndex].ParameterType);
 
-                    if (parameters[i].HasDefaultValue)
+                    if (parameters[clrIndex].HasDefaultValue)
                     {
-                        defaultValues[i] = parameters[i].DefaultValue;
+                        defaultValues[bslIndex] = parameters[clrIndex].DefaultValue;
                     }
 
-                    var indexedArg = Expression.ArrayIndex(argsParam, Expression.Constant(i));
-                    var defaultArg = Expression.ArrayIndex(defaultsClojure, Expression.Constant(i));
+                    var indexedArg = Expression.ArrayIndex(argsParam, Expression.Constant(bslIndex));
+                    var defaultArg = Expression.ArrayIndex(defaultsClojure, Expression.Constant(bslIndex));
                     var conversionCall = Expression.Call(convertMethod, indexedArg, defaultArg);
                     argsPass.Add(conversionCall);
                 }

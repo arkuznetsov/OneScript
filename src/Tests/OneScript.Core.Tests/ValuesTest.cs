@@ -10,6 +10,7 @@ using FluentAssertions;
 using Moq;
 using OneScript.Commons;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary;
 using OneScript.Types;
 using OneScript.Values;
@@ -312,7 +313,7 @@ namespace OneScript.Core.Tests
         public void ValueFilledTest(IValue value)
         {
             var globCtx = new StandardGlobalContext();
-            Assert.True(globCtx.ValueIsFilled(value));
+            Assert.True(globCtx.ValueIsFilled(ForbiddenBslProcess.Instance, value));
         }
         
         [Theory]
@@ -320,7 +321,7 @@ namespace OneScript.Core.Tests
         public void ValueEmptyTest(IValue value)
         {
             var globCtx = new StandardGlobalContext();
-            Assert.False(globCtx.ValueIsFilled(value));
+            Assert.False(globCtx.ValueIsFilled(ForbiddenBslProcess.Instance, value));
         }
     }
 }
