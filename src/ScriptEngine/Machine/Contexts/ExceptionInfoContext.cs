@@ -20,7 +20,7 @@ namespace ScriptEngine.Machine.Contexts
     /// <summary>
     /// Класс позволяет узнать информацию о произошедшем исключении.
     /// </summary>
-    [ContextClass("ИнформацияОбОшибке", "ErrorInfo", TypeUUID = "E0EDED59-D37A-42E7-9796-D6C061934B5D")]
+    [ContextClass("ИнформацияОбОшибке", "ErrorInfo")]
     public class ExceptionInfoContext : AutoContext<ExceptionInfoContext>
     {
         private ScriptException _exc;

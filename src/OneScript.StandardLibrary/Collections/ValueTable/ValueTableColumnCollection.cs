@@ -23,7 +23,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
     /// <summary>
     /// Коллекция колонок таблицы значений
     /// </summary>
-    [ContextClass("КоллекцияКолонокТаблицыЗначений", "ValueTableColumnCollection", TypeUUID = "E1584766-C053-4644-B4C2-9642C0F53EFA")]
+    [ContextClass("КоллекцияКолонокТаблицыЗначений", "ValueTableColumnCollection")]
     public class ValueTableColumnCollection : AutoContext<ValueTableColumnCollection>, ICollectionContext<ValueTableColumn>, IDebugPresentationAcceptor
     {
         private readonly List<ValueTableColumn> _columns = new List<ValueTableColumn>();

@@ -20,7 +20,7 @@ namespace ScriptEngine.Machine.Contexts
         private static readonly ContextPropertyMapper<TInstance> _properties = new ContextPropertyMapper<TInstance>();
         private static readonly ContextMethodsMapper<TInstance> _methods = new ContextMethodsMapper<TInstance>();
         private static readonly HashSet<int> _warnedDeprecatedMethods = new HashSet<int>();
-        private static readonly TypeDescriptor _objectType = typeof(TInstance).GetTypeFromClassMarkup(true);
+        private static readonly TypeDescriptor _objectType = typeof(TInstance).GetTypeFromClassMarkup();
         
         protected AutoContext() : base(_objectType)
         {

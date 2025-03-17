@@ -21,7 +21,7 @@ using ScriptEngine.Types;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    [ContextClass("Сценарий", "Script", TypeUUID = "2dd411ec-d8c7-4429-a569-bd5fd9187d5e")]
+    [ContextClass("Сценарий", "Script")]
     public class UserScriptContextInstance : ThisAwareScriptedObjectBase, IDebugPresentationAcceptor
     {
         public static readonly BilingualString OnInstanceCreationTerms =

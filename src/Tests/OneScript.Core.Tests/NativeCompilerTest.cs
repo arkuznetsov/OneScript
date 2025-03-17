@@ -342,7 +342,7 @@ namespace OneScript.Core.Tests
             yield return new object[] { VariantType(), typeof(MethodCallExpression) };
         }
         
-        private static TypeDescriptor VariantType() => new TypeDescriptor(Guid.NewGuid(), "BslValue", null, typeof(BslValue));
+        private static TypeDescriptor VariantType() => new("TestValueType", "BslValue", null, typeof(BslValue));
         
         [Theory]
         [MemberData(nameof(TypesForTestEqualityOperators))]

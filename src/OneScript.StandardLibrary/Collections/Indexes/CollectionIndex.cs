@@ -20,7 +20,7 @@ using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary.Collections.Indexes
 {
-    [ContextClass("ИндексКоллекции", "CollectionIndex", TypeUUID = "48D150D4-A0DA-47CA-AEA3-D4078A731C11")]
+    [ContextClass("ИндексКоллекции", "CollectionIndex")]
     public class CollectionIndex : AutoCollectionContext<CollectionIndex, IValue>
     {
         private readonly List<IValue> _fields = new List<IValue>();

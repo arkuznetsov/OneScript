@@ -15,7 +15,7 @@ using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary.Collections.ValueTable
 {
-    [ContextClass("СтрокаТаблицыЗначений", "ValueTableRow", TypeUUID = "DBFCD195-4B87-4AB7-9BA7-AE2E791E04ED")]
+    [ContextClass("СтрокаТаблицыЗначений", "ValueTableRow")]
     public class ValueTableRow : AutoContext<ValueTableRow>, ICollectionContext<IValue>, IDebugPresentationAcceptor
     {
         private readonly Dictionary<IValue, IValue> _data = new Dictionary<IValue, IValue>();

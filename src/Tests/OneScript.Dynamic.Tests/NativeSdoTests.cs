@@ -84,7 +84,7 @@ namespace OneScript.Dynamic.Tests
                 ");
 
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass", default));
             
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(testServices.CreateContainer()));
@@ -115,7 +115,7 @@ namespace OneScript.Dynamic.Tests
                 ", serviceContainer, symbols);
 
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(serviceContainer));
             var n = sdo.GetPropertyNumber("Ы");
@@ -143,7 +143,7 @@ namespace OneScript.Dynamic.Tests
                 ", serviceContainer, symbols);
 
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(serviceContainer));
             var n = sdo.GetPropertyNumber("Результат");
@@ -174,7 +174,7 @@ namespace OneScript.Dynamic.Tests
                 ", serviceContainer, symbols);
 
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(serviceContainer));
             var n = sdo.GetPropertyNumber("М");
@@ -219,7 +219,7 @@ namespace OneScript.Dynamic.Tests
                 Процедура1()", serviceContainer, symbols);
 
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(serviceContainer));
         }
@@ -266,7 +266,7 @@ namespace OneScript.Dynamic.Tests
             
             var module = CreateModule(code);
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(testServices.CreateContainer()));
         }
@@ -282,7 +282,7 @@ namespace OneScript.Dynamic.Tests
             
             var module = CreateModule(code);
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(testServices.CreateContainer()));
         }
@@ -300,7 +300,7 @@ namespace OneScript.Dynamic.Tests
             
             var module = CreateModule(code);
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(testServices.CreateContainer()));
         }
@@ -389,7 +389,7 @@ namespace OneScript.Dynamic.Tests
             ", serviceContainer, symbols);
 
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(serviceContainer));
 
@@ -431,7 +431,7 @@ namespace OneScript.Dynamic.Tests
             var module = CreateModule(code, serviceContainer, symbols);
 
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)),
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"),
                 new IValue[] { new RegExpImpl(".") });
             sdo.InitOwnData();
             sdo.Initialize(GetProcess(testServices.CreateContainer()));
@@ -456,7 +456,7 @@ namespace OneScript.Dynamic.Tests
             var module = CreateModule(code, serviceContainer, symbols);
 
             var sdo = new UserScriptContextInstance(module,
-                new TypeDescriptor(new Guid(), "TestClass", default, typeof(UserScriptContextInstance)));
+                new TypeDescriptor(typeof(UserScriptContextInstance), "TestClass"));
             sdo.InitOwnData();
             var process = GetProcess(testServices.CreateContainer());
             sdo.Initialize(process);

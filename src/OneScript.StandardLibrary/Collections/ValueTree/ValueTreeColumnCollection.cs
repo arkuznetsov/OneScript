@@ -22,7 +22,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
     /// <summary>
     /// Коллекция колонок дерева значений.
     /// </summary>
-    [ContextClass("КоллекцияКолонокДереваЗначений", "ValueTreeColumnCollection", TypeUUID = "7FEEB150-ECAB-4971-865B-6CCBECC7D947")]
+    [ContextClass("КоллекцияКолонокДереваЗначений", "ValueTreeColumnCollection")]
     public class ValueTreeColumnCollection : AutoContext<ValueTreeColumnCollection>, ICollectionContext<ValueTreeColumn>, IDebugPresentationAcceptor
     {
         private readonly List<ValueTreeColumn> _columns = new List<ValueTreeColumn>();

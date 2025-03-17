@@ -17,7 +17,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
     /// <summary>
     /// Колонка дерева значений.
     /// </summary>
-    [ContextClass("КолонкаДереваЗначений", "ValueTreeColumn", TypeUUID = "0C753A0C-7B05-4BBC-AAEE-6A80456D6FC0")]
+    [ContextClass("КолонкаДереваЗначений", "ValueTreeColumn")]
     public class ValueTreeColumn : AutoContext<ValueTreeColumn>
     {
         private string _title;

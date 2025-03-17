@@ -19,7 +19,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
     /// <summary>
     /// Строка дерева значений.
     /// </summary>
-    [ContextClass("СтрокаДереваЗначений", "ValueTreeRow", TypeUUID = "4EE26F99-54A8-4640-B2F8-3DA1CB102113")]
+    [ContextClass("СтрокаДереваЗначений", "ValueTreeRow")]
     public class ValueTreeRow : AutoContext<ValueTreeRow>, ICollectionContext<IValue>, IDebugPresentationAcceptor
     {
         private readonly Dictionary<IValue, IValue> _data = new Dictionary<IValue, IValue>();

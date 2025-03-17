@@ -19,7 +19,7 @@ using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary.Collections.ValueTable
 {
-    [ContextClass("ИндексыКоллекции", "CollectionIndexes", TypeUUID = "75983CBE-2ACC-4925-9CE0-23FC0C3E3211")]
+    [ContextClass("ИндексыКоллекции", "CollectionIndexes")]
     public class CollectionIndexes : AutoCollectionContext<CollectionIndexes, CollectionIndex>
     {
         readonly List<CollectionIndex> _indexes = new List<CollectionIndex>();

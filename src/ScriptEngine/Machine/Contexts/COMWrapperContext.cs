@@ -19,7 +19,7 @@ using OneScript.Execution;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    [ContextClass("COMОбъект", "COMObject", TypeUUID = "5E4FA60E-9724-494A-A5C8-5BB0A4F914E0")]
+    [ContextClass("COMОбъект", "COMObject")]
     public abstract class COMWrapperContext : PropertyNameIndexAccessor, 
         ICollectionContext<IValue>,
         IEmptyValueCheck,
