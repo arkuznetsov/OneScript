@@ -204,6 +204,11 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             return false;
         }
+        
+        public override bool IsPropReadable(int propNum)
+        {
+            return true;
+        }
 
         public ValueTableColumn GetColumnByIIndex(IValue index)
         {

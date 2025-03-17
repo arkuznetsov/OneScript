@@ -231,6 +231,11 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             return false;
         }
+        
+        public override bool IsPropReadable(int propNum)
+        {
+            return true;
+        }
 
         public ValueTreeColumn GetColumnByIIndex(IValue index)
         {

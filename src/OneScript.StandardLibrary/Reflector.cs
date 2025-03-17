@@ -55,7 +55,7 @@ namespace OneScript.StandardLibrary
             if (target.DynamicMethodSignatures)
                 argsToPass = arguments?.ToArray() ?? Array.Empty<IValue>();
             else
-                argsToPass = GetArgsToPass(arguments, methInfo.GetParameters());
+                argsToPass = GetArgsToPass(arguments, methInfo.GetBslParameters());
  
             IValue retValue = ValueFactory.Create();
             if (methInfo.IsFunction())
@@ -340,7 +340,7 @@ namespace OneScript.StandardLibrary
             foreach (var methInfo in methods)
             {
                 var annotations = methInfo.GetAnnotations();
-                var parameters = methInfo.GetParameters();
+                var parameters = methInfo.GetBslParameters();
                 
                 ValueTableRow new_row = result.Add();
                 new_row.Set(nameColumn, ValueFactory.Create(methInfo.Name));

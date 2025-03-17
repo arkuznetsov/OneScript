@@ -164,14 +164,19 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
 
         public override int GetPropertyNumber(string name)
         {
-            var cols = Owner().Columns;
-            var column = cols.FindColumnByName(name);
-            if (column == null)
+            if (PropertyMapper.ContainsProperty(name))
             {
                 return base.GetPropertyNumber(name);
             }
             
-            return GetColumnPropIndex(cols.IndexOf(column));
+            var cols = Owner().Columns;
+            var column = cols.FindColumnByName(name);
+            if (column != null)
+            {
+                return GetColumnPropIndex(cols.IndexOf(column));
+            }
+            
+            throw PropertyAccessException.PropNotFoundException(name); 
         }
 
         public override bool IsPropReadable(int propNum)
@@ -227,7 +232,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
 
         private bool IsOwnProp(int propNum)
         {
-            return base.GetPropCount() - 1 >= propNum;
+            return propNum < base.GetPropCount();
         }
 
         private int GetColumnPropIndex(int index)

@@ -101,6 +101,9 @@ namespace ScriptEngine.Machine.Contexts
             return _properties.GetProperty(propertyNumber).PropertyInfo;
         }
 
+        protected ContextPropertyMapper<TInstance> PropertyMapper => _properties;
+        protected ContextMethodsMapper<TInstance> MethodMapper => _methods;
+
         private void CheckIfCallIsPossible(int methodNumber, IValue[] arguments)
         {
             var methodInfo = _methods.GetRuntimeMethod(methodNumber) as ContextMethodInfo;
