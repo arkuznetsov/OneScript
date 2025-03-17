@@ -9,9 +9,11 @@ using System.Collections.Generic;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
+using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
+using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary.Collections
 {
@@ -19,17 +21,20 @@ namespace OneScript.StandardLibrary.Collections
     public class FixedStructureImpl : DynamicPropertiesAccessor, ICollectionContext<KeyAndValueImpl>
     {
         private readonly StructureImpl _structure = new StructureImpl();
-
+        
+        private static readonly TypeDescriptor typeDescriptor = typeof(StructureImpl).GetTypeFromClassMarkup();
 
         public FixedStructureImpl(StructureImpl structure)
         {
-        	foreach (KeyAndValueImpl keyValue in structure)
+        	DefineType(typeDescriptor);
+            foreach (KeyAndValueImpl keyValue in structure)
         		_structure.Insert(keyValue.Key.AsString(), keyValue.Value);
         }
 
         public FixedStructureImpl(string strProperties, params IValue[] values)
         {
-        	_structure = new StructureImpl(strProperties, values);
+            DefineType(typeDescriptor);
+            _structure = new StructureImpl(strProperties, values);
         }
 
         [ContextMethod("Свойство", "Property")]

@@ -10,9 +10,11 @@ using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
+using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
+using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary.Collections
 {
@@ -21,10 +23,12 @@ namespace OneScript.StandardLibrary.Collections
     {
         private readonly List<IValue> _values = new List<IValue>();
         private static readonly ContextMethodsMapper<StructureImpl> _methods = new ContextMethodsMapper<StructureImpl>();
+
+        private static readonly TypeDescriptor typeDescriptor = typeof(StructureImpl).GetTypeFromClassMarkup();
         
         public StructureImpl()
         {
-            
+            DefineType(typeDescriptor);
         }
 
         public StructureImpl(string strProperties, params IValue[] values)
