@@ -41,12 +41,12 @@ namespace OneScript.StandardLibrary
         /// <example>ПодключитьСценарий("C:\file.os", "МойОбъект");
         /// А = Новый МойОбъект();</example>
         [ContextMethod("ПодключитьСценарий", "AttachScript")]
-        public void AttachScript(string path, string typeName)
+        public void AttachScript(IBslProcess process, string path, string typeName)
         {
             var compiler = _engine.GetCompilerService();
             try
             {
-                _engine.AttachedScriptsFactory.AttachByPath(compiler, path, typeName, _engine.NewProcess());
+                _engine.AttachedScriptsFactory.AttachByPath(compiler, path, typeName, process);
             }
             catch (SyntaxErrorException e)
             {
