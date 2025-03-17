@@ -1101,11 +1101,23 @@ namespace OneScript.Native.Compiler
             if (targetType.IsObjectValue())
             {
                 var methodInfo = FindMethodOfType(node, targetType, name);
-                var args = PrepareCallArguments(call.ArgumentList, methodInfo.GetParameters());
+                var args = PrepareCallArguments(call.ArgumentList, methodInfo.GetParameters(), methodInfo is ContextMethodInfo { InjectsProcess: true });
 
                 _blocks.Add(Expression.Call(target, methodInfo, args));
             }
-            else if (targetType.IsValue() || target is DynamicExpression)
+            else if (targetType.IsContext())
+            {
+                var contextCall = ExpressionHelpers.CallContextMethod(target, name, _processParameter,
+                    PrepareDynamicCallArguments(call.ArgumentList));
+                _blocks.Add(contextCall);
+            }
+            else if (targetType.IsValue())
+            {
+                var contextCall = ExpressionHelpers.TryCallContextMethod(target, name, _processParameter,
+                    PrepareDynamicCallArguments(call.ArgumentList));
+                _blocks.Add(contextCall);
+            }
+            else if (target is DynamicExpression)
             {
                 var args = new List<Expression>();
                 args.Add(target);
@@ -1156,14 +1168,20 @@ namespace OneScript.Native.Compiler
                         $"Method {targetType}.{name} is not a function"), ToCodePosition(node.Location));
                 }
             
-                var args = PrepareCallArguments(call.ArgumentList, methodInfo.GetParameters());
+                var args = PrepareCallArguments(call.ArgumentList, methodInfo.GetParameters(), methodInfo is ContextMethodInfo { InjectsProcess: true });
                 _statementBuildParts.Push(Expression.Call(target, methodInfo, args));
             }
             else if (targetType.IsContext())
             {
                 _statementBuildParts.Push(ExpressionHelpers.CallContextMethod(target, name, _processParameter, PrepareDynamicCallArguments(call.ArgumentList)));
             }
-            else if (targetType.IsValue() || target is DynamicExpression)
+            else if (targetType.IsValue())
+            {
+                var contextCall = ExpressionHelpers.TryCallContextMethod(target, name, _processParameter,
+                    PrepareDynamicCallArguments(call.ArgumentList));
+                _statementBuildParts.Push(contextCall);
+            }
+            else if (target is DynamicExpression)
             {
                 var args = new List<Expression>();
                 args.Add(target);
@@ -1247,7 +1265,7 @@ namespace OneScript.Native.Compiler
             }
 
             var symbol = Symbols.GetScope(binding.ScopeNumber).Methods[binding.MemberNumber];
-            var args = PrepareCallArguments(node.ArgumentList, symbol.Method.GetParameters());
+            var args = PrepareCallArguments(node.ArgumentList, symbol.Method.GetParameters(), symbol.Method is ContextMethodInfo { InjectsProcess: true });
 
             var methodInfo = symbol.Method;
             if (methodInfo is ContextMethodInfo contextMethod)
@@ -1316,7 +1334,7 @@ namespace OneScript.Native.Compiler
                     var method = _builtInFunctions.GetMethod(methodName);
                     var declaredParameters = method.GetParameters();
 
-                    var args = PrepareCallArguments(node.ArgumentList, declaredParameters);
+                    var args = PrepareCallArguments(node.ArgumentList, declaredParameters, false);
 
                     result = Expression.Call(method, args);
                     break;
@@ -1385,7 +1403,7 @@ namespace OneScript.Native.Compiler
                 type);
         }
 
-        private List<Expression> PrepareCallArguments(BslSyntaxNode argList, ParameterInfo[] declaredParameters)
+        private List<Expression> PrepareCallArguments(BslSyntaxNode argList, ParameterInfo[] declaredParameters, bool injectsProcess)
         {
             var factArguments = new List<Expression>();
 
@@ -1395,7 +1413,8 @@ namespace OneScript.Native.Compiler
                     : null).ToArray();
 
             var parametersToProcess = declaredParameters.Length;
-            for (int i = 0; i < parameters.Length; i++)
+            var declStart = injectsProcess ? 1 : 0;
+            for (int i = 0, decl = declStart; i < parameters.Length; i++, decl++)
             {
                 if (parametersToProcess == 0)
                 {
@@ -1405,7 +1424,7 @@ namespace OneScript.Native.Compiler
                 }
 
                 var passedArg = parameters[i];
-                var declaredParam = declaredParameters[i];
+                var declaredParam = declaredParameters[decl];
 
                 if (declaredParam.GetCustomAttribute<ParamArrayAttribute>() != null)
                 {
@@ -1448,7 +1467,7 @@ namespace OneScript.Native.Compiler
 
             if (parametersToProcess > 0)
             {
-                foreach (var declaredParam in declaredParameters.Skip(parameters.Length))
+                foreach (var declaredParam in declaredParameters.Skip(parameters.Length + declStart))
                 {
                     if (declaredParam.HasDefaultValue)
                     {

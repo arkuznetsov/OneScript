@@ -731,9 +731,30 @@ namespace OneScript.Native.Compiler
         public static Expression CallContextMethod(Expression target, string name, ParameterExpression processParameter,
             IEnumerable<Expression> arguments)
         {
+            return CallContextMethodInternal(
+                nameof(DynamicOperations.CallContextMethod), target, name, processParameter, arguments);
+        }
+        
+        public static Expression TryCallContextMethod(
+            Expression target,
+            string name,
+            ParameterExpression processParameter,
+            IEnumerable<Expression> arguments)
+        {
+            return CallContextMethodInternal(
+                nameof(DynamicOperations.TryCallContextMethod), target, name, processParameter, arguments);
+        }
+        
+        private static Expression CallContextMethodInternal(
+            string implementationName,
+            Expression target,
+            string name,
+            ParameterExpression processParameter,
+            IEnumerable<Expression> arguments)
+        {
             var methodInfo = OperationsCache.GetOrAdd(
                 typeof(DynamicOperations),
-                nameof(DynamicOperations.CallContextMethod)
+                implementationName
             );
 
             var argExpressions = new List<Expression>

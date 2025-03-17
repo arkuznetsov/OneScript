@@ -205,10 +205,33 @@ namespace OneScript.Native.Runtime
             return (BslValue)context.GetPropValue(propIndex);
         }
 
+        public static BslValue TryCallContextMethod(BslValue instance, string methodName, IBslProcess process, BslValue[] arguments)
+        {
+            if (!(instance is IRuntimeContextInstance context))
+                throw BslExceptions.ValueIsNotObjectException();
+
+            return CallContextMethod(context, methodName, process, arguments);
+        }
+        
         public static BslValue CallContextMethod(IRuntimeContextInstance instance, string methodName, IBslProcess process, BslValue[] arguments)
         {
             var idx = instance.GetMethodNumber(methodName);
-            instance.CallAsFunction(idx, arguments, out var result, process);
+            
+            var parameters = instance.GetMethodInfo(idx).GetParameters();
+            
+            if (arguments.Length > parameters.Length)
+                throw RuntimeException.TooManyArgumentsPassed();
+
+            var valueArgs = new IValue[parameters.Length];
+            for (int i = 0; i < valueArgs.Length; i++)
+            {
+                if (i < arguments.Length)
+                    valueArgs[i] = arguments[i];
+                else
+                    valueArgs[i] = BslSkippedParameterValue.Instance;
+            }
+            
+            instance.CallAsFunction(idx, valueArgs, out var result, process);
             return (BslValue)result;
         }
     }
