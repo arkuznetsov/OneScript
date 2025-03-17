@@ -735,7 +735,7 @@ namespace ScriptEngine.Machine
         {
             var op2 = _operationStack.Pop();
             var op1 = _operationStack.Pop();
-            _operationStack.Push(ValueFactory.Add(op1.GetRawValue(), op2.GetRawValue()));
+            _operationStack.Push(ValueFactory.Add(op1.GetRawValue(), op2.GetRawValue(), _process));
             NextInstruction();
         }
 
@@ -1487,8 +1487,8 @@ namespace ScriptEngine.Machine
 
         private void Str(int arg)
         {
-            string value = _operationStack.Pop().AsString();
-            _operationStack.Push(ValueFactory.Create(value));
+            var value = (BslValue)_operationStack.Pop().GetRawValue();
+            _operationStack.Push(ValueFactory.Create(value.ConvertToString(_process)));
             NextInstruction();
         }
 
