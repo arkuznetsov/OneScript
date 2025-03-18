@@ -17,7 +17,7 @@ using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary
 {
-    [ContextClass("УникальныйИдентификатор","UUID", TypeUUID = "B35D7F7B-DF1C-4D6C-A755-6C97A60BB345")]
+    [ContextClass("УникальныйИдентификатор","UUID")]
     public class GuidWrapper : BslPrimitiveValue, IObjectWrapper, IEmptyValueCheck
     {
         Guid _value;

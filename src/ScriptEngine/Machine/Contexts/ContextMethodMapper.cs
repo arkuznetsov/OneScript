@@ -12,11 +12,12 @@ using System.Linq.Expressions;
 using System.Reflection;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Language;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    public delegate IValue ContextCallableDelegate<TInstance>(TInstance instance, IValue[] args);
+    public delegate IValue ContextCallableDelegate<TInstance>(TInstance instance, IValue[] args, IBslProcess process = default);
 
     public class ContextMethodsMapper<TInstance>
     {
@@ -106,37 +107,39 @@ namespace ScriptEngine.Machine.Contexts
         private class InternalMethInfo
         {
             private readonly Lazy<ContextCallableDelegate<TInstance>> _method;
-            public MethodSignature MethodSignature { get; }
+            private readonly ContextMethodInfo _clrMethod;
             
-            public BslMethodInfo ClrMethod { get; }
+            public MethodSignature MethodSignature { get; }
+            public BslMethodInfo ClrMethod => _clrMethod;
 
             public InternalMethInfo(MethodInfo target, ContextMethodAttribute binding)
             {
+                _clrMethod = new ContextMethodInfo(target, binding);
+                MethodSignature = CreateMetadata(target, binding, _clrMethod.InjectsProcess);
+                
                 _method = new Lazy<ContextCallableDelegate<TInstance>>(() =>
                 {
                     var isFunc = target.ReturnType != typeof(void);
-                    return isFunc ? CreateFunction(target) : CreateProcedure(target);
+                    return isFunc ? CreateFunction(_clrMethod) : CreateProcedure(_clrMethod);
                 });
-
-                MethodSignature = CreateMetadata(target, binding);
-                ClrMethod = new ContextMethodInfo(target, binding);
             }
 
             public ContextCallableDelegate<TInstance> Method => _method.Value;
 
-            private static MethodSignature CreateMetadata(MethodInfo target, ContextMethodAttribute binding)
+            private static MethodSignature CreateMetadata(MethodInfo target, ContextMethodAttribute binding, bool hasProcessParam)
             {
                 var parameters = target.GetParameters();
                 var isFunc = target.ReturnType != typeof(void);
-                var argNum = parameters.Length;
+                
+                var (startIndex, argNum) = hasProcessParam ? (1, parameters.Length - 1) : (0, parameters.Length);
 
                 var paramDefs = new ParameterDefinition[argNum];
-                for (int i = 0; i < argNum; i++)
+                for (int i = 0, j = startIndex; i < argNum; i++, j++)
                 {
                     var pd = new ParameterDefinition();
-                    if (parameters[i].GetCustomAttributes(typeof(ByRefAttribute), false).Length != 0)
+                    if (parameters[j].GetCustomAttributes(typeof(ByRefAttribute), false).Length != 0)
                     {
-                        if (parameters[i].ParameterType != typeof(IVariable))
+                        if (parameters[j].ParameterType != typeof(IVariable))
                         {
                             throw new InvalidOperationException("Attribute ByRef can be applied only on IVariable parameters");
                         }
@@ -147,7 +150,7 @@ namespace ScriptEngine.Machine.Contexts
                         pd.IsByValue = true;
                     }
 
-                    if (parameters[i].IsOptional)
+                    if (parameters[j].IsOptional)
                     {
                         pd.HasDefaultValue = true;
                         pd.DefaultValueIndex = ParameterDefinition.UNDEFINED_VALUE_INDEX;
@@ -170,23 +173,22 @@ namespace ScriptEngine.Machine.Contexts
                 return scriptMethInfo;
             }
 
-            private static ContextCallableDelegate<TInstance> CreateFunction(MethodInfo target)
+            private static ContextCallableDelegate<TInstance> CreateFunction(ContextMethodInfo target)
             {
-                var methodCall = MethodCallExpression(target, out var instParam, out var argsParam);
+                var methodCall = MethodCallExpression(target, out var instParam, out var argsParam, out var processParam);
 
                 var convertRetMethod = _genConvertReturnMethod.MakeGenericMethod(target.ReturnType);
-                //System.Diagnostics.Debug.Assert(convertRetMethod != null);
                 var convertReturnCall = Expression.Call(convertRetMethod, methodCall);
                 var body = convertReturnCall;
 
-                var l = Expression.Lambda<ContextCallableDelegate<TInstance>>(body, instParam, argsParam);
+                var l = Expression.Lambda<ContextCallableDelegate<TInstance>>(body, instParam, argsParam, processParam);
 
                 return l.Compile();
 
             }
-            private static ContextCallableDelegate<TInstance> CreateProcedure(MethodInfo target)
+            private static ContextCallableDelegate<TInstance> CreateProcedure(ContextMethodInfo target)
             {
-                var methodCall = MethodCallExpression(target, out var instParam, out var argsParam);
+                var methodCall = MethodCallExpression(target, out var instParam, out var argsParam, out var processParam);
                 var returnLabel = Expression.Label(typeof(IValue));
                 var defaultValue = Expression.Constant(null, typeof(IValue));
                 var returnExpr = Expression.Return(
@@ -201,11 +203,15 @@ namespace ScriptEngine.Machine.Contexts
                     Expression.Label(returnLabel, defaultValue)
                     );
 
-                var l = Expression.Lambda<ContextCallableDelegate<TInstance>>(body, instParam, argsParam);
+                var l = Expression.Lambda<ContextCallableDelegate<TInstance>>(body, instParam, argsParam, processParam);
                 return l.Compile();
             }
 
-            private static InvocationExpression MethodCallExpression(MethodInfo target, out ParameterExpression instParam, out ParameterExpression argsParam)
+            private static InvocationExpression MethodCallExpression(
+                ContextMethodInfo contextMethod, 
+                out ParameterExpression instParam,
+                out ParameterExpression argsParam,
+                out ParameterExpression processParam)
             {
                 // For those who dare:
                 // Код ниже формирует следующую лямбду с 2-мя замыканиями realMethodDelegate и defaults:
@@ -217,29 +223,36 @@ namespace ScriptEngine.Machine.Contexts
                 //        ConvertParam<TypeOfArgN>(args[i], defaults[i]));
                 // }
 
+                var target = contextMethod.GetWrappedMethod();
                 var methodClojure = CreateDelegateExpr(target);
 
                 instParam = Expression.Parameter(typeof(TInstance), "inst");
                 argsParam = Expression.Parameter(typeof(IValue[]), "args");
-
-                var argsPass = new List<Expression>();
-                argsPass.Add(instParam);
+                processParam = Expression.Parameter(typeof(IBslProcess), "process");
 
                 var parameters = target.GetParameters();
-                object[] defaultValues = new object[parameters.Length];
+
+                var (clrIndexStart, argsLen) = contextMethod.InjectsProcess ? (1, parameters.Length - 1) : (0, parameters.Length);
+                object[] defaultValues = new object[argsLen];
                 var defaultsClojure = Expression.Constant(defaultValues);
-
-                for (int i = 0; i < parameters.Length; i++)
+                
+                var argsPass = new List<Expression>();
+                argsPass.Add(instParam);
+                
+                if (contextMethod.InjectsProcess)
+                    argsPass.Add(processParam);
+                
+                for (int bslIndex = 0,clrIndex = clrIndexStart; bslIndex < argsLen; bslIndex++, clrIndex++)
                 {
-                    var convertMethod = _genConvertParamMethod.MakeGenericMethod(parameters[i].ParameterType);
+                    var convertMethod = _genConvertParamMethod.MakeGenericMethod(parameters[clrIndex].ParameterType);
 
-                    if (parameters[i].HasDefaultValue)
+                    if (parameters[clrIndex].HasDefaultValue)
                     {
-                        defaultValues[i] = parameters[i].DefaultValue;
+                        defaultValues[bslIndex] = parameters[clrIndex].DefaultValue;
                     }
 
-                    var indexedArg = Expression.ArrayIndex(argsParam, Expression.Constant(i));
-                    var defaultArg = Expression.ArrayIndex(defaultsClojure, Expression.Constant(i));
+                    var indexedArg = Expression.ArrayIndex(argsParam, Expression.Constant(bslIndex));
+                    var defaultArg = Expression.ArrayIndex(defaultsClojure, Expression.Constant(bslIndex));
                     var conversionCall = Expression.Call(convertMethod, indexedArg, defaultArg);
                     argsPass.Add(conversionCall);
                 }

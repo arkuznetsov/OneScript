@@ -11,6 +11,7 @@ using System.Linq;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary.TypeDescriptions;
 using OneScript.Types;
 using ScriptEngine.Machine;
@@ -22,20 +23,17 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
     /// <summary>
     /// Коллекция колонок таблицы значений
     /// </summary>
-    [ContextClass("КоллекцияКолонокТаблицыЗначений", "ValueTableColumnCollection", TypeUUID = "E1584766-C053-4644-B4C2-9642C0F53EFA")]
-    public class ValueTableColumnCollection : DynamicPropertiesAccessor, ICollectionContext<ValueTableColumn>, IDebugPresentationAcceptor
+    [ContextClass("КоллекцияКолонокТаблицыЗначений", "ValueTableColumnCollection")]
+    public class ValueTableColumnCollection : AutoContext<ValueTableColumnCollection>, ICollectionContext<ValueTableColumn>, IDebugPresentationAcceptor
     {
         private readonly List<ValueTableColumn> _columns = new List<ValueTableColumn>();
         private readonly StringComparer _namesComparer = StringComparer.OrdinalIgnoreCase;
         private readonly ValueTable _owner;
         private int maxColumnId = 0;
 
-        private static readonly TypeDescriptor _objectType = typeof(ValueTableColumnCollection).GetTypeFromClassMarkup();
-
         public ValueTableColumnCollection(ValueTable owner)
         {
             _owner = owner;
-            DefineType(_objectType);
         }
 
         /// <summary>
@@ -99,6 +97,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             return _columns.Count;
         }
+        
+        public int Count(IBslProcess process) => Count();
 
         /// <summary>
         /// Поиск колонки по имени
@@ -170,6 +170,13 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             return GetEnumerator();
         }
 
+        public override bool IsIndexed => true;
+
+        public override IValue GetIndexedValue(IValue index)
+        {
+            return GetColumnByIIndex(index);
+        }
+        
         public override int GetPropertyNumber(string name)
         {
             int idx = _columns.FindIndex(column => _namesComparer.Equals(name, column.Name));
@@ -196,6 +203,11 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         public override bool IsPropWritable(int propNum)
         {
             return false;
+        }
+        
+        public override bool IsPropReadable(int propNum)
+        {
+            return true;
         }
 
         public ValueTableColumn GetColumnByIIndex(IValue index)
@@ -249,47 +261,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             }
 
             throw RuntimeException.InvalidArgumentType();
-        }
-
-        public override IValue GetIndexedValue(IValue index)
-        {
-            return GetColumnByIIndex(index);
-        }
-
-        private static readonly ContextMethodsMapper<ValueTableColumnCollection> _methods = new ContextMethodsMapper<ValueTableColumnCollection>();
-
-        public override BslMethodInfo GetMethodInfo(int methodNumber)
-        {
-            return _methods.GetRuntimeMethod(methodNumber);
-        }
-
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
-        {
-            var binding = _methods.GetCallableDelegate(methodNumber);
-            try
-            {
-                binding(this, arguments);
-            } catch (System.Reflection.TargetInvocationException e)
-            {
-                throw e.InnerException;
-            }
-        }
-
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-        {
-            var binding = _methods.GetCallableDelegate(methodNumber);
-            try
-            {
-                retValue = binding(this, arguments);
-            } catch (System.Reflection.TargetInvocationException e)
-            {
-                throw e.InnerException;
-            }
-        }
-
-        public override int GetMethodNumber(string name)
-        {
-            return _methods.FindMethod(name);
         }
 
         void IDebugPresentationAcceptor.Accept(IDebugValueVisitor visitor)

@@ -516,6 +516,7 @@ namespace OneScript.Native.Compiler
         }
 
         public static Expression ConstructorCall(ITypeManager typeManager, Expression services, Expression type,
+            Expression process,
             Expression[] argsArray)
         {
             var method = OperationsCache.GetOrAdd(
@@ -528,10 +529,12 @@ namespace OneScript.Native.Compiler
                 Expression.Constant(typeManager),
                 services,
                 type,
+                process,
                 arrayOfArgs);
         }
         
         public static Expression ConstructorCall(ITypeManager typeManager, Expression services, TypeDescriptor knownType,
+            Expression process,
             Expression[] argsArray)
         {
             MethodInfo method;
@@ -557,6 +560,7 @@ namespace OneScript.Native.Compiler
                 Expression.Constant(typeManager),
                 services,
                 Expression.Constant(knownType.Name),
+                process,
                 arrayOfArgs);
         }
 
@@ -652,7 +656,7 @@ namespace OneScript.Native.Compiler
             return Expression.Call(null, method, target, ConvertToBslValue(index), ConvertToBslValue(value));
         }
         
-        public static Expression InvokeBslNativeMethod(BslNativeMethodInfo nativeMethod, object target, List<Expression> args)
+        public static Expression InvokeBslNativeMethod(BslNativeMethodInfo nativeMethod, ParameterExpression process, object target, List<Expression> args)
         {
             var helperMethod = OperationsCache.GetOrAdd(
                 typeof(CallableMethod),
@@ -663,6 +667,7 @@ namespace OneScript.Native.Compiler
             return Expression.Call(
                 Expression.Constant(nativeMethod.GetCallable()),
                 helperMethod,
+                process,
                 nativeMethod.IsInstance ?
                     InvocationTargetExpression(target) :
                     Expression.Constant(null, typeof(object)),
@@ -723,17 +728,40 @@ namespace OneScript.Native.Compiler
                    && memberExpr.Member.Name == nameof(IVariable.BslValue);
         }
 
-        public static Expression CallContextMethod(Expression target, string name, IEnumerable<Expression> arguments)
+        public static Expression CallContextMethod(Expression target, string name, ParameterExpression processParameter,
+            IEnumerable<Expression> arguments)
+        {
+            return CallContextMethodInternal(
+                nameof(DynamicOperations.CallContextMethod), target, name, processParameter, arguments);
+        }
+        
+        public static Expression TryCallContextMethod(
+            Expression target,
+            string name,
+            ParameterExpression processParameter,
+            IEnumerable<Expression> arguments)
+        {
+            return CallContextMethodInternal(
+                nameof(DynamicOperations.TryCallContextMethod), target, name, processParameter, arguments);
+        }
+        
+        private static Expression CallContextMethodInternal(
+            string implementationName,
+            Expression target,
+            string name,
+            ParameterExpression processParameter,
+            IEnumerable<Expression> arguments)
         {
             var methodInfo = OperationsCache.GetOrAdd(
                 typeof(DynamicOperations),
-                nameof(DynamicOperations.CallContextMethod)
+                implementationName
             );
 
             var argExpressions = new List<Expression>
             {
                 target,
                 Expression.Constant(name),
+                processParameter,
                 PackArgsToArgsArray(arguments)
             };
 

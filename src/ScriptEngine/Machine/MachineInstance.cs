@@ -13,11 +13,11 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using OneScript.Commons;
 using OneScript.Compilation.Binding;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Language;
 using OneScript.Sources;
 using OneScript.Types;
@@ -39,7 +39,8 @@ namespace ScriptEngine.Machine
         private ICodeStatCollector _codeStatCollector;
         private MachineStopManager _stopManager;
         
-        private ExecutionContext _mem;
+        private IBslProcess _process;
+        private ITypeManager _typeManager;
         private AttachedContext[] _globalContexts;
 
         // для отладчика.
@@ -50,33 +51,27 @@ namespace ScriptEngine.Machine
         // кешированный обработчик событий
         private readonly Lazy<IEventProcessor> _eventProcessor;
 
-        private MachineInstance() 
+        internal MachineInstance() 
         {
             InitCommands();
             Reset();
 
-            _eventProcessor = new Lazy<IEventProcessor>(() => _mem.Services.TryResolve<IEventProcessor>(),
+            _eventProcessor = new Lazy<IEventProcessor>(() => _process.Services.TryResolve<IEventProcessor>(),
                 LazyThreadSafetyMode.None);
         }
 
-        public event EventHandler<MachineStoppedEventArgs> MachineStopped;
-
-        public ExecutionContext Memory => _mem;
-
-        public ITypeManager TypeManager => _mem?.TypeManager;
-        
-        public IGlobalsManager Globals => _mem?.GlobalInstances;
-        
-        public void SetMemory(ExecutionContext memory)
+        public void Setup(IBslProcess process)
         {
             Cleanup();
 
-            _mem = memory;
-            _codeStatCollector = _mem.Services.TryResolve<ICodeStatCollector>();
-            _globalContexts = _mem.GlobalNamespace.AttachedContexts.Select(x => new AttachedContext(x))
+            _process = process;
+            _codeStatCollector = process.Services.TryResolve<ICodeStatCollector>();
+            _typeManager = process.Services.Resolve<ITypeManager>();
+            _globalContexts = process.Services.Resolve<IRuntimeEnvironment>().AttachedContexts.Select(x => new AttachedContext(x))
                 .ToArray();
-            
         }
+
+        internal IBslProcess Process => _process;
 
         public void UpdateGlobals() 
         {
@@ -178,9 +173,9 @@ namespace ScriptEngine.Machine
 
         #region Debug protocol methods
 
-        public void SetDebugMode(IBreakpointManager breakpointManager)
+        public void SetDebugMode(IThreadManager threadManager, IBreakpointManager breakpointManager)
         {
-            _stopManager ??= new MachineStopManager(this, breakpointManager);
+            _stopManager ??= new MachineStopManager(this, threadManager, breakpointManager);
         }
         
         public void UnsetDebugMode()
@@ -216,7 +211,7 @@ namespace ScriptEngine.Machine
         {
             var code = CompileCached(expression, CompileExpressionModule);
 
-            var localScope = new AttachedContext(new UserScriptContextInstance(code), _currentFrame.Locals);
+            var localScope = new AttachedContext(new EvalExecLocalScope(code), _currentFrame.Locals);
             
             var frame = new ExecutionFrame
             {
@@ -243,51 +238,35 @@ namespace ScriptEngine.Machine
 
         internal IValue EvaluateInFrame(string expression, ExecutionFrame selectedFrame)
         {
-            MachineInstance currentMachine;
             MachineInstance runner = new MachineInstance
             {
-                _mem = this._mem,
+                _process = this._process,
                 _globalContexts = this._globalContexts,
+                _typeManager = this._typeManager,
                 _debugInfo = CurrentScript
             };
-            currentMachine = Current;
-            SetCurrentMachineInstance(runner);
-
+            
             runner.SetFrame(selectedFrame);
 
             ExecutionFrame frame;
-            try
-            {
-                var code = runner.CompileExpressionModule(expression);
 
-                var localScope = new AttachedContext(new UserScriptContextInstance(code), selectedFrame.Locals);
+            var code = runner.CompileExpressionModule(expression);
 
-                frame = new ExecutionFrame
-                {
-                    MethodName = code.Source.Name,
-                    Module = code,
-                    ThisScope = localScope,
-                    Locals = Array.Empty<IVariable>(),
-                    Scopes = CreateFrameScopes(selectedFrame.Scopes, localScope),
-                    InstructionPointer = 0,
-                    LineNumber = 1
-                };
-            }
-            catch
-            {
-                SetCurrentMachineInstance(currentMachine);
-                throw;
-            }
+            var localScope = new AttachedContext(new EvalExecLocalScope(code), selectedFrame.Locals);
 
-            try
+            frame = new ExecutionFrame
             {
-                runner.PushFrame(frame);
-                runner.MainCommandLoop();
-            }
-            finally
-            {
-                SetCurrentMachineInstance(currentMachine);
-            }
+                MethodName = code.Source.Name,
+                Module = code,
+                ThisScope = localScope,
+                Locals = Array.Empty<IVariable>(),
+                Scopes = CreateFrameScopes(selectedFrame.Scopes, localScope),
+                InstructionPointer = 0,
+                LineNumber = 1
+            };
+
+            runner.PushFrame(frame);
+            runner.MainCommandLoop();
 
             return runner._operationStack.Pop().GetRawValue();
         }
@@ -354,7 +333,8 @@ namespace ScriptEngine.Machine
             _exceptionsStack = new Stack<ExceptionJumpInfo>();
             _module = null;
             _currentFrame = null;
-            _mem = null;
+            _process = null;
+            _typeManager = null;
             _globalContexts = null;
         }
 
@@ -410,7 +390,7 @@ namespace ScriptEngine.Machine
 
                     var shouldRethrow = ShouldRethrowException(exc);
 
-                    if (MachineStopped != null && _stopManager != null)
+                    if (_stopManager != null)
                         if (_stopManager.Breakpoints.StopOnAnyException(exc.MessageWithoutCodeFragment) || 
                             shouldRethrow && _stopManager.Breakpoints.StopOnUncaughtException(exc.MessageWithoutCodeFragment))
                             EmitStopOnException();
@@ -755,7 +735,7 @@ namespace ScriptEngine.Machine
         {
             var op2 = _operationStack.Pop();
             var op1 = _operationStack.Pop();
-            _operationStack.Push(ValueFactory.Add(op1.GetRawValue(), op2.GetRawValue()));
+            _operationStack.Push(ValueFactory.Add(op1.GetRawValue(), op2.GetRawValue(), _process));
             NextInstruction();
         }
 
@@ -913,7 +893,7 @@ namespace ScriptEngine.Machine
 
             IValue[] argValues = PopArguments();
 
-            var definedParameters = methodSignature.GetParameters();
+            var definedParameters = methodSignature.GetBslParameters();
             bool needsDiscarding;
 
             if (scope == _currentFrame.ThisScope) // local call
@@ -979,12 +959,12 @@ namespace ScriptEngine.Machine
  
             if (asFunc)
             {
-                instance.CallAsFunction(index, realArgs, out IValue retVal);
+                instance.CallAsFunction(index, realArgs, out IValue retVal, _process);
                 _operationStack.Push(retVal);
             }
             else
             {
-                instance.CallAsProcedure(index, realArgs);
+                instance.CallAsProcedure(index, realArgs, _process);
             }
             NextInstruction();
         }
@@ -1018,7 +998,7 @@ namespace ScriptEngine.Machine
         {
             PrepareContextCallArguments(arg, out IRuntimeContextInstance context, out int methodId, out IValue[] argValues);
 
-            context.CallAsProcedure(methodId, argValues);
+            context.CallAsProcedure(methodId, argValues, _process);
             NextInstruction();
         }
 
@@ -1031,7 +1011,7 @@ namespace ScriptEngine.Machine
                 throw RuntimeException.UseProcAsAFunction();
             }
 
-            context.CallAsFunction(methodId, argValues, out IValue retVal);
+            context.CallAsFunction(methodId, argValues, out IValue retVal, _process);
             _operationStack.Push(retVal);
             NextInstruction();
         }
@@ -1061,7 +1041,7 @@ namespace ScriptEngine.Machine
             else
             {
                 var methodInfo = context.GetMethodInfo(methodId);
-                var methodParams = methodInfo.GetParameters();
+                var methodParams = methodInfo.GetBslParameters();
 
                 if (argCount > methodParams.Length)
                     throw RuntimeException.TooManyArgumentsPassed();
@@ -1186,18 +1166,19 @@ namespace ScriptEngine.Machine
             }
 
             var typeName = _operationStack.Pop().AsString();
-            if (!TypeManager.TryGetType(typeName, out var type))
+            if (!_typeManager.TryGetType(typeName, out var type))
             {
                 throw RuntimeException.TypeIsNotDefined(typeName);
             }
             
             // TODO убрать cast после рефакторинга ITypeFactory
-            var factory = (TypeFactory)TypeManager.GetFactoryFor(type);
+            var factory = (TypeFactory)_typeManager.GetFactoryFor(type);
             var context = new TypeActivationContext
             {
                 TypeName = typeName,
-                TypeManager = _mem.TypeManager,
-                Services = _mem.Services
+                TypeManager = _typeManager,
+                Services = _process.Services,
+                CurrentProcess = _process
             };
             
             var instance = (IValue)factory.Activate(context, argValues);
@@ -1215,7 +1196,7 @@ namespace ScriptEngine.Machine
             var rci = collection.AsObject();
             if (rci is ICollectionContext<IValue> context)
             {
-                var iterator = context.GetManagedIterator();
+                var iterator = new CollectionEnumerator(context.GetEnumerator(_process));
                 _currentFrame.LocalFrameStack.Push(iterator);
                 NextInstruction();
 
@@ -1325,22 +1306,21 @@ namespace ScriptEngine.Machine
 
         private void EmitStopOnException()
         {
-            if (MachineStopped != null && _stopManager != null)
+            if (_stopManager != null)
             {
                 CreateFullCallstack();
                 var args = new MachineStoppedEventArgs(MachineStopReason.Exception, Environment.CurrentManagedThreadId, "");
-                MachineStopped?.Invoke(this, args);
+                _stopManager.NotifyStop(MachineStopReason.Exception, "");
             }
         }
 
         private void EmitStopEventIfNecessary()
         {
-            if (MachineStopped != null && _stopManager != null && _stopManager.ShouldStopAtThisLine(_module.Source.Location, _currentFrame))
+            if (_stopManager != null && _stopManager.ShouldStopAtThisLine(_module.Source.Location, _currentFrame))
             {
                 CreateFullCallstack();
-                var args = new MachineStoppedEventArgs(_stopManager.LastStopReason, Environment.CurrentManagedThreadId, _stopManager.LastStopErrorMessage);
+                _stopManager.NotifyStop();
                 _stopManager.LastStopErrorMessage = string.Empty;
-                MachineStopped?.Invoke(this, args);
             }
         }
 
@@ -1391,7 +1371,7 @@ namespace ScriptEngine.Machine
                 return;
             }
             
-            var localScope = new AttachedContext(new UserScriptContextInstance(module), _currentFrame.Locals);
+            var localScope = new AttachedContext(new EvalExecLocalScope(module), _currentFrame.Locals);
             var scopes = CreateFrameScopes(_currentFrame.Scopes, localScope);
             
             var mi = (MachineMethodInfo)module.Methods[0];
@@ -1507,8 +1487,8 @@ namespace ScriptEngine.Machine
 
         private void Str(int arg)
         {
-            string value = _operationStack.Pop().AsString();
-            _operationStack.Push(ValueFactory.Create(value));
+            var value = (BslValue)_operationStack.Pop().GetRawValue();
+            _operationStack.Push(ValueFactory.Create(value.ConvertToString(_process)));
             NextInstruction();
         }
 
@@ -1550,7 +1530,7 @@ namespace ScriptEngine.Machine
         private void Type(int arg)
         {
             var typeName = _operationStack.Pop().AsString();
-            var type = TypeManager.GetTypeByName(typeName);
+            var type = _typeManager.GetTypeByName(typeName);
             var value = new BslTypeValue(type);
             _operationStack.Push(value);
             NextInstruction();
@@ -2397,18 +2377,19 @@ namespace ScriptEngine.Machine
             }
             
             var typeName = _operationStack.Pop().AsString();
-            if (!TypeManager.TryGetType(typeName, out var type))
+            if (!_typeManager.TryGetType(typeName, out var type))
             {
                 throw RuntimeException.TypeIsNotDefined(typeName);
             }
             
             // TODO убрать cast после рефакторинга ITypeFactory
-            var factory = (TypeFactory)TypeManager.GetFactoryFor(type);
+            var factory = (TypeFactory)_typeManager.GetFactoryFor(type);
             var context = new TypeActivationContext
             {
                 TypeName = typeName,
-                TypeManager = _mem.TypeManager,
-                Services = _mem.Services
+                TypeManager = _typeManager,
+                Services = _process.Services,
+                CurrentProcess = _process
             };
 
             var instance = factory.Activate(context, argValues);
@@ -2429,7 +2410,7 @@ namespace ScriptEngine.Machine
                 .WithName($"{entryId}:<eval>")
                 .Build();
 
-            var compiler = _mem.Services.Resolve<EvalCompiler>();
+            var compiler = _process.Services.Resolve<EvalCompiler>();
             compiler.SharedSymbols = ExtractCompilerContext();
             var module = (StackRuntimeModule)compiler.CompileExpression(stringSource);
             return module;
@@ -2444,7 +2425,7 @@ namespace ScriptEngine.Machine
                 .WithName($"{entryId}:<exec>")
                 .Build();
             
-            var compiler = _mem.Services.Resolve<EvalCompiler>();
+            var compiler = _process.Services.Resolve<EvalCompiler>();
             compiler.SharedSymbols = ExtractCompilerContext();
             var module = (StackRuntimeModule)compiler.CompileBatch(stringSource);
             
@@ -2522,22 +2503,5 @@ namespace ScriptEngine.Machine
                 Source = module.Source.Location,
                 FrameObject = frame
             };
-
-        // multithreaded instance
-        [ThreadStatic]
-        private static MachineInstance _currentThreadWorker;
-        
-        private static void SetCurrentMachineInstance(MachineInstance current)
-            => _currentThreadWorker = current;
-
-        public static MachineInstance Current
-        {
-            get
-            {
-                _currentThreadWorker ??= new MachineInstance();
-
-                return _currentThreadWorker;
-            }
-        }
     }
 }

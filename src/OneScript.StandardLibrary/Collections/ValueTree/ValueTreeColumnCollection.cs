@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary.TypeDescriptions;
 using OneScript.Types;
 using ScriptEngine.Machine;
@@ -21,19 +22,11 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
     /// <summary>
     /// Коллекция колонок дерева значений.
     /// </summary>
-    [ContextClass("КоллекцияКолонокДереваЗначений", "ValueTreeColumnCollection", TypeUUID = "7FEEB150-ECAB-4971-865B-6CCBECC7D947")]
-    public class ValueTreeColumnCollection : DynamicPropertiesAccessor, ICollectionContext<ValueTreeColumn>, IDebugPresentationAcceptor
+    [ContextClass("КоллекцияКолонокДереваЗначений", "ValueTreeColumnCollection")]
+    public class ValueTreeColumnCollection : AutoContext<ValueTreeColumnCollection>, ICollectionContext<ValueTreeColumn>, IDebugPresentationAcceptor
     {
         private readonly List<ValueTreeColumn> _columns = new List<ValueTreeColumn>();
         
-        private static TypeDescriptor _instanceType = typeof(ValueTreeColumnCollection).GetTypeFromClassMarkup();
-        private static readonly ContextMethodsMapper<ValueTreeColumnCollection> _methods = new ContextMethodsMapper<ValueTreeColumnCollection>();
-
-        public ValueTreeColumnCollection()
-        {
-            DefineType(_instanceType);
-        }
-
         /// <summary>
         /// Добавляет новую колонку.
         /// </summary>
@@ -95,6 +88,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             return _columns.Count;
         }
+        
+        public int Count(IBslProcess process) => Count();
 
         /// <summary>
         /// Ищет колонку по имени.
@@ -236,6 +231,11 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             return false;
         }
+        
+        public override bool IsPropReadable(int propNum)
+        {
+            return true;
+        }
 
         public ValueTreeColumn GetColumnByIIndex(IValue index)
         {
@@ -268,42 +268,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         public override IValue GetIndexedValue(IValue index)
         {
             return GetColumnByIIndex(index);
-        }
-
-        public override BslMethodInfo GetMethodInfo(int methodNumber)
-        {
-            return _methods.GetRuntimeMethod(methodNumber);
-        }
-
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
-        {
-            var binding = _methods.GetCallableDelegate(methodNumber);
-            try
-            {
-                binding(this, arguments);
-            }
-            catch (System.Reflection.TargetInvocationException e)
-            {
-                throw e.InnerException;
-            }
-        }
-
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-        {
-            var binding = _methods.GetCallableDelegate(methodNumber);
-            try
-            {
-                retValue = binding(this, arguments);
-            }
-            catch (System.Reflection.TargetInvocationException e)
-            {
-                throw e.InnerException;
-            }
-        }
-
-        public override int GetMethodNumber(string name)
-        {
-            return _methods.FindMethod(name);
         }
 
         internal List<ValueTreeColumn> GetProcessingColumnList(string columnNamesString)

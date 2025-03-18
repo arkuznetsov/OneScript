@@ -37,8 +37,5 @@ namespace OneScript.Contexts
         {
             return _alias;
         }
-
-        public string TypeUUID { get; set; }
-
     }
 }

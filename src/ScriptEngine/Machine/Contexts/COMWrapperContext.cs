@@ -15,10 +15,11 @@ using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Types;
 using System.Reflection;
+using OneScript.Execution;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    [ContextClass("COMОбъект", "COMObject", TypeUUID = "5E4FA60E-9724-494A-A5C8-5BB0A4F914E0")]
+    [ContextClass("COMОбъект", "COMObject")]
     public abstract class COMWrapperContext : PropertyNameIndexAccessor, 
         ICollectionContext<IValue>,
         IEmptyValueCheck,
@@ -278,6 +279,8 @@ namespace ScriptEngine.Machine.Contexts
         #region ICollectionContext Members
 
         public virtual int Count() => 0;
+
+        public int Count(IBslProcess process) => Count();
 
         bool IEmptyValueCheck.IsEmpty => false;
 

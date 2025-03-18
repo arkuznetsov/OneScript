@@ -5,10 +5,8 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
-using System.Linq;
 using OneScript.Commons;
 using OneScript.Contexts;
-using OneScript.Contexts.Enums;
 using OneScript.Exceptions;
 using OneScript.Values;
 
@@ -198,24 +196,7 @@ namespace ScriptEngine.Machine.Contexts
 
         private static IValue ConvertEnum(object objParam, Type type)
         {
-            if (!type.IsInstanceOfType(objParam))
-                throw ValueMarshallingException.InvalidEnum(type);
-
-            var memberInfo = type.GetMember(objParam.ToString());
-            var valueInfo = memberInfo.FirstOrDefault(x => x.DeclaringType == type);
-            
-            if (valueInfo == null)
-                throw ValueMarshallingException.EnumWithNoAttribute(type);
-            
-            var attrs = valueInfo.GetCustomAttributes(typeof(EnumValueAttribute), false);
-
-            if (attrs.Length == 0)
-                throw ValueMarshallingException.EnumWithNoAttribute(type);
-
-            var itemName = ((EnumValueAttribute)attrs[0]).Name;
-            var enumImpl = GlobalsHelper.GetEnum(type);
-
-            return enumImpl.GetPropValue(itemName);
+            return SimpleEnumsMarshaller.ConvertEnum(objParam, type);
         }
 
         public static T ConvertWrappedEnum<T>(IValue enumeration, T defValue) where T : struct

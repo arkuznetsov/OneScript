@@ -46,7 +46,7 @@ namespace OneScript.StandardLibrary
         /// <param name="arguments">Массив аргументов, передаваемых методу. Следует учесть, что все параметры нужно передавать явно, в том числе необязательные.</param>
         /// <returns>Если вызывается функция, то возвращается ее результат. В противном случае возвращается Неопределено.</returns>
         [ContextMethod("ВызватьМетод", "CallMethod")]
-        public IValue CallMethod(IRuntimeContextInstance target, string methodName, ArrayImpl arguments = null)
+        public IValue CallMethod(IBslProcess process, IRuntimeContextInstance target, string methodName, ArrayImpl arguments = null)
         {
             var methodIdx = target.GetMethodNumber(methodName);
             var methInfo = target.GetMethodInfo(methodIdx);
@@ -55,16 +55,16 @@ namespace OneScript.StandardLibrary
             if (target.DynamicMethodSignatures)
                 argsToPass = arguments?.ToArray() ?? Array.Empty<IValue>();
             else
-                argsToPass = GetArgsToPass(arguments, methInfo.GetParameters());
+                argsToPass = GetArgsToPass(arguments, methInfo.GetBslParameters());
  
             IValue retValue = ValueFactory.Create();
             if (methInfo.IsFunction())
             {
-                target.CallAsFunction(methodIdx, argsToPass, out retValue);
+                target.CallAsFunction(methodIdx, argsToPass, out retValue, process);
             }
             else
             {
-                target.CallAsProcedure(methodIdx, argsToPass);
+                target.CallAsProcedure(methodIdx, argsToPass, process);
             }
 
             if (arguments != null)
@@ -340,7 +340,7 @@ namespace OneScript.StandardLibrary
             foreach (var methInfo in methods)
             {
                 var annotations = methInfo.GetAnnotations();
-                var parameters = methInfo.GetParameters();
+                var parameters = methInfo.GetBslParameters();
                 
                 ValueTableRow new_row = result.Add();
                 new_row.Set(nameColumn, ValueFactory.Create(methInfo.Name));

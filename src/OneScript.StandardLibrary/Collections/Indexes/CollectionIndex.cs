@@ -20,18 +20,16 @@ using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary.Collections.Indexes
 {
-    [ContextClass("ИндексКоллекции", "CollectionIndex", TypeUUID = "48D150D4-A0DA-47CA-AEA3-D4078A731C11")]
+    [ContextClass("ИндексКоллекции", "CollectionIndex")]
     public class CollectionIndex : AutoCollectionContext<CollectionIndex, IValue>
     {
-        private static readonly TypeDescriptor _objectType = typeof(CollectionIndex).GetTypeFromClassMarkup();
-
         private readonly List<IValue> _fields = new List<IValue>();
         private readonly IIndexCollectionSource _source;
 
         private readonly IDictionary<CollectionIndexKey, IList<IValue>> _data =
             new Dictionary<CollectionIndexKey, IList<IValue>>();
         
-        public CollectionIndex(IIndexCollectionSource source, IEnumerable<IValue> fields) : base(_objectType)
+        public CollectionIndex(IIndexCollectionSource source, IEnumerable<IValue> fields)
         {
             _source = source;
             _fields.AddRange(fields);

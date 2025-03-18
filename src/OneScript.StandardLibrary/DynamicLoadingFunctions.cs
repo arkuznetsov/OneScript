@@ -9,6 +9,7 @@ using OneScript.Commons;
 using OneScript.Compilation;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Language;
 using OneScript.StandardLibrary.Collections;
 using OneScript.StandardLibrary.NativeApi;
@@ -40,12 +41,12 @@ namespace OneScript.StandardLibrary
         /// <example>ПодключитьСценарий("C:\file.os", "МойОбъект");
         /// А = Новый МойОбъект();</example>
         [ContextMethod("ПодключитьСценарий", "AttachScript")]
-        public void AttachScript(string path, string typeName)
+        public void AttachScript(IBslProcess process, string path, string typeName)
         {
             var compiler = _engine.GetCompilerService();
             try
             {
-                _engine.AttachedScriptsFactory.AttachByPath(compiler, path, typeName);
+                _engine.AttachedScriptsFactory.AttachByPath(compiler, path, typeName, process);
             }
             catch (SyntaxErrorException e)
             {
@@ -68,17 +69,20 @@ namespace OneScript.StandardLibrary
         /// Загруженный сценарий возвращается, как самостоятельный объект. 
         /// Экспортные свойства и методы скрипта доступны для вызова.
         /// </summary>
+        /// <param name="process"></param>
         /// <param name="code">Текст сценария</param>
         /// <param name="externalContext">Структура. Глобальные свойства, которые будут инжектированы в область видимости загружаемого скрипта. (Необязательный)</param>
         /// <example>
         /// Контекст = Новый Структура("ЧислоПи", 3.1415); // 4 знака хватит всем
         /// ЗагрузитьСценарийИзСтроки("Сообщить(ЧислоПи);", Контекст);</example>
         [ContextMethod("ЗагрузитьСценарийИзСтроки", "LoadScriptFromString")]
-        public IRuntimeContextInstance LoadScriptFromString(string code, StructureImpl externalContext = null)
+        public IRuntimeContextInstance LoadScriptFromString(IBslProcess process,
+            string code,
+            StructureImpl externalContext = null)
         {
             var compiler = _engine.GetCompilerService();
             if(externalContext == null)
-                return _engine.AttachedScriptsFactory.LoadFromString(compiler, code);
+                return _engine.AttachedScriptsFactory.LoadFromString(compiler, code, process);
             else
             {
                 var extData = new ExternalContextData();
@@ -90,7 +94,7 @@ namespace OneScript.StandardLibrary
 
                 try
                 {
-                    return _engine.AttachedScriptsFactory.LoadFromString(compiler, code, extData);
+                    return _engine.AttachedScriptsFactory.LoadFromString(compiler, code, process, extData);
                 }
                 catch (SyntaxErrorException e)
                 {
@@ -108,24 +112,25 @@ namespace OneScript.StandardLibrary
                 }
             }
         }
-        
+
         /// <summary>
         /// Создает экземпляр объекта на основании стороннего файла сценария.
         /// Загруженный сценарий возвращается, как самостоятельный объект. 
         /// Экспортные свойства и методы скрипта доступны для вызова.
         /// </summary>
         /// <param name="path">Путь к подключаемому сценарию</param>
+        /// <param name="process"></param>
         /// <param name="externalContext">Структура. Глобальные свойства, которые будут инжектированы в область видимости загружаемого скрипта. (Необязательный)</param>
         /// <example>
         /// Контекст = Новый Структура("ЧислоПи", 3.1415); // 4 знака хватит
         /// // В коде скрипта somescript.os будет доступна глобальная переменная "ЧислоПи"
         /// Объект = ЗагрузитьСценарий("somescript.os", Контекст);</example>
         [ContextMethod("ЗагрузитьСценарий", "LoadScript")]
-        public IRuntimeContextInstance LoadScript(string path, StructureImpl externalContext = null)
+        public IRuntimeContextInstance LoadScript(IBslProcess process, string path, StructureImpl externalContext = null)
         {
             var compiler = _engine.GetCompilerService();
             if(externalContext == null)
-                return _engine.AttachedScriptsFactory.LoadFromPath(compiler, path);
+                return _engine.AttachedScriptsFactory.LoadFromPath(compiler, path, process);
             else
             {
                 ExternalContextData extData = new ExternalContextData();
@@ -135,7 +140,7 @@ namespace OneScript.StandardLibrary
                     extData.Add(item.Key.AsString(), item.Value);
                 }
 
-                return _engine.AttachedScriptsFactory.LoadFromPath(compiler, path, extData);
+                return _engine.AttachedScriptsFactory.LoadFromPath(compiler, path, extData, process);
 
             }
         }

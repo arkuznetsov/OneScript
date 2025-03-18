@@ -8,6 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Dynamic;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using ScriptEngine.Machine;
 
@@ -16,6 +17,11 @@ namespace OneScript.Values
     public abstract class BslValue : DynamicObject, IComparable<BslValue>, IEquatable<BslValue>, IValue
     {
         protected virtual string ConvertToString() => ToString();
+        
+        public virtual string ConvertToString(IBslProcess process)
+        {
+            return ConvertToString();
+        }
 
         public abstract int CompareTo(BslValue other);
 

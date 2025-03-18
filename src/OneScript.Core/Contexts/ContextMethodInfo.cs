@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using OneScript.Commons;
+using OneScript.Execution;
 
 namespace OneScript.Contexts
 {
@@ -39,6 +40,7 @@ namespace OneScript.Contexts
         {
             _realMethod = realMethod;
             _scriptMark = binding;
+            InjectsProcess = _realMethod.GetParameters().FirstOrDefault()?.ParameterType == typeof(IBslProcess);
         }
 
         public override Type ReturnType => _realMethod.ReturnType;
@@ -100,6 +102,8 @@ namespace OneScript.Contexts
 
 
         public object UnderlyingObject => _realMethod;
+
+        public bool InjectsProcess { get; }
 
         public MethodInfo GetWrappedMethod() => _realMethod;
     }

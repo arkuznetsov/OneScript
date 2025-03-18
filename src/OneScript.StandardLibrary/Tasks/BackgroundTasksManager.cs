@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary.Collections;
 using OneScript.Types;
 using OneScript.Values;
@@ -50,17 +51,8 @@ namespace OneScript.StandardLibrary.Tasks
             var taskCreationOptions = longRunning ? TaskCreationOptions.LongRunning : TaskCreationOptions.None;
             var worker = new Task(() =>
             {
-                MachineInstance.Current.SetMemory(_runtimeContext);
-                var debugger = _runtimeContext.Services.TryResolve<IDebugController>();
-                debugger?.AttachToThread();
-                try
-                {
-                    task.ExecuteOnCurrentThread();
-                }
-                finally
-                {
-                    debugger?.DetachFromThread();
-                }
+                var process = _runtimeContext.Services.Resolve<IBslProcessFactory>().NewProcess();
+                task.ExecuteOnCurrentThread(process);
 
             }, taskCreationOptions);
 
