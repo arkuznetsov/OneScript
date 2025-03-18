@@ -1407,6 +1407,11 @@ namespace OneScript.Native.Compiler
         {
             var factArguments = new List<Expression>();
 
+            if (injectsProcess)
+            {
+                factArguments.Add(_processParameter);
+            }
+
             var parameters = argList.Children.Select(passedArg =>
                 passedArg.Children.Count > 0
                     ? ConvertToExpressionTree(passedArg.Children[0])
