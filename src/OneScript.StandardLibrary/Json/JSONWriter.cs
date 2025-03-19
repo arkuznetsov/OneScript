@@ -123,96 +123,81 @@ namespace OneScript.StandardLibrary.Json
 
         string EscapeCharacters(string sval, bool EscapeSlash)
         {
-            var sb = new StringBuilder(sval);
+            var sb = new StringBuilder();
 
-            int Length = sval.Length;
-            for (var i = 0; i < Length; i++)
+            int length = sval.Length;
+            int start = 0;
+
+            for (var i = 0; i < length; i++)
             {
-                char c = sb[i];
+                char c = sval[i];
+                string? escapedValue = null;
+
                 if (EscapeSlash && c == '/')
                 {
-                    sb.Replace("/", "\\/", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\/";
                 }
                 else if (_settings.EscapeAmpersand && c == '&')
                 {
-                    sb.Replace("&", "\\&", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\&";
                 }
                 else if ((_settings.EscapeSingleQuotes || !_settings.UseDoubleQuotes) && c == '\'')
                 {
-                    sb.Replace("'", "\\u0027", i, 1);
-                    Length = Length + 5;
-                    i = i + 5;
+                    escapedValue = "\\u0027";
                 }
                 else if (_settings.EscapeAngleBrackets && c == '<')
                 {
-                    sb.Replace("<", "\\u003C", i, 1);
-                    Length = Length + 5;
-                    i = i + 5;
+                    escapedValue = "\\u003C";
                 }
                 else if (_settings.EscapeAngleBrackets && c == '>')
                 {
-                    sb.Replace(">", "\\u003E", i, 1);
-                    Length = Length + 5;
-                    i = i + 5;
+                    escapedValue = "\\u003E";
                 }
                 else if (c == '\r')
                 {
-                    sb.Replace("\r", "\\r", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\r";
                 }
                 else if (c == '\n')
                 {
-                    sb.Replace("\n", "\\n", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\n";
                 }
                 else if (c == '\f')
                 {
-                    sb.Replace("\f", "\\f", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\f";
                 }
                 else if (c == '\"')
                 {
-                    sb.Replace("\"", "\\\"", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\\"";
                 }
                 else if (c == '\b')
                 {
-                    sb.Replace("\b", "\\b", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\b";
                 }
                 else if (c == '\t')
                 {
-                    sb.Replace("\t", "\\t", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\t";
                 }
                 else if (c == '\\')
                 {
-                    sb.Replace("\\", "\\\\", i, 1);
-                    Length++;
-                    i++;
+                    escapedValue = "\\\\";
                 }
 
                 // Спец. символы: \u0000, \u0001, \u0002, ... , \u001e, \u001f;
                 else if ((int)c >= 0 && (int)c <= 31)
                 {
-                    string unicode = "\\u" + ((int)c).ToString("X4").ToLower();
-                    sb.Replace(c.ToString(), unicode, i, 1);
-                    Length = Length + 5;
-                    i = i + 5;
+                    escapedValue = "\\u" + ((int)c).ToString("x4");
                 }
 
+                if (escapedValue != null)
+                {
+                    sb.Append(sval, start, i - start);
+                    sb.Append(escapedValue);
+                    start = i + 1;
+                }
             }
+
             sb.Insert(0, _writer.QuoteChar);
+            sb.Append(sval, start, length - start);
             sb.Append(_writer.QuoteChar);
             return sb.ToString();
         }
