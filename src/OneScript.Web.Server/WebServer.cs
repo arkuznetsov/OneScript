@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using OneScript.Contexts;
 using OneScript.Types;
 using ScriptEngine.Machine;
@@ -16,6 +17,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using OneScript.Execution;
 
 namespace OneScript.Web.Server
@@ -99,6 +101,8 @@ namespace OneScript.Web.Server
                 options.AllowSynchronousIO = true;
                 options.ListenAnyIP(Port);
             });
+
+            builder.Services.Configure<FormOptions>(builder.Configuration.GetSection("FormOptions"));
 
             _app = builder.Build();
 
