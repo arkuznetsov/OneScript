@@ -88,9 +88,9 @@ namespace OneScript.Contexts
 
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => _realMethod.ReturnTypeCustomAttributes;
 
-        public override string Name => _scriptMark.GetName();
+        public override string Name => _scriptMark.Name;
         
-        public override string Alias => _scriptMark.GetAlias();
+        public override string Alias => _scriptMark.Alias;
 
         public override Type DeclaringType => _realMethod.DeclaringType;
 

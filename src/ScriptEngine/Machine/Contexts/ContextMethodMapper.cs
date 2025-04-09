@@ -165,8 +165,8 @@ namespace ScriptEngine.Machine.Contexts
                 scriptMethInfo.IsExport = true;
                 scriptMethInfo.IsDeprecated = binding.IsDeprecated;
                 scriptMethInfo.ThrowOnUseDeprecated = binding.ThrowOnUse;
-                scriptMethInfo.Name = binding.GetName();
-                scriptMethInfo.Alias = binding.GetAlias();
+                scriptMethInfo.Name = binding.Name;
+                scriptMethInfo.Alias = binding.Alias;
 
                 scriptMethInfo.Params = paramDefs;
 

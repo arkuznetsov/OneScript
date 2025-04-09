@@ -22,7 +22,7 @@ namespace OneScript.StandardLibrary
     /// <summary>
     /// Динамическое подключение сценариев
     /// </summary>
-    [GlobalContext(ManualRegistration = true)]
+    [GlobalContext(ManualRegistration = true, Category = "Динамическое подключение сценариев")]
     public class DynamicLoadingFunctions : GlobalContextBase<DynamicLoadingFunctions>
     {
         private readonly ScriptingEngine _engine;

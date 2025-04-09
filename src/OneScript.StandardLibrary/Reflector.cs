@@ -496,7 +496,7 @@ namespace OneScript.StandardLibrary
 
             var builder = new ClassBuilder(clrType);
 
-            return builder.SetTypeName(attrib.GetName())
+            return builder.SetTypeName(attrib.Name)
                    .ExportDefaults()
                    .Build();
         }

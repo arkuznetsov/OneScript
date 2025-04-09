@@ -27,4 +27,8 @@
         <Copyright>Copyright (c) 2021 EvilBeaver</Copyright>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <DocumentationFile>bin\Release\$(MSBuildProjectName).xml</DocumentationFile>
+    </PropertyGroup>
+
 </Project>

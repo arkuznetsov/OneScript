@@ -18,6 +18,19 @@ using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary.Collections
 {
+    /// <summary>
+    /// Универсальный объект, хранящий значения по именам свойств.
+    /// Доступ к элементам структуры возможен через точку, или по имени свойства в квадратных скобках []
+    ///
+    /// Возможен обход в цикле <c>Для Каждого Из</c>. При обходе, элементами коллекции являются объекты типа <see cref="KeyAndValueImpl"/>КлючИЗначение</see>
+    /// </summary>
+    /// <example>
+    /// Пользователь = Новый Структура("Логин, Адрес, Пароль");
+    /// Пользователь.Логин = "user";
+    /// Пользователь.Адрес = "somemail@server.com";
+    /// Пользователь.Пароль = "password";
+    /// </example>
+    /// <seealso cref="KeyAndValueImpl"/>
     [ContextClass("Структура", "Structure")]
     public class StructureImpl : DynamicPropertiesAccessor, ICollectionContext<KeyAndValueImpl>, IDebugPresentationAcceptor
     {

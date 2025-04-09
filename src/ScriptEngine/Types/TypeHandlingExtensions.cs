@@ -25,8 +25,8 @@ namespace ScriptEngine.Types
 
             var type = new TypeDescriptor(
                 classType,
-                attr.GetName(),
-                attr.GetAlias());
+                attr.Name,
+                attr.Alias);
 
             manager.RegisterType(type);
             return type;
@@ -44,8 +44,8 @@ namespace ScriptEngine.Types
             
             return new TypeDescriptor(
                 classType,
-                attr.GetName(),
-                attr.GetAlias());
+                attr.Name,
+                attr.Alias);
         }
     }
 }

@@ -14,6 +14,12 @@ using ScriptEngine.Machine.Contexts;
 
 namespace OneScript.StandardLibrary.Collections
 {
+    /// <summary>
+    /// Стандартный ассоциативный массив (словарь), соответствие вида Ключ->Значение.
+    /// Ключом данной коллекции может выступать произвольный объект.
+    /// Доступен обход в цикле <c>Для Каждого Из</c>, элементами коллекции выступают объекты вида <see cref="KeyAndValueImpl">КлючИЗначение</see>.
+    /// </summary>
+    /// <seealso cref="KeyAndValueImpl"/>
     [ContextClass("Соответствие", "Map")]
     public class MapImpl : AutoCollectionContext<MapImpl, KeyAndValueImpl>
     {
