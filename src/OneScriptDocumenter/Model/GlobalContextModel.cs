@@ -30,5 +30,8 @@ namespace OneScriptDocumenter.Model
 
         [JsonConverter(typeof(OwnerConverter))]
         public Type Owner { get; set; }
+        
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public IEnumerable<string> SeeAlso { get; set; }
     }
 }

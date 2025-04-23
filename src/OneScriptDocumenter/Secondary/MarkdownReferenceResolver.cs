@@ -38,7 +38,17 @@ namespace OneScriptDocumenter.Secondary
             var ownerType = reference.Owner;
             var memberInfo = reference.Member;
 
-            var target = _referenceFactory.CreateReference(ownerType, memberInfo);
+            string target;
+            if (linkText != "")
+            {
+                target = _referenceFactory.CreateReference(ownerType, memberInfo);
+            }
+            else
+            {
+                var data = _referenceFactory.CreateReferenceWithText(ownerType, memberInfo);
+                linkText = data.LinkText;
+                target = data.LinkTarget;
+            }
 
             return MarkdownLink(target, linkText);
         }

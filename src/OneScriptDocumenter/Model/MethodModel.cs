@@ -20,8 +20,6 @@ namespace OneScriptDocumenter.Model
         public string Description { get; set; }
         public string Title => Name.Russian;
         
-        public string ClrName { get; set; }
-
         public List<ParameterModel> Parameters { get; set; }
         
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -29,5 +27,8 @@ namespace OneScriptDocumenter.Model
         
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Example { get; set; }
+        
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public IEnumerable<string> SeeAlso { get; set; }
     }
 }

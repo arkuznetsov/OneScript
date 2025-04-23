@@ -129,7 +129,8 @@ namespace OneScriptDocumenter.Secondary
                 Name = new BilingualString(typeMarkup.Name, typeMarkup.Alias),
                 Description = XmlSummary(primaryDoc.SelfDoc),
                 Items = LoadSystemEnumItems(primaryDoc.Owner),
-                Example = XmlTextBlock(primaryDoc.SelfDoc, "example")
+                Example = XmlTextBlock(primaryDoc.SelfDoc, "example"),
+                SeeAlso = XmlSeeAlso(primaryDoc.SelfDoc)
             };
         }
 
@@ -169,7 +170,8 @@ namespace OneScriptDocumenter.Secondary
                 Name = new BilingualString(typeMarkup.Name, typeMarkup.Alias),
                 Description = XmlSummary(primaryDoc.SelfDoc),
                 Example = XmlTextBlock(primaryDoc.SelfDoc, "example"),
-                Items = primaryDoc.Fields.Select(kv => ConvertEnumValue(kv.Key, kv.Value)).ToList()
+                Items = primaryDoc.Fields.Select(kv => ConvertEnumValue(kv.Key, kv.Value)).ToList(),
+                SeeAlso = XmlSeeAlso(primaryDoc.SelfDoc)
             };
         }
 
@@ -185,6 +187,7 @@ namespace OneScriptDocumenter.Secondary
                 Properties = primaryDoc.Properties.Select(kv => ConvertProperty(kv.Key, kv.Value)).ToList(),
                 Methods = primaryDoc.Methods.Select(kv => ConvertMethod(kv.Key, kv.Value)).ToList(),
                 Constructors = primaryDoc.Constructors.Select(kv => ConvertConstructor(kv.Key, kv.Value)).ToList(),
+                SeeAlso = XmlSeeAlso(primaryDoc.SelfDoc)
             };
         }
 
@@ -231,6 +234,7 @@ namespace OneScriptDocumenter.Secondary
             contextModel.Description = XmlSummary(primaryDoc.SelfDoc);
             contextModel.Properties = primaryDoc.Properties.Select(kv => ConvertProperty(kv.Key, kv.Value)).ToList();
             contextModel.Methods = primaryDoc.Methods.Select(kv => ConvertMethod(kv.Key, kv.Value)).ToList();
+            contextModel.SeeAlso = XmlSeeAlso(primaryDoc.SelfDoc);
 
             return contextModel;
         }
@@ -257,6 +261,7 @@ namespace OneScriptDocumenter.Secondary
             
             model.ClrName = property.Name;
             model.Example = XmlTextBlock(documentation, "example", true);
+            model.SeeAlso = XmlSeeAlso(documentation);
 
             return model;
         }
@@ -294,9 +299,9 @@ namespace OneScriptDocumenter.Secondary
             
             model.Description = XmlSummary(documentation);
             model.ReturnTypeDocumentation = XmlReturns(documentation);
-            model.ClrName = method.Name;
             model.Example = XmlTextBlock(documentation, "example", true);
             model.Parameters = CreateParameters(method, documentation);
+            model.SeeAlso = XmlSeeAlso(documentation);
 
             return model;
         }
@@ -342,8 +347,6 @@ namespace OneScriptDocumenter.Secondary
                 model.Name = new BilingualString(markup.Name, markup.Alias);
             }
             
-            model.ClrName = method.Name;
-
             if (documentation != null)
             {
                 model.Description = XmlSummary(documentation);
@@ -391,6 +394,12 @@ namespace OneScriptDocumenter.Secondary
             var stringValue = _docConverter.ConvertTextBlock(docs?.Element(nodeName), !isCode);
             return stringValue == "" ? null : // Чтобы свойство не писал сериализатор JSON
                 stringValue;
+        }
+        
+        private IReadOnlyCollection<string> XmlSeeAlso(XElement doc)
+        {
+            var links = _docConverter.ConvertSeeAlsoList(doc);
+            return links.Count == 0 ? null : links;
         }
 
         private class FakeTypeManager : ITypeManager

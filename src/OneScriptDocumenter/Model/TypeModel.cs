@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using OneScript.Localization;
 using OneScriptDocumenter.Model.Json;
@@ -32,5 +33,8 @@ namespace OneScriptDocumenter.Model
         
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Example { get; set; }
+        
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public IEnumerable<string> SeeAlso { get; set; }
     }
 }

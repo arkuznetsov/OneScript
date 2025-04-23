@@ -5,6 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using OneScript.Localization;
 
@@ -29,5 +30,8 @@ namespace OneScriptDocumenter.Model
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Example { get; set; } = "";
+        
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public IEnumerable<string> SeeAlso { get; set; }
     }
 }

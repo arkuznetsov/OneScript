@@ -5,7 +5,10 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -33,6 +36,40 @@ namespace OneScriptDocumenter.Secondary
             return markdownContent.ToString();
         }
 
+        public IReadOnlyCollection<string> ConvertSeeAlsoList(XElement docs)
+        {
+            if (docs == null)
+                return Array.Empty<string>();
+            
+            var seeAlso = docs.Elements("seealso").ToList();
+            if (seeAlso.Count == 0)
+                return Array.Empty<string>();
+
+            return seeAlso.Select(node =>
+            {
+                var markdownContent = new StringBuilder();
+                ProcessLinkElement(node, markdownContent);
+                return markdownContent.ToString();
+            }).ToList();
+        }
+
+        private void ProcessLinkElement(XElement node, StringBuilder markdownContent)
+        {
+            var targetAttribute = node.Attribute("cref");
+            if (targetAttribute == null)
+            {
+                // Не будем специально обрабатывать этот элемент
+                VisitNodes(markdownContent, node);
+            }
+            else
+            {
+                var referenceTarget = targetAttribute.Value;
+                var referenceText = node.Value;
+                var linkCode = _referenceResolver.Resolve(referenceTarget, referenceText);
+                markdownContent.Append(linkCode);
+            }
+        }
+
         private void VisitNodes(StringBuilder markdownContent, XElement textBlock)
         {
             bool trimFirstLine = true;
@@ -55,19 +92,7 @@ namespace OneScriptDocumenter.Secondary
         {
             if (node.Name == "see")
             {
-                var targetAttribute = node.Attribute("cref");
-                if (targetAttribute == null)
-                {
-                    // Не будем специально обрабатывать этот элемент
-                    VisitNodes(markdownContent, node);
-                }
-                else
-                {
-                    var referenceTarget = targetAttribute.Value;
-                    var referenceText = node.Value;
-                    var linkCode = _referenceResolver.Resolve(referenceTarget, referenceText);
-                    markdownContent.Append(linkCode);
-                }
+                ProcessLinkElement(node, markdownContent);
             }
             else if (node.Name == "c")
             {

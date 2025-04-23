@@ -15,6 +15,24 @@ namespace OneScriptDocumenter.Secondary
     public class ReferenceFactory
     {
         private string _baseUrl = "/syntax/";
+
+        public struct ReferenceData
+        {
+            public string LinkTarget { get; set; }
+            public string LinkText { get; set; }
+        }
+
+        public ReferenceData CreateReferenceWithText(Type ownerType, MemberInfo memberInfo = null)
+        {
+            var typeNameInLink = GetBslNameForAnnotatedObject(ownerType);
+            var memberNameInLink = GetBslNameForAnnotatedObject(memberInfo);
+
+            return new ReferenceData
+            {
+                LinkTarget = LinkTarget(typeNameInLink, memberNameInLink),
+                LinkText = memberNameInLink ?? typeNameInLink
+            };
+        }
         
         public string CreateReference(Type ownerType, MemberInfo memberInfo = null)
         {
