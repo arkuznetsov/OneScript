@@ -210,7 +210,7 @@ namespace OneScript.StandardLibrary.Text
         /// <summary>
         /// Воспроизводит звуковой сигнал.
         /// </summary>
-        [ContextMethod("Сигнал")]
+        [ContextMethod("Сигнал", "Beep")]
         public void Beep()
         {
             Console.Beep();

@@ -306,7 +306,7 @@ namespace OneScript.StandardLibrary.Binary
         /// закрывает поток и возвращает результат в виде двоичных данных
         /// </summary>
         /// <returns></returns>
-        [ContextMethod("ЗакрытьИПолучитьДвоичныеДанные")]
+        [ContextMethod("ЗакрытьИПолучитьДвоичныеДанные", "CloseAndGetBinaryData")]
         public BinaryDataContext CloseAndGetBinaryData()
         {
             byte[] bytes;
