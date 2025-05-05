@@ -29,5 +29,6 @@ namespace OneScript.Contexts.Enums
 		public string TypeUUID { get; set; }
 		
 		public string ValueTypeUUID { get; set; }
+		public bool IsDeprecated { get; set; }
     }
 }
