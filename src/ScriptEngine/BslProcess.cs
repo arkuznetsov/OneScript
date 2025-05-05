@@ -56,6 +56,7 @@ namespace ScriptEngine
                 if (notifyExecutors)
                 {
                     Array.ForEach(_executorProviders, e => e.AfterProcessExit(this));
+                    _isRunning = false;
                 }
             }
         }
