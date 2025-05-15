@@ -11,7 +11,26 @@ ARG VERSION="dev"
 RUN mono /var/ovm/ovm.exe install --fdd ${VERSION}
 
 # Основной образ
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:6.0-jammy
+
+RUN apt-get update \
+    && apt-get install -y locales \
+    && apt-get clean \
+	&& rm -rf /var/lib/apt/lists/* /tmp/*
+
+# Locale
+RUN sed -i -e \
+  's/# ru_RU.UTF-8 UTF-8/ru_RU.UTF-8 UTF-8/' /etc/locale.gen \
+   && locale-gen
+
+ENV LANG=ru_RU.UTF-8
+ENV LANGUAGE=ru_RU:ru
+ENV LC_LANG=ru_RU.UTF-8
+ENV LC_ALL=ru_RU.UTF-8
+
+# +Timezone
+ENV TZ=Europe/Moscow
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ARG VERSION="dev"
 
