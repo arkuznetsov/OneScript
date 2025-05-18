@@ -47,8 +47,8 @@ namespace OneScript.StandardLibrary.Xml
         /// <param name="localName">Локальное имя.</param>
         /// <returns>Новое полное имя XML.</returns>
         [ScriptConstructor(Name = "По умолчанию")]
-        public static XMLExpandedName Create(IValue namespaceURI, IValue localName)
-            => new XMLExpandedName(namespaceURI.AsString(), localName.AsString());
+        public static XMLExpandedName Create(string namespaceURI, string localName)
+            => new XMLExpandedName(namespaceURI, localName);
 
         public override bool Equals(IValue other)
         {

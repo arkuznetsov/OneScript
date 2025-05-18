@@ -147,11 +147,11 @@ namespace OneScript.StandardLibrary.Zip
         }
 
         [ScriptConstructor(Name = "На основании имени файла или потока")]
-        public static ZipReader Constructor(IValue dataSource, IValue password = null)
+        public static ZipReader Constructor(IValue dataSource, string password = null)
         {
             var dataSourceRawValue = dataSource?.GetRawValue() ?? ValueFactory.CreateInvalidValueMarker();
 
-            return new ZipReader(dataSourceRawValue, password?.AsString());
+            return new ZipReader(dataSourceRawValue, password);
         }
 
         public void Dispose()

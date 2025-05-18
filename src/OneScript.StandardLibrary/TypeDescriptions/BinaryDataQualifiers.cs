@@ -48,12 +48,9 @@ namespace OneScript.StandardLibrary.TypeDescriptions
 		}
 
 		[ScriptConstructor]
-		public static BinaryDataQualifiers Constructor(IValue length = null,
-		                                                  IValue allowedLength = null)
+		public static BinaryDataQualifiers Constructor(int length = default, AllowedLengthEnum allowedLength = default)
 		{
-			var paramLength = ContextValuesMarshaller.ConvertParam<int>(length);
-			var paramAllowedLength = ContextValuesMarshaller.ConvertParam<AllowedLengthEnum>(allowedLength);
-			return new BinaryDataQualifiers(paramLength, paramAllowedLength);
+			return new BinaryDataQualifiers(length, allowedLength);
 		}
 	}
 }

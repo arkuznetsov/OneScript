@@ -27,9 +27,9 @@ namespace OneScript.StandardLibrary.DriveInfo
         }
 
         [ScriptConstructor]
-        public static DriveInfo Constructor(TypeActivationContext activation, IValue driveName)
+        public static DriveInfo Constructor(TypeActivationContext activation, string driveName)
         {
-            return new DriveInfo(activation.Services.Resolve<IGlobalsManager>(), driveName.AsString());
+            return new DriveInfo(activation.Services.Resolve<IGlobalsManager>(), driveName);
         }
 
 

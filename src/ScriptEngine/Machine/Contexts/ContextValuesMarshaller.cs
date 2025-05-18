@@ -5,32 +5,55 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
+using System.Linq;
+using System.Reflection;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Values;
 
 namespace ScriptEngine.Machine.Contexts
 {
     public static class ContextValuesMarshaller
     {
+        public static MethodInfo BslParameterConverter { get; private set; }
+        public static MethodInfo BslParameterGenericConverter { get; private set; }
+        public static MethodInfo BslReturnValueGenericConverter { get; private set; }
+
+        static ContextValuesMarshaller()
+        {
+            BslParameterConverter = typeof(ContextValuesMarshaller).GetMethods()
+                .First(x => x.Name == nameof(ConvertParam) && x.GetGenericArguments().Length == 0 && x.GetParameters().Length == 3);
+            
+            BslParameterGenericConverter = typeof(ContextValuesMarshaller).GetMethods()
+                .First(x => x.Name == nameof(ConvertParam) && x.GetGenericArguments().Length == 1 && x.GetParameters().Length == 3);
+            
+            BslReturnValueGenericConverter = typeof(ContextValuesMarshaller).GetMethods()
+                .First(x => x.Name == nameof(ConvertReturnValue) && x.GetGenericArguments().Length == 1);
+        }
+        
         public static T ConvertParam<T>(IValue value, T defaultValue = default)
         {
-            object valueObj = ConvertParam(value, typeof(T));
+            return ConvertParam<T>(value, ForbiddenBslProcess.Instance, defaultValue);
+        }
+        
+        public static T ConvertParam<T>(IValue value, IBslProcess process, T defaultValue = default)
+        {
+            object valueObj = ConvertParam(value, typeof(T), process);
             return valueObj != null ? (T)valueObj : defaultValue;
         }
-
-        public static T ConvertParamDef<T>(IValue value, object defaultValue)
+        
+        public static object ConvertParam(IValue value, Type type)
         {
-            object valueObj = ConvertParam(value, typeof(T));
-            return valueObj != null ? (T)valueObj : (T)defaultValue;
+            return ConvertParam(value, type, ForbiddenBslProcess.Instance);
         }
 
-        public static object ConvertParam(IValue value, Type type)
+        public static object ConvertParam(IValue value, Type type, IBslProcess process)
         {
             try
             {
-                return ConvertValueType(value, type);
+                return ConvertValueType(value, type, process);
             }
             catch (InvalidCastException)
             {
@@ -42,7 +65,43 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
 
-        private static object ConvertValueType(IValue value, Type type)
+        /// <summary>
+        /// Выполняет строгую конвертацию парамтера в запрошенный тип.
+        /// Не выполняет приведение объектов к строке, в отличие от ConvertParam.
+        /// Это значит, что нельзя скормить объект в C# параметр с типом string через конверсию в AsString.
+        /// Выдает исключение о неверном типе парамтера.
+        /// </summary>
+        public static T ConvertValueStrict<T>(IValue value)
+        {
+            if (value == null || value.IsSkippedArgument())
+            {
+                return default;
+            }
+
+            if (value is T t)
+                return t;
+            
+            try
+            {
+                var converted = ConvertToClrObject(value);
+                return converted switch
+                {
+                    T casted => casted,
+                    decimal _ => (T)Convert.ChangeType(converted, typeof(T)),
+                    _ => throw RuntimeException.InvalidArgumentType()
+                };
+            }
+            catch (InvalidCastException)
+            {
+                throw RuntimeException.InvalidArgumentType();
+            }
+            catch (ValueMarshallingException)
+            {
+                throw RuntimeException.InvalidArgumentType();
+            }
+        }
+
+        private static object ConvertValueType(IValue value, Type type, IBslProcess process)
         {
             object valueObj;
             if (value == null || value.IsSkippedArgument())
@@ -52,7 +111,7 @@ namespace ScriptEngine.Machine.Contexts
 
             if (Nullable.GetUnderlyingType(type) != null)
             {
-                return ConvertValueType(value, Nullable.GetUnderlyingType(type));
+                return ConvertValueType(value, Nullable.GetUnderlyingType(type), process);
             }
 
             if (type == typeof(IValue))
@@ -65,7 +124,7 @@ namespace ScriptEngine.Machine.Contexts
             }
             else if (type == typeof(string))
             {
-                valueObj = value.AsString();
+                valueObj = ((BslValue)value.GetRawValue()).ConvertToString(process);
             }
             else if (value == BslUndefinedValue.Instance)
             {

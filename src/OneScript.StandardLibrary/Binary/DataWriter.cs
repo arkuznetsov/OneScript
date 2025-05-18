@@ -103,21 +103,24 @@ namespace OneScript.StandardLibrary.Binary
         ///  Значение по умолчанию: Ложь. </param>
         ///
         [ScriptConstructor]
-        public static DataWriter Constructor(IValue file_stream, IValue textEncoding = null, IValue byteOrder = null, IValue lineSplitter = null, IValue param5 = null, IValue param6 = null, IValue param7 = null)
+        public static DataWriter Constructor(IValue file_stream, IValue textEncoding = null, ByteOrderEnum? byteOrder = null, string lineSplitter = null, IValue param5 = null, IValue param6 = null, IValue param7 = null)
         {
             if (file_stream.SystemType == BasicTypes.String)
-                return new DataWriter(file_stream.AsString(), textEncoding, 
-                            ContextValuesMarshaller.ConvertParam<ByteOrderEnum?>(byteOrder,null),
-                            ContextValuesMarshaller.ConvertParam<string>(lineSplitter),
-                            ContextValuesMarshaller.ConvertParam<bool>(param5),
-                            ContextValuesMarshaller.ConvertParam<string>(param6),
-                            ContextValuesMarshaller.ConvertParam<bool>(param7));
+                return new DataWriter(file_stream.AsString(),
+                    textEncoding, 
+                    byteOrder,
+                    lineSplitter,
+                    ContextValuesMarshaller.ConvertValueStrict<bool>(param5),
+                    ContextValuesMarshaller.ConvertValueStrict<string>(param6),
+                    ContextValuesMarshaller.ConvertValueStrict<bool>(param7));
             else
-                return ConstructorByStream(file_stream, textEncoding,
-                            ContextValuesMarshaller.ConvertParam<ByteOrderEnum?>(byteOrder,null),
-                            ContextValuesMarshaller.ConvertParam<string>(lineSplitter),
-                            ContextValuesMarshaller.ConvertParam<string>(param5),
-                            ContextValuesMarshaller.ConvertParam<bool>(param6));
+                return ConstructorByStream(
+                    file_stream,
+                    textEncoding,
+                    byteOrder,
+                    lineSplitter,
+                    ContextValuesMarshaller.ConvertValueStrict<string>(param5),
+                    ContextValuesMarshaller.ConvertValueStrict<bool>(param6));
         }
 
         /// <summary>

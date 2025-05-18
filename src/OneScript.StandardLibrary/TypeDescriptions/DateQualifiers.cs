@@ -68,10 +68,9 @@ namespace OneScript.StandardLibrary.TypeDescriptions
 		}
 
 		[ScriptConstructor(Name = "На основании описания даты")]
-		public static DateQualifiers Constructor(IValue dateFractions = null)
+		public static DateQualifiers Constructor(DateFractionsEnum dateFractions = DateFractionsEnum.DateTime)
 		{
-			var paramDateFractions = ContextValuesMarshaller.ConvertParam(dateFractions, DateFractionsEnum.DateTime);
-			return new DateQualifiers(paramDateFractions);
+			return new DateQualifiers(dateFractions);
 		}
 	}
 }
