@@ -5,6 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
+using System.Reflection;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
@@ -19,11 +20,11 @@ namespace ScriptEngine.Machine.Contexts
             object valueObj = ConvertParam(value, typeof(T));
             return valueObj != null ? (T)valueObj : defaultValue;
         }
-
-        public static T ConvertParamDef<T>(IValue value, object defaultValue)
+        
+        public static T ConvertParamDef<T>(IValue value, T defaultValue)
         {
             object valueObj = ConvertParam(value, typeof(T));
-            return valueObj != null ? (T)valueObj : (T)defaultValue;
+            return valueObj != null ? (T)valueObj : defaultValue;
         }
 
         public static object ConvertParam(IValue value, Type type)
@@ -39,6 +40,39 @@ namespace ScriptEngine.Machine.Contexts
             catch (OverflowException)
             {
                 throw RuntimeException.InvalidArgumentValue();
+            }
+        }
+
+        /// <summary>
+        /// Выполняет строгую конвертацию парамтера в запрошенный тип.
+        /// Не выполняет приведение объектов к строке, в отличие от ConvertParam.
+        /// Это значит, что нельзя скормить объект в C# параметр с типом string через конверсию в AsString.
+        /// Выдает исключение о неверном типе парамтера.
+        /// </summary>
+        public static T ConvertValueStrict<T>(IValue value)
+        {
+            if (value == null || value.IsSkippedArgument())
+            {
+                return default;
+            }
+
+            try
+            {
+                var converted = ConvertToClrObject(value);
+                return converted switch
+                {
+                    T casted => casted,
+                    decimal _ => (T)Convert.ChangeType(converted, typeof(T)),
+                    _ => throw RuntimeException.InvalidArgumentType()
+                };
+            }
+            catch (InvalidCastException)
+            {
+                throw RuntimeException.InvalidArgumentType();
+            }
+            catch (ValueMarshallingException)
+            {
+                throw RuntimeException.InvalidArgumentType();
             }
         }
 

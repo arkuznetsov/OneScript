@@ -239,14 +239,18 @@ namespace OneScript.StandardLibrary.Xml
         private void ApplySettings(IValue encodingOrSettings)
         {
             var rawEncoding = encodingOrSettings?.GetRawValue();
-            if (rawEncoding is XmlWriterSettingsImpl)
+            if (rawEncoding is XmlWriterSettingsImpl settings)
             {
-                _settings = rawEncoding as XmlWriterSettingsImpl;
+                _settings = settings;
             }
             else if ((encodingOrSettings?.SystemType ?? BasicTypes.String) == BasicTypes.String)
             {
-                _settings = (XmlWriterSettingsImpl) XmlWriterSettingsImpl.Constructor(encodingOrSettings, null,
-                    ValueFactory.Create(Indent), null, ValueFactory.Create(DEFAULT_INDENT_STRING));
+                _settings = XmlWriterSettingsImpl.Constructor(
+                    encodingOrSettings?.AsString(),
+                    null,
+                    Indent,
+                    false,
+                    DEFAULT_INDENT_STRING);
             }
             else
             {

@@ -47,12 +47,12 @@ namespace OneScript.StandardLibrary.Binary
         /// Значение по умолчанию: LittleEndian. </param>
         ///
         [ScriptConstructor]
-        public static BinaryDataBuffer Constructor(IValue size, IValue byteOrder = null)
+        public static BinaryDataBuffer Constructor(int size, ByteOrderEnum? byteOrder = null)
         {
-            var orderValue = byteOrder == null ? ByteOrderEnum.LittleEndian : ContextValuesMarshaller.ConvertParam<ByteOrderEnum>(byteOrder);
+            var orderValue = byteOrder ?? ByteOrderEnum.LittleEndian;
 
             return new BinaryDataBuffer(
-                new byte[ContextValuesMarshaller.ConvertParam<int>(size)],
+                new byte[size],
                 orderValue);
         }
 

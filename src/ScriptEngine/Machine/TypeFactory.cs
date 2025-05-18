@@ -29,11 +29,11 @@ namespace ScriptEngine.Machine
 
         private static readonly Refl.MethodInfo _typeCast =
             typeof(ContextValuesMarshaller).GetMethods()
-            .First(x => x.Name == "ConvertParam" && x.GetGenericArguments().Length == 0);
+            .First(x => x.Name == nameof(ContextValuesMarshaller.ConvertParam) && x.GetGenericArguments().Length == 0);
 
         private static readonly Refl.MethodInfo _genTypeCast =
             typeof(ContextValuesMarshaller).GetMethods()
-            .First(x => x.Name == "ConvertParamDef" && x.GetGenericArguments().Length == 1);
+            .First(x => x.Name == nameof(ContextValuesMarshaller.ConvertParamDef) && x.GetGenericArguments().Length == 1);
         
         public TypeFactory(TypeDescriptor type)
         {
@@ -135,7 +135,7 @@ namespace ScriptEngine.Machine
                     if (parameters[i].HasDefaultValue)
                     {
                         var convertMethod = _genTypeCast.MakeGenericMethod(parameters[i].ParameterType);
-                        var defaultArg = Expression.Constant(parameters[i].DefaultValue);
+                        var defaultArg = Expression.Constant(parameters[i].DefaultValue, parameters[i].ParameterType);
 
                         var marshalledArg = Expression.Call(convertMethod, conversionArg, defaultArg);
                         argsToPass.Add(marshalledArg);

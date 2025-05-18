@@ -88,20 +88,17 @@ namespace OneScript.StandardLibrary.TypeDescriptions
 		}
 
 		[ScriptConstructor(Name = "На основании описания числа")]
-		public static NumberQualifiers Constructor(IValue digits = null,
-		                                                  IValue fractionDigits = null,
-		                                                  IValue allowedSign = null)
+		public static NumberQualifiers Constructor(
+			int digits = default,
+			int fractionDigits = default,
+			AllowedSignEnum allowedSign = default)
 		{
-			var paramDigits         = ContextValuesMarshaller.ConvertParam<int>(digits);
-			var paramFractionDigits = ContextValuesMarshaller.ConvertParam<int>(fractionDigits);
-
-			if (paramDigits < 0 || paramFractionDigits < 0)
+			if (digits < 0 || fractionDigits < 0)
 			{
 				throw RuntimeException.InvalidArgumentValue();
 			}
-
-			var paramAllowedSign    = ContextValuesMarshaller.ConvertParam<AllowedSignEnum>(allowedSign);
-			return new NumberQualifiers(paramDigits, paramFractionDigits, paramAllowedSign);
+			
+			return new NumberQualifiers(digits, fractionDigits, allowedSign);
 		}
 	}
 }

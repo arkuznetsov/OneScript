@@ -62,7 +62,7 @@ namespace OneScript.StandardLibrary.Binary
                 return new MemoryStreamContext((int)n);
             }
 
-            var memBuf = ContextValuesMarshaller.ConvertParam<BinaryDataBuffer>(bufferOrCapacity);
+            var memBuf = ContextValuesMarshaller.ConvertValueStrict<BinaryDataBuffer>(bufferOrCapacity);
             return new MemoryStreamContext(memBuf);
         }
 

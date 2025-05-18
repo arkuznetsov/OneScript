@@ -77,12 +77,10 @@ namespace OneScript.StandardLibrary.TypeDescriptions
 		}
 
 		[ScriptConstructor(Name = "На основании описания строки")]
-		public static StringQualifiers Constructor(IValue length = null,
-		                                                  IValue allowedLength = null)
+		public static StringQualifiers Constructor(int length = default,
+		                                           AllowedLengthEnum allowedLength = default)
 		{
-			var paramLength        = ContextValuesMarshaller.ConvertParam<int>(length);
-			var paramAllowedLength = ContextValuesMarshaller.ConvertParam<AllowedLengthEnum>(allowedLength);
-			return new StringQualifiers(paramLength, paramAllowedLength);
+			return new StringQualifiers(length, allowedLength);
 		}
 	}
 }
