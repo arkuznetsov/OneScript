@@ -78,6 +78,9 @@ namespace ScriptEngine.Machine.Contexts
                 return default;
             }
 
+            if (value is T t)
+                return t;
+            
             try
             {
                 var converted = ConvertToClrObject(value);
