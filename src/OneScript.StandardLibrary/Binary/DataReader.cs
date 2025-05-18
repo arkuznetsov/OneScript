@@ -13,6 +13,7 @@ using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.StandardLibrary.Text;
 using OneScript.Types;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -309,9 +310,12 @@ namespace OneScript.StandardLibrary.Binary
         /// <returns name="Number"/>
         /// 
         [ContextMethod("ПрочитатьБайт", "ReadByte")]
-        public byte ReadByte()
+        public BslValue ReadByte()
         {
-            return _reader.ReadByte();
+            if (_reader.BaseStream.Position == _reader.BaseStream.Length)
+                return BslUndefinedValue.Instance;
+            
+            return BslNumericValue.Create(_reader.ReadByte());
         }
 
         /// <summary>
