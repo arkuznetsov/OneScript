@@ -46,9 +46,9 @@ namespace OneScript.StandardLibrary
         }
 
         [ScriptConstructor(Name = "Из строки")]
-        public static GuidWrapper Create(IValue uuidString)
+        public static GuidWrapper Create(string uuidString)
         {
-            return new GuidWrapper(uuidString.AsString());
+            return new GuidWrapper(uuidString);
         }
         
         public override TypeDescriptor SystemType => InstanceType;
