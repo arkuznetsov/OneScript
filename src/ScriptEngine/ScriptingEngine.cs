@@ -137,7 +137,7 @@ namespace ScriptEngine
             return compiler;
         }
         
-        public IRuntimeContextInstance NewObject(IExecutableModule module, IBslProcess process,
+        public UserScriptContextInstance NewObject(IExecutableModule module, IBslProcess process,
             ExternalContextData externalContext = null)
         {
             var scriptContext = CreateUninitializedSDO(module, externalContext);
@@ -146,7 +146,7 @@ namespace ScriptEngine
             return scriptContext;
         }
 
-        public ScriptDrivenObject CreateUninitializedSDO(IExecutableModule module, ExternalContextData externalContext = null)
+        public UserScriptContextInstance CreateUninitializedSDO(IExecutableModule module, ExternalContextData externalContext = null)
         {
             var scriptContext = new UserScriptContextInstance(module, true);
             if (externalContext != null)

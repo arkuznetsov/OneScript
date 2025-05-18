@@ -76,13 +76,15 @@ namespace OneScript.StandardLibrary
         /// Контекст = Новый Структура("ЧислоПи", 3.1415); // 4 знака хватит всем
         /// ЗагрузитьСценарийИзСтроки("Сообщить(ЧислоПи);", Контекст);</example>
         [ContextMethod("ЗагрузитьСценарийИзСтроки", "LoadScriptFromString")]
-        public IRuntimeContextInstance LoadScriptFromString(IBslProcess process,
+        public UserScriptContextInstance LoadScriptFromString(IBslProcess process,
             string code,
             StructureImpl externalContext = null)
         {
             var compiler = _engine.GetCompilerService();
-            if(externalContext == null)
+            if (externalContext == null)
+            {
                 return _engine.AttachedScriptsFactory.LoadFromString(compiler, code, process);
+            }
             else
             {
                 var extData = new ExternalContextData();

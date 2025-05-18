@@ -79,19 +79,19 @@ namespace ScriptEngine.Machine.Contexts
             CompileAndRegister(typeof(AttachedScriptsFactory), compiler, typeName, code, process);
         }
 
-        public IRuntimeContextInstance LoadFromPath(ICompilerFrontend compiler, string path, IBslProcess process)
+        public UserScriptContextInstance LoadFromPath(ICompilerFrontend compiler, string path, IBslProcess process)
         {
             return LoadFromPath(compiler, path, null, process);
         }
 
-        public IRuntimeContextInstance LoadFromPath(ICompilerFrontend compiler, string path,
+        public UserScriptContextInstance LoadFromPath(ICompilerFrontend compiler, string path,
             ExternalContextData externalContext, IBslProcess process)
         {
             var code = _engine.Loader.FromFile(path);
             return LoadAndCreate(compiler, code, externalContext, process);
         }
 
-        public IRuntimeContextInstance LoadFromString(ICompilerFrontend compiler, string text, IBslProcess process,
+        public UserScriptContextInstance LoadFromString(ICompilerFrontend compiler, string text, IBslProcess process,
             ExternalContextData externalContext = null)
         {
             var code = _engine.Loader.FromString(text);
@@ -154,7 +154,7 @@ namespace ScriptEngine.Machine.Contexts
             _engine.TypeManager.RegisterType(typeName, default, typeof(AttachedScriptsFactory));
         }
         
-        private IRuntimeContextInstance LoadAndCreate(ICompilerFrontend compiler, SourceCode code,
+        private UserScriptContextInstance LoadAndCreate(ICompilerFrontend compiler, SourceCode code,
             ExternalContextData externalContext, IBslProcess process)
         {
             var module = CompileModuleFromSource(compiler, code, externalContext, process);
