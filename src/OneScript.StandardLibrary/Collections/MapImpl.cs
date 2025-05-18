@@ -52,10 +52,7 @@ namespace OneScript.StandardLibrary.Collections
 
         public override void SetIndexedValue(IValue index, IValue val)
         {
-            if (index.SystemType != BasicTypes.Undefined)
-            {
-                _content[index] = val;
-            }
+            _content[index] = val;
         }
 
         public override bool IsPropReadable(int propNum)
@@ -84,7 +81,7 @@ namespace OneScript.StandardLibrary.Collections
         #region ICollectionContext Members
 
         [ContextMethod("Вставить", "Insert")]
-        public void Insert(IValue key, IValue val=null)
+        public void Insert(IValue key, IValue val = null)
         {
             SetIndexedValue(key, val ?? ValueFactory.Create() );
         }
