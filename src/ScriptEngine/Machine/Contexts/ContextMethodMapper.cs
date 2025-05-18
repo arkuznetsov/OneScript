@@ -26,14 +26,6 @@ namespace ScriptEngine.Machine.Contexts
 
         private readonly object _locker = new object();
 
-        private static readonly MethodInfo _genConvertParamMethod =
-            typeof(InternalMethInfo).GetMethod("ConvertParam",
-            BindingFlags.Static | BindingFlags.NonPublic);
-
-        private static readonly MethodInfo _genConvertReturnMethod =
-            typeof(InternalMethInfo).GetMethod("ConvertReturnValue",
-            BindingFlags.Static | BindingFlags.NonPublic);
-        
         private void Init()
         {
             if (_methodPtrs == null)
@@ -177,7 +169,7 @@ namespace ScriptEngine.Machine.Contexts
             {
                 var methodCall = MethodCallExpression(target, out var instParam, out var argsParam, out var processParam);
 
-                var convertRetMethod = _genConvertReturnMethod.MakeGenericMethod(target.ReturnType);
+                var convertRetMethod = ContextValuesMarshaller.BslReturnValueGenericConverter.MakeGenericMethod(target.ReturnType);
                 var convertReturnCall = Expression.Call(convertRetMethod, methodCall);
                 var body = convertReturnCall;
 
@@ -233,8 +225,6 @@ namespace ScriptEngine.Machine.Contexts
                 var parameters = target.GetParameters();
 
                 var (clrIndexStart, argsLen) = contextMethod.InjectsProcess ? (1, parameters.Length - 1) : (0, parameters.Length);
-                object[] defaultValues = new object[argsLen];
-                var defaultsClojure = Expression.Constant(defaultValues);
                 
                 var argsPass = new List<Expression>();
                 argsPass.Add(instParam);
@@ -246,14 +236,18 @@ namespace ScriptEngine.Machine.Contexts
                 {
                     var convertMethod = _genConvertParamMethod.MakeGenericMethod(parameters[clrIndex].ParameterType);
 
+                    Expression defaultArg;
                     if (parameters[clrIndex].HasDefaultValue)
                     {
-                        defaultValues[bslIndex] = parameters[clrIndex].DefaultValue;
+                        defaultArg = Expression.Constant(parameters[clrIndex].DefaultValue, parameters[clrIndex].ParameterType);
+                    }
+                    else
+                    {
+                        defaultArg = Expression.Default(parameters[clrIndex].ParameterType);
                     }
 
                     var indexedArg = Expression.ArrayIndex(argsParam, Expression.Constant(bslIndex));
-                    var defaultArg = Expression.ArrayIndex(defaultsClojure, Expression.Constant(bslIndex));
-                    var conversionCall = Expression.Call(convertMethod, indexedArg, defaultArg);
+                    var conversionCall = Expression.Call(convertMethod, indexedArg, defaultArg, processParam);
                     argsPass.Add(conversionCall);
                 }
 
@@ -288,18 +282,16 @@ namespace ScriptEngine.Machine.Contexts
                 return methodClojure;
             }
 
-            // ReSharper disable once UnusedMember.Local
-            private static T ConvertParam<T>(IValue value, object def)
+            private static readonly MethodInfo _genConvertParamMethod =
+                typeof(InternalMethInfo).GetMethod(nameof(ConvertParam),
+                    BindingFlags.Static | BindingFlags.NonPublic);
+
+            private static T ConvertParam<T>(IValue value, T def, IBslProcess process)
             {
                 if (value == null || value.IsSkippedArgument())
-                    return (T)def;
+                    return def;
 
-                return ContextValuesMarshaller.ConvertParam<T>(value);
-            }
-
-            private static IValue ConvertReturnValue<TRet>(TRet param)
-            {
-                return ContextValuesMarshaller.ConvertReturnValue(param);
+                return ContextValuesMarshaller.ConvertParam<T>(value, process, def);
             }
         }
 
