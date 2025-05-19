@@ -1165,7 +1165,7 @@ namespace ScriptEngine.Machine
                     argValues[i] = argValue.GetRawValue();
             }
 
-            var typeName = _operationStack.Pop().AsString();
+            var typeName = _operationStack.Pop().AsString(_process);
             if (!_typeManager.TryGetType(typeName, out var type))
             {
                 throw RuntimeException.TypeIsNotDefined(typeName);
@@ -1286,7 +1286,7 @@ namespace ScriptEngine.Machine
                 }
                 else
                 {
-                    throw new RuntimeException(exceptionValue.AsString());
+                    throw new RuntimeException(exceptionValue.AsString(_process));
                 }
             }
         }
@@ -1363,7 +1363,7 @@ namespace ScriptEngine.Machine
 
         private void Execute(int arg)
         {
-            var code = _operationStack.Pop().AsString();
+            var code = _operationStack.Pop().AsString(_process);
             var module = CompileCached(code, CompileExecutionBatchModule);
             if (!module.Methods.Any())
             {
@@ -1401,7 +1401,7 @@ namespace ScriptEngine.Machine
 
         private void Eval(int arg)
         {
-            IValue value = Evaluate(_operationStack.Pop().AsString());
+            IValue value = Evaluate(_operationStack.Pop().AsString(_process));
             _operationStack.Push(value);
             NextInstruction();
         }
@@ -1442,9 +1442,9 @@ namespace ScriptEngine.Machine
         {
             if (useExportMode)
             {
-                handlerMethod = _operationStack.Pop().AsString();
+                handlerMethod = _operationStack.Pop().AsString(_process);
                 handlerTarget = _operationStack.Pop().AsObject();
-                eventName = _operationStack.Pop().AsString();
+                eventName = _operationStack.Pop().AsString(_process);
                 eventSource = _operationStack.Pop().AsObject();
                 
                 // Выбросит исключение, если не найден такой метод
@@ -1452,9 +1452,9 @@ namespace ScriptEngine.Machine
             }
             else
             {
-                handlerMethod = _operationStack.Pop().AsString();
+                handlerMethod = _operationStack.Pop().AsString(_process);
                 handlerTarget = _currentFrame.ThisScope.Instance;
-                eventName = _operationStack.Pop().AsString();
+                eventName = _operationStack.Pop().AsString(_process);
                 eventSource = _operationStack.Pop().AsObject();
             }
         }
@@ -1496,7 +1496,7 @@ namespace ScriptEngine.Machine
         {
             if (arg == 1)
             {
-                var strDate = _operationStack.Pop().AsString();
+                var strDate = _operationStack.Pop().AsString(_process);
                 _operationStack.Push(ValueFactory.Parse(strDate, DataType.Date));
             }
             else if (arg >= 3 && arg <= 6)
@@ -1529,7 +1529,7 @@ namespace ScriptEngine.Machine
 
         private void Type(int arg)
         {
-            var typeName = _operationStack.Pop().AsString();
+            var typeName = _operationStack.Pop().AsString(_process);
             var type = _typeManager.GetTypeByName(typeName);
             var value = new BslTypeValue(type);
             _operationStack.Push(value);
@@ -1546,21 +1546,21 @@ namespace ScriptEngine.Machine
 
         private void StrLen(int arg)
         {
-            var str = _operationStack.Pop().AsString();
+            var str = _operationStack.Pop().AsString(_process);
             _operationStack.Push(ValueFactory.Create(str.Length));
             NextInstruction();
         }
 
         private void TrimL(int arg)
         {
-            var str = _operationStack.Pop().AsString().TrimStart();
+            var str = _operationStack.Pop().AsString(_process).TrimStart();
             _operationStack.Push(ValueFactory.Create(str));
             NextInstruction();
         }
 
         private void TrimR(int arg)
         {
-            var str = _operationStack.Pop().AsString();
+            var str = _operationStack.Pop().AsString(_process);
 
             int lastIdx = str.Length-1;
             for (int i = lastIdx; i >= 0; i--)
@@ -1580,7 +1580,7 @@ namespace ScriptEngine.Machine
 
         private void TrimLR(int arg)
         {
-            var str = _operationStack.Pop().AsString().Trim();
+            var str = _operationStack.Pop().AsString(_process).Trim();
             _operationStack.Push(ValueFactory.Create(str));
             NextInstruction();
         }
@@ -1588,7 +1588,7 @@ namespace ScriptEngine.Machine
         private void Left(int arg)
         {
             var len = (int)_operationStack.Pop().AsNumber();
-            var str = _operationStack.Pop().AsString();
+            var str = _operationStack.Pop().AsString(_process);
 
             if (len > str.Length)
                 len = str.Length;
@@ -1606,7 +1606,7 @@ namespace ScriptEngine.Machine
         private void Right(int arg)
         {
             var len = (int)_operationStack.Pop().AsNumber();
-            var str = _operationStack.Pop().AsString();
+            var str = _operationStack.Pop().AsString(_process);
 
             if (len > str.Length)
                 len = str.Length;
@@ -1631,14 +1631,14 @@ namespace ScriptEngine.Machine
             if (arg == 2)
             {
                 start = (int)_operationStack.Pop().AsNumber();
-                str = _operationStack.Pop().AsString();
+                str = _operationStack.Pop().AsString(_process);
                 len = str.Length-start+1;
             }
             else
             {
                 len = (int)_operationStack.Pop().AsNumber();
                 start = (int)_operationStack.Pop().AsNumber();
-                str = _operationStack.Pop().AsString();
+                str = _operationStack.Pop().AsString(_process);
             }
 
             if (start < 1)
@@ -1664,8 +1664,8 @@ namespace ScriptEngine.Machine
         
         private void StrPos(int arg)
         {
-            var needle = _operationStack.Pop().AsString();
-            var haystack = _operationStack.Pop().AsString();
+            var needle = _operationStack.Pop().AsString(_process);
+            var haystack = _operationStack.Pop().AsString(_process);
 
             var result = haystack.IndexOf(needle, StringComparison.Ordinal) + 1;
             _operationStack.Push(ValueFactory.Create(result));
@@ -1674,21 +1674,21 @@ namespace ScriptEngine.Machine
 
         private void UCase(int arg)
         {
-            var result = _operationStack.Pop().AsString().ToUpper();
+            var result = _operationStack.Pop().AsString(_process).ToUpper();
             _operationStack.Push(ValueFactory.Create(result));
             NextInstruction();
         }
 
         private void LCase(int arg)
         {
-            var result = _operationStack.Pop().AsString().ToLower();
+            var result = _operationStack.Pop().AsString(_process).ToLower();
             _operationStack.Push(ValueFactory.Create(result));
             NextInstruction();
         }
 
         private void TCase(int arg)
         {
-            var argValue = _operationStack.Pop().AsString();
+            var argValue = _operationStack.Pop().AsString(_process);
 
             char[] array = argValue.ToCharArray();
 	        // Handle the first letter in the string.
@@ -1744,11 +1744,11 @@ namespace ScriptEngine.Machine
             if(arg == 2)
             {
                 position = (int)_operationStack.Pop().AsNumber()-1;
-                strChar = _operationStack.Pop().AsString();
+                strChar = _operationStack.Pop().AsString(_process);
             }
             else if(arg == 1)
             {
-                strChar = _operationStack.Pop().AsString();
+                strChar = _operationStack.Pop().AsString(_process);
                 position = 0;
             }
             else
@@ -1764,7 +1764,7 @@ namespace ScriptEngine.Machine
 
         private void EmptyStr(int arg)
         {
-            var str = _operationStack.Pop().AsString();
+            var str = _operationStack.Pop().AsString(_process);
 
             _operationStack.Push(ValueFactory.Create(String.IsNullOrWhiteSpace(str)));
             NextInstruction();
@@ -1772,9 +1772,9 @@ namespace ScriptEngine.Machine
 
         private void StrReplace(int arg)
         {
-            var newVal = _operationStack.Pop().AsString();
-            var searchVal = _operationStack.Pop().AsString();
-            var sourceString = _operationStack.Pop().AsString();
+            var newVal = _operationStack.Pop().AsString(_process);
+            var searchVal = _operationStack.Pop().AsString(_process);
+            var sourceString = _operationStack.Pop().AsString(_process);
 
             var result = sourceString.Replace(searchVal, newVal);
             _operationStack.Push(ValueFactory.Create(result));
@@ -1784,7 +1784,7 @@ namespace ScriptEngine.Machine
         private void StrGetLine(int arg)
         {
             var lineNumber = (int)_operationStack.Pop().AsNumber();
-            var strArg = _operationStack.Pop().AsString();
+            var strArg = _operationStack.Pop().AsString(_process);
             string result = "";
             if (lineNumber >= 1)
             {
@@ -1798,7 +1798,7 @@ namespace ScriptEngine.Machine
 
         private void StrLineCount(int arg)
         {
-            var strArg = _operationStack.Pop().AsString();
+            var strArg = _operationStack.Pop().AsString(_process);
             int pos = 0;
             int lineCount = 1;
             while (pos >= 0 && pos < strArg.Length)
@@ -1817,8 +1817,8 @@ namespace ScriptEngine.Machine
 
         private void StrEntryCount(int arg)
         {
-            var what = _operationStack.Pop().AsString();
-            var where = _operationStack.Pop().AsString();
+            var what = _operationStack.Pop().AsString(_process);
+            var where = _operationStack.Pop().AsString(_process);
 
             var pos = where.IndexOf(what);
             var entryCount = 0;
@@ -2302,7 +2302,7 @@ namespace ScriptEngine.Machine
 
         private void Format(int arg)
         {
-            var formatString = _operationStack.Pop().AsString();
+            var formatString = _operationStack.Pop().AsString(_process);
             var valueToFormat = _operationStack.Pop().GetRawValue();
 
             var formatted = ValueFormatter.Format((BslValue)valueToFormat, formatString);
@@ -2376,7 +2376,7 @@ namespace ScriptEngine.Machine
                     argValues = Array.Empty<IValue>();
             }
             
-            var typeName = _operationStack.Pop().AsString();
+            var typeName = _operationStack.Pop().AsString(_process);
             if (!_typeManager.TryGetType(typeName, out var type))
             {
                 throw RuntimeException.TypeIsNotDefined(typeName);

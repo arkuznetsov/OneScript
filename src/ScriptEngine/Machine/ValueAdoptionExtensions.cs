@@ -8,6 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Values;
 using ScriptEngine.Machine.Contexts;
 
@@ -27,6 +28,8 @@ namespace ScriptEngine.Machine
         public static DateTime AsDate(this IValue val) => (DateTime) (BslValue)val.GetRawValue();
         public static decimal AsNumber(this IValue val) => (decimal) (BslValue)val.GetRawValue();
         public static string AsString(this IValue val) => (string) (BslValue)val.GetRawValue();
+        
+        public static string AsString(this IValue val, IBslProcess process) => ((BslValue)val.GetRawValue()).ConvertToString(process);
         
         public static IRuntimeContextInstance AsObject(this IValue val) 
             => val.GetRawValue() is IRuntimeContextInstance ctx? ctx : throw BslExceptions.ValueIsNotObjectException();
