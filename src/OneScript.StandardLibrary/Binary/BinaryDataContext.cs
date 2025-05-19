@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -140,7 +141,7 @@ namespace OneScript.StandardLibrary.Binary
             }
         }
 
-        protected override string ConvertToString()
+        public override string ConvertToString(IBslProcess process)
         {
             const int LIMIT = 64;
             int length;

@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 
 using System.Xml;
 using OneScript.Contexts;
+using OneScript.Execution;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -58,6 +59,6 @@ namespace OneScript.StandardLibrary.Xml
                 return base.Equals(other);
         }
 
-        protected override string ConvertToString() => $"{{{NamespaceURI}}}{LocalName}";
+        public override string ConvertToString(IBslProcess process) => $"{{{NamespaceURI}}}{LocalName}";
     }
 }

@@ -116,7 +116,7 @@ namespace ScriptEngine.Machine.Contexts
         {
             var methId = GetScriptMethod(PresentationGetProcessingTerms.Russian, PresentationGetProcessingTerms.English);
             if (methId == -1)
-                _asStringOverride = p => ConvertToString();
+                _asStringOverride = ConvertToString;
             else
             {
                 var signature = GetMethodInfo(GetOwnMethodCount()+methId);
@@ -141,7 +141,7 @@ namespace ScriptEngine.Machine.Contexts
             CallScriptMethod(methId, arguments, process);
 
             if (arguments[1].AsBoolean() == true)
-                return base.ConvertToString();
+                return base.ConvertToString(process);
 
             return arguments[0].AsString();
         }

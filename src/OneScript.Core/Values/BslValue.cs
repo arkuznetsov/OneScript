@@ -16,18 +16,16 @@ namespace OneScript.Values
 {
     public abstract class BslValue : DynamicObject, IComparable<BslValue>, IEquatable<BslValue>, IValue
     {
-        protected virtual string ConvertToString() => ToString();
-        
         public virtual string ConvertToString(IBslProcess process)
         {
-            return ConvertToString();
+            return ToString();
         }
 
         public abstract int CompareTo(BslValue other);
 
         public abstract bool Equals(BslValue other);
         
-        public static explicit operator string(BslValue value) => value.ConvertToString();
+        public static explicit operator string(BslValue value) => value.ConvertToString(ForbiddenBslProcess.Instance);
 
         public static explicit operator bool(BslValue target) =>
             target switch
