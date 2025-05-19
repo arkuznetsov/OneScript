@@ -55,7 +55,7 @@ namespace OneScriptDocumenter.Secondary
             {
                 return target
                     .GetCustomAttributes<ContextMethodAttribute>()
-                    .SingleOrDefault(attr => !attr.IsDeprecated && !attr.SkipForDocumenter);
+                    .Single(attr => !attr.IsDeprecated && !attr.SkipForDocumenter);
             }
             catch (InvalidOperationException e)
             {
