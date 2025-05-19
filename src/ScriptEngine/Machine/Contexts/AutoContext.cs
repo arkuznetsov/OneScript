@@ -126,12 +126,6 @@ namespace ScriptEngine.Machine.Contexts
             _warnedDeprecatedMethods.Add(methodNumber);
         }
 
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
-            => CallAsProcedure(methodNumber, arguments, ForbiddenBslProcess.Instance);
-        
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-            => CallAsFunction(methodNumber, arguments, out retValue, ForbiddenBslProcess.Instance);
-        
         public override void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
         {
             CheckIfCallIsPossible(methodNumber, arguments);

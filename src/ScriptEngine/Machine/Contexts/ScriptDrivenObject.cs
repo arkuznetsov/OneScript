@@ -392,16 +392,6 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
 
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
-        {
-            throw BslProcessRequired();
-        }
-
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-        {
-            throw BslProcessRequired();
-        }
-
         public override int GetPropCount()
         {
             return VARIABLE_COUNT + _module.Properties.Count;

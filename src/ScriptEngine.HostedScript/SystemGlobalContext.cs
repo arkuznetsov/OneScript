@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 
 using System;
 using OneScript.Contexts;
+using OneScript.Execution;
 using OneScript.Sources;
 using OneScript.StandardLibrary;
 using OneScript.StandardLibrary.Collections;
@@ -269,14 +270,14 @@ namespace ScriptEngine.HostedScript
             return _methods.Count;
         }
 
-        public void CallAsProcedure(int methodNumber, IValue[] arguments)
+        public void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
         {
-            _methods.GetCallableDelegate(methodNumber)(this, arguments);
+            _methods.GetCallableDelegate(methodNumber)(this, arguments, process);
         }
 
-        public void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
+        public void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
         {
-            retValue = _methods.GetCallableDelegate(methodNumber)(this, arguments);
+            retValue = _methods.GetCallableDelegate(methodNumber)(this, arguments, process);
         }
 
 #endregion

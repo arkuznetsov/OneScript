@@ -35,20 +35,20 @@ namespace OneScript.Contexts
 
         BslPropertyInfo GetPropertyInfo(int propertyNumber);
 
-        void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
-        {
-            CallAsProcedure(methodNumber, arguments);
-        }
+        void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process);
 
-        void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
+        void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process);
+
+        [Obsolete("Use function with IBslProcess parameter")]
+        void CallAsProcedure(int methodNumber, IValue[] arguments)
         {
-            CallAsFunction(methodNumber, arguments, out retValue);
+            CallAsProcedure(methodNumber, arguments, ForbiddenBslProcess.Instance);
         }
 
         [Obsolete("Use function with IBslProcess parameter")]
-        void CallAsProcedure(int methodNumber, IValue[] arguments);
-        
-        [Obsolete("Use function with IBslProcess parameter")]
-        void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue);
+        void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
+        {
+            CallAsFunction(methodNumber, arguments, out retValue, ForbiddenBslProcess.Instance);
+        }
     }
 }

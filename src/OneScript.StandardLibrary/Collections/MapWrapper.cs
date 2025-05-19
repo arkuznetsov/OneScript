@@ -116,26 +116,20 @@ namespace OneScript.StandardLibrary.Collections
             var binding = _methods.GetCallableDelegate(methodNumber);
             try
             {
-                binding(this, arguments);
+                binding(this, arguments, process);
             }
             catch (System.Reflection.TargetInvocationException e)
             {
                 throw e.InnerException!;
             }
         }
-
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
-            => CallAsProcedure(methodNumber, arguments, ForbiddenBslProcess.Instance);
-        
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-            => CallAsFunction(methodNumber, arguments, out retValue, ForbiddenBslProcess.Instance);
         
         public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
         {
             var binding = _methods.GetCallableDelegate(methodNumber);
             try
             {
-                retValue = binding(this, arguments);
+                retValue = binding(this, arguments, process);
             }
             catch (System.Reflection.TargetInvocationException e)
             {

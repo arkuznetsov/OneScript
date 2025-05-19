@@ -141,22 +141,13 @@ namespace ScriptEngine.Machine.Contexts
             throw new NotImplementedException();
         }
         
-        public virtual void CallAsProcedure(int methodNumber, IValue[] arguments)
-        {
-            throw new NotImplementedException();
-        }
-        public virtual void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-        {
-            throw new NotImplementedException();
-        }
-        
         public virtual void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
         {
-            CallAsProcedure(methodNumber, arguments);
+            throw new NotImplementedException();
         }
         public virtual void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
         {
-            CallAsFunction(methodNumber, arguments, out retValue);
+            throw new NotImplementedException();
         }
 
         #endregion
@@ -265,7 +256,7 @@ namespace ScriptEngine.Machine.Contexts
                     valueArgs[i] = ValueFactory.CreateInvalidValueMarker();
             }
 
-            CallAsFunction(methIdx, valueArgs, out IValue methResult);
+            CallAsFunction(methIdx, valueArgs, out IValue methResult, ForbiddenBslProcess.Instance);
             result = methResult == null ? null : ContextValuesMarshaller.ConvertToClrObject(methResult);
 
             return true;

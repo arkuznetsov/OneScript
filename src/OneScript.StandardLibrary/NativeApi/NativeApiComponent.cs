@@ -8,6 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
@@ -236,7 +237,7 @@ namespace OneScript.StandardLibrary.NativeApi
                     );
         }
 
-        public void CallAsProcedure(int methodNumber, IValue[] arguments)
+        public void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
         {
             int paramCount = NativeApiProxy.GetNParams(_object, methodNumber);
             using (var variant = new NativeApiVariant(paramCount))
@@ -249,7 +250,7 @@ namespace OneScript.StandardLibrary.NativeApi
             }
         }
 
-        public void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
+        public void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
         {
             var result = ValueFactory.Create();
             int paramCount = NativeApiProxy.GetNParams(_object, methodNumber);

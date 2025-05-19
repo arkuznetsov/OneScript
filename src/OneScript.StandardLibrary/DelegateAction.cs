@@ -70,16 +70,6 @@ namespace OneScript.StandardLibrary
         {
             return ExecuteMethodInfo;
         }
-
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
-        {
-            retValue = _action(ForbiddenBslProcess.Instance, arguments);
-        }
-
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
-        {
-            _action(ForbiddenBslProcess.Instance, arguments);
-        }
         
         public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
         {

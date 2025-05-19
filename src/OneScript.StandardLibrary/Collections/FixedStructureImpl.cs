@@ -85,12 +85,12 @@ namespace OneScript.StandardLibrary.Collections
                 .Build();
         }
 
-        public override void CallAsProcedure(int methodNumber, IValue[] arguments)
+        public override void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
         {
             var binding = _methods.GetCallableDelegate(methodNumber);
             try
             {
-                binding(this, arguments);
+                binding(this, arguments, process);
             }
             catch (System.Reflection.TargetInvocationException e)
             {
@@ -98,12 +98,12 @@ namespace OneScript.StandardLibrary.Collections
             }
         }
 
-        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue)
+        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
         {
             var binding = _methods.GetCallableDelegate(methodNumber);
             try
             {
-                retValue = binding(this, arguments);
+                retValue = binding(this, arguments, process);
             }
             catch (System.Reflection.TargetInvocationException e)
             {

@@ -17,7 +17,7 @@ using OneScript.Language;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    public delegate IValue ContextCallableDelegate<TInstance>(TInstance instance, IValue[] args, IBslProcess process = default);
+    public delegate IValue ContextCallableDelegate<TInstance>(TInstance instance, IValue[] args, IBslProcess process);
 
     public class ContextMethodsMapper<TInstance>
     {

@@ -46,11 +46,6 @@ namespace ScriptEngine.Machine.Contexts
             return (int)ret.AsNumber();
         }
         
-        public int Count()
-        {
-            throw BslProcessRequired();
-        }
-
         public IEnumerator<BslValue> GetEnumerator(IBslProcess process)
         {
             CallAsFunction(_getIteratorMethod.DispatchId, Array.Empty<IValue>(), out var enumerator, process);
