@@ -14,6 +14,7 @@ namespace ScriptEngine.Machine
         TypeDescriptor SystemType { get; }
 
         // TODO: Избавиться нахер от этого ужоса
+        [Obsolete("Планируется удаление.")]
         IValue GetRawValue();
     }
 

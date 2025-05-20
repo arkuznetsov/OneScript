@@ -34,7 +34,7 @@ namespace OneScript.Contexts
         {
             if (variable is VariableReference vref && vref._reference is IndexedValueReference iv)
             {
-                _ = iv.Value; // проверить правильность индекса
+                _ = iv.Value; // проверить правильность индекса через его чтение
             }
 
             return new VariableReference(variable, refName);

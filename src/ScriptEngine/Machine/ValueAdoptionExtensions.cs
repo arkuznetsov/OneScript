@@ -34,6 +34,7 @@ namespace ScriptEngine.Machine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string AsString(this IValue val) => AsString(val, ForbiddenBslProcess.Instance);
         
+        [Obsolete("Use BslValue.ToString(IBslProcess)")]
         public static string AsString(this IValue val, IBslProcess process) => ((BslValue)val.GetRawValue()).ToString(process);
 
         public static string ExplicitString(this IValue val)
