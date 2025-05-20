@@ -11,6 +11,7 @@ using System.Linq;
 using OneScript.Contexts;
 using OneScript.StandardLibrary.Collections.Indexes;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
@@ -350,14 +351,14 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// <param name="groupColumnNames">Строка - Имена колонок для сворачивания (изменения), разделены запятыми</param>
         /// <param name="aggregateColumnNames">Строка - Имена колонок для суммирования (ресурсы), разделены запятыми</param>
         [ContextMethod("Свернуть", "GroupBy")]
-        public void GroupBy(string groupColumnNames, string aggregateColumnNames = null)
+        public void GroupBy(IBslProcess process, string groupColumnNames, string aggregateColumnNames = null)
         {
             var GroupColumns = GetProcessingColumnList(groupColumnNames, true);
             var AggregateColumns = GetProcessingColumnList(aggregateColumnNames, true);
 
             CheckMixedColumns(GroupColumns, AggregateColumns);
 
-            var uniqueRows = new Dictionary<ValueTableRow, ValueTableRow>(new RowsByColumnsEqComparer(GroupColumns) );
+            var uniqueRows = new Dictionary<ValueTableRow, ValueTableRow>(new RowsByColumnsEqComparer(process, GroupColumns));
             int new_idx = 0;
 
             foreach (var row in _rows)
@@ -419,10 +420,12 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
         private class RowsByColumnsEqComparer : IEqualityComparer<ValueTableRow>
         {
+            private readonly IBslProcess _process;
             private List<ValueTableColumn> _columns;
 
-            public RowsByColumnsEqComparer(List<ValueTableColumn> columns)
+            public RowsByColumnsEqComparer(IBslProcess process, List<ValueTableColumn> columns)
             {
+                _process = process;
                 _columns = columns;
             }
 
@@ -440,7 +443,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             {
                 int hash = 0;
                 foreach (var column in _columns)
-                    hash ^= row.Get(column).GetHashCode();
+                    hash ^= row.Get(column).AsString(_process).GetHashCode();
                 return hash;
             }
         }
