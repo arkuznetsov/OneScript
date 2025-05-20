@@ -16,7 +16,13 @@ namespace OneScript.Values
 {
     public abstract class BslValue : DynamicObject, IComparable<BslValue>, IEquatable<BslValue>, IValue
     {
-        public virtual string ConvertToString(IBslProcess process)
+        /// <summary>
+        /// Bsl-представление объекта. Имеет смысл переопределять, если представление при вызове
+        /// из BSL должно отличаться от стандартного метода ToString, либо, если формирование
+        /// представления требует выполнения Bsl-кода.
+        /// </summary>
+        /// <param name="process">Текущий процесс, в котором вызван данный метод</param>
+        public virtual string ToString(IBslProcess process)
         {
             return ToString();
         }

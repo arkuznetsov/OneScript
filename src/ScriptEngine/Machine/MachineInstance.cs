@@ -986,7 +986,7 @@ namespace ScriptEngine.Machine
             var objIValue = _operationStack.Pop();
             
             var context = objIValue.AsObject();
-            var propName = _module.Constants[arg].ConvertToString(_process);
+            var propName = _module.Constants[arg].ToString(_process);
             var propNum = context.GetPropertyNumber(propName);
 
             var propReference = Variable.CreateContextPropertyReference(context, propNum, "stackvar");
@@ -1023,7 +1023,7 @@ namespace ScriptEngine.Machine
  
             var objIValue = _operationStack.Pop();
             context = objIValue.AsObject();
-            var methodName = _module.Constants[arg].ConvertToString(_process);
+            var methodName = _module.Constants[arg].ToString(_process);
             methodId = context.GetMethodNumber(methodName);
             
             if (context.DynamicMethodSignatures)
@@ -1488,7 +1488,7 @@ namespace ScriptEngine.Machine
         private void Str(int arg)
         {
             var value = (BslValue)_operationStack.Pop().GetRawValue();
-            _operationStack.Push(ValueFactory.Create(value.ConvertToString(_process)));
+            _operationStack.Push(ValueFactory.Create(value.ToString(_process)));
             NextInstruction();
         }
 

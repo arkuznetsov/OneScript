@@ -97,7 +97,7 @@ namespace ScriptEngine.Machine
             
             if (op1 is BslStringValue s)
             {
-                return Create(s + ((BslValue)op2).ConvertToString(process));
+                return Create(s + ((BslValue)op2).ToString(process));
             }
 
             if (op1 is BslDateValue date)

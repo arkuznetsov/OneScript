@@ -61,7 +61,7 @@ namespace OneScript.Values
             {
                 if (binder.Type == typeof(string))
                 {
-                    result = ConvertToString(ForbiddenBslProcess.Instance);
+                    result = ToString(ForbiddenBslProcess.Instance);
                 }
                 throw new InvalidOperationException($"Conversion from Number to {binder.Type} is not supported");
             }

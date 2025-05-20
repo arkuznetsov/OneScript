@@ -57,7 +57,7 @@ namespace ScriptEngine.Machine
             {
                 ExceptionInfoContext { IsErrorTemplate: true } excInfo => 
                     new ParametrizedRuntimeException(excInfo.Description, excInfo.Parameters, excInfo.InnerException),
-                UserScriptContextInstance userContext => new RuntimeException(userContext.ConvertToString(_processFactory.NewProcess())),
+                UserScriptContextInstance userContext => new RuntimeException(userContext.ToString(_processFactory.NewProcess())),
                 _ => new RuntimeException(raiseValue.ToString())
             };
         }

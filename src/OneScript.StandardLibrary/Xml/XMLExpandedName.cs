@@ -59,6 +59,6 @@ namespace OneScript.StandardLibrary.Xml
                 return base.Equals(other);
         }
 
-        public override string ConvertToString(IBslProcess process) => $"{{{NamespaceURI}}}{LocalName}";
+        public override string ToString(IBslProcess process) => $"{{{NamespaceURI}}}{LocalName}";
     }
 }

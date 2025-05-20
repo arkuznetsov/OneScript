@@ -460,7 +460,7 @@ namespace OneScript.Dynamic.Tests
             sdo.InitOwnData();
             var process = GetProcess(testServices.CreateContainer());
             sdo.Initialize(process);
-            sdo.ConvertToString(process).Should().Be("Привет");
+            sdo.ToString(process).Should().Be("Привет");
         }
         
         [Fact(Skip = "Выходные параметры не поддерживаются нативной средой")]

@@ -124,7 +124,7 @@ namespace ScriptEngine.Machine.Contexts
             }
             else if (type == typeof(string))
             {
-                valueObj = ((BslValue)value.GetRawValue()).ConvertToString(process);
+                valueObj = ((BslValue)value.GetRawValue()).ToString(process);
             }
             else if (value == BslUndefinedValue.Instance)
             {

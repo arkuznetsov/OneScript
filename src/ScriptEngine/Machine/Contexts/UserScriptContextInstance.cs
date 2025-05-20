@@ -107,7 +107,7 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
         
-        public override string ConvertToString(IBslProcess process)
+        public override string ToString(IBslProcess process)
         {
             return _asStringOverride(process);
         }
@@ -116,7 +116,7 @@ namespace ScriptEngine.Machine.Contexts
         {
             var methId = GetScriptMethod(PresentationGetProcessingTerms.Russian, PresentationGetProcessingTerms.English);
             if (methId == -1)
-                _asStringOverride = base.ConvertToString;
+                _asStringOverride = base.ToString;
             else
             {
                 var signature = GetMethodInfo(GetOwnMethodCount()+methId);
@@ -141,7 +141,7 @@ namespace ScriptEngine.Machine.Contexts
             CallScriptMethod(methId, arguments, process);
 
             if (arguments[1].AsBoolean() == true)
-                return base.ConvertToString(process);
+                return base.ToString(process);
 
             if (arguments[0].SystemType != BasicTypes.String && arguments[0].SystemType != BasicTypes.Undefined)
             {

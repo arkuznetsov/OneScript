@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using System.Runtime.CompilerServices;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
@@ -28,7 +29,12 @@ namespace ScriptEngine.Machine
         public static DateTime AsDate(this IValue val) => (DateTime) (BslValue)val.GetRawValue();
         public static decimal AsNumber(this IValue val) => (decimal) (BslValue)val.GetRawValue();
         
-        public static string AsString(this IValue val, IBslProcess process) => ((BslValue)val.GetRawValue()).ConvertToString(process);
+        // Метод для совместимости внешних компонент
+        [Obsolete("Use overload with IBslProcess")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string AsString(this IValue val) => AsString(val, ForbiddenBslProcess.Instance);
+        
+        public static string AsString(this IValue val, IBslProcess process) => ((BslValue)val.GetRawValue()).ToString(process);
 
         public static string ExplicitString(this IValue val)
         {
