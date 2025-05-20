@@ -26,9 +26,9 @@ namespace OneScript.Execution
         {}
                 
         public BslValue Run(BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments) 
-            => throw new NotSupportedException();
+            => throw new NotSupportedException("BslProcess required");
 
-        public IServiceContainer Services => throw new NotSupportedException();
+        public IServiceContainer Services => throw new NotSupportedException("BslProcess required");
 
         public int VirtualThreadId => -1;
     }
