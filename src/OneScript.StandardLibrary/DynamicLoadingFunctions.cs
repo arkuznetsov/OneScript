@@ -91,7 +91,7 @@ namespace OneScript.StandardLibrary
 
                 foreach (var item in externalContext)
                 {
-                    extData.Add(item.Key.AsString(), item.Value);
+                    extData.Add(item.Key.ToString()!, item.Value);
                 }
 
                 try
@@ -139,7 +139,7 @@ namespace OneScript.StandardLibrary
 
                 foreach (var item in externalContext)
                 {
-                    extData.Add(item.Key.AsString(), item.Value);
+                    extData.Add(item.Key.ToString()!, item.Value);
                 }
 
                 return _engine.AttachedScriptsFactory.LoadFromPath(compiler, path, extData, process);

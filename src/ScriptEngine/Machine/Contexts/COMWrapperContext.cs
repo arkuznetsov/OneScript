@@ -329,9 +329,9 @@ namespace ScriptEngine.Machine.Contexts
         public override bool DynamicMethodSignatures => true;
  
         [ScriptConstructor]
-        public static COMWrapperContext Constructor(IValue[] args)
+        public static COMWrapperContext Constructor(IBslProcess process, IValue[] args)
         {
-            return COMWrapperContext.Create(args[0].AsString(), args.Skip(1).ToArray());
+            return COMWrapperContext.Create(args[0].AsString(process), args.Skip(1).ToArray());
         }
 
     }

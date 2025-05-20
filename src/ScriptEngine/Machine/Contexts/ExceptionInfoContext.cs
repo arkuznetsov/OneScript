@@ -201,9 +201,9 @@ namespace ScriptEngine.Machine.Contexts
         /// <param name="cause">ИнформацияОбОшибке - Причина, по которой произошло текущее исключение</param>
         /// <returns></returns>
         [ScriptConstructor(Name = "С возможностью передачи параметров")]
-        public static ExceptionInfoContext Create(IValue msg, IValue parameter, ExceptionInfoContext cause = null)
+        public static ExceptionInfoContext Create(string msg, IValue parameter, ExceptionInfoContext cause = null)
         {
-            return new ExceptionInfoContext(msg.AsString(), parameter, cause);
+            return new ExceptionInfoContext(msg, parameter, cause);
         }
 
         public static ExceptionInfoContext EmptyExceptionInfo()

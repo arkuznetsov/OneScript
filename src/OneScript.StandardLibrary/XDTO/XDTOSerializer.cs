@@ -194,7 +194,7 @@ namespace OneScript.StandardLibrary.XDTO
 
                 if (xsiType.SystemType == BasicTypes.String)
                 {
-                    switch (xsiType.AsString())
+                    switch (xsiType.ToString())
                     {
                         case "string":
                             typeValue = new BslTypeValue(BasicTypes.String);

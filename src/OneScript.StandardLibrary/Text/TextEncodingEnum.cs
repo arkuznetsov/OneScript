@@ -137,7 +137,7 @@ namespace OneScript.StandardLibrary.Text
         public static Encoding GetEncoding(IValue encoding, bool addBOM = true)
         {
             if (encoding.SystemType == BasicTypes.String)
-                return GetEncodingByName(encoding.AsString(), addBOM);
+                return GetEncodingByName(encoding.ToString(), addBOM);
             else
             {
                 if (!(encoding.GetRawValue() is ClrEnumValueWrapper<TextEncodingValues> encValue))

@@ -216,15 +216,15 @@ namespace OneScript.Web.Server
             => _exceptionHandler = (target, methodName);
 
         [ContextMethod("УстановитьКаталогСервера", "SetServerDir")]
-        public void SetContentRoot(IValue path)
+        public void SetContentRoot(string path)
         {
-            _contentRoot = path.AsString();
+            _contentRoot = path;
         }
         
         [ContextMethod("УстановитьКорневойПуть", "SetWebRoot")]
-        public void SetWebRoot(IValue path)
+        public void SetWebRoot(string path)
         {
-            _wwwRoot = path.AsString();
+            _wwwRoot = path;
         }
 
         [ContextMethod("ИспользоватьСтатическиеФайлы", "UseStaticFiles")]

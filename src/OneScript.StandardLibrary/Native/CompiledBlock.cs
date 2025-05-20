@@ -217,7 +217,7 @@ namespace OneScript.StandardLibrary.Native
             foreach (var parameter in Parameters)
             {
                 methodInfo.NewParameter()
-                    .Name(parameter.Key.AsString())
+                    .Name(parameter.Key.ToString())
                     .ParameterType(ConvertTypeToClrType(parameter.Value as BslTypeValue));
             }
 

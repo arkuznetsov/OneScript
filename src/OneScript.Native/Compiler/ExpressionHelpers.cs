@@ -162,6 +162,8 @@ namespace OneScript.Native.Compiler
             Debug.Assert(right.Type.IsValue());
             
             // DLR не находит операторы конверсии, объявленные в BslValue, надо ей помочь.
+            // FIXME: история с кастомными операторами конверсии, а значит и всё введение иерархии BslValue
+            // себя не оправдало и надо это удалить, т.к. сейчас только производит путаницу.
             string operatorName;
             if (type == typeof(bool))
                 operatorName = nameof(DynamicOperations.ToBoolean);

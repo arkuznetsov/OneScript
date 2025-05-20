@@ -77,7 +77,7 @@ namespace ScriptEngine.Machine.Contexts
 
         public override string GetPropName(int propNum)
         {
-            return _values[propNum].AsString();
+            return _values[propNum].ToString();
         }
 
 

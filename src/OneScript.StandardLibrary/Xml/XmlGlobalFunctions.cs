@@ -59,7 +59,7 @@ namespace OneScript.StandardLibrary.Xml
         public string XMLString(IValue value)
         {
             if (value.SystemType == BasicTypes.String)
-                return value.AsString();
+                return value.ToString();
             else if (value.SystemType == BasicTypes.Undefined || value.SystemType == BasicTypes.Null)
                 return "";
             else if(value.SystemType == BasicTypes.Boolean)
@@ -77,11 +77,11 @@ namespace OneScript.StandardLibrary.Xml
                 }
                 if(rawValue is GuidWrapper guid)
                 {
-                    return guid.AsString();
+                    return guid.ToString();
                 }
                 else if (_allowedEnums.ContainsKey(rawValue.GetType()))
                 {
-                    return rawValue.AsString();
+                    return rawValue.ToString();
                 }
             }
 

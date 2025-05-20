@@ -167,7 +167,7 @@ namespace OneScript.Contexts
 
         public override string ToString()
         {
-            return Name;
+            return Value.ToString();
         }
     }
 }

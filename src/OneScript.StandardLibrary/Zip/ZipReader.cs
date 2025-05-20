@@ -56,7 +56,7 @@ namespace OneScript.StandardLibrary.Zip
             
             if (filenameOrStream.SystemType == BasicTypes.String)
             {
-                _zip = ZipFile.Read(filenameOrStream.AsString(), new ReadOptions { Encoding = ChooseEncoding(encoding) });
+                _zip = ZipFile.Read(filenameOrStream.ToString(), new ReadOptions { Encoding = ChooseEncoding(encoding) });
             } 
             else if (filenameOrStream.GetRawValue() is IStreamWrapper stream)
             {

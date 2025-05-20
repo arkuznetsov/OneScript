@@ -127,10 +127,10 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         /// <param name="values">Массив. Значения.</param>
         /// <param name="columnIndex">КолонкаДереваЗначений, Число, Строка. Колонка, в которую будут загружены значения, её имя или индекс.</param>
         [ContextMethod("ЗагрузитьКолонку", "LoadColumn")]
-        public void LoadColumn(IValue values, IValue columnIndex)
+        public void LoadColumn(ArrayImpl values, IValue columnIndex)
         {
             var rowIterator = _rows.GetEnumerator();
-            var arrayIterator = (values as ArrayImpl).GetEnumerator();
+            using var arrayIterator = values.GetEnumerator();
 
             while (rowIterator.MoveNext() && arrayIterator.MoveNext())
             {
@@ -240,9 +240,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             foreach (KeyAndValueImpl kv in filter)
             {
-                ValueTreeColumn column = Columns.FindColumnByName(kv.Key.AsString());
+                ValueTreeColumn column = Columns.FindColumnByName(kv.Key.ToString());
                 if (column == null)
-                    throw PropertyAccessException.PropNotFoundException(kv.Key.AsString());
+                    throw PropertyAccessException.PropNotFoundException(kv.Key.ToString());
 
                 IValue current = row.Get(column);
                 if (!current.StrictEquals(kv.Value))

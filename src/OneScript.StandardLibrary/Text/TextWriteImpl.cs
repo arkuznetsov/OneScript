@@ -10,6 +10,7 @@ using System.IO;
 using System.Text;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -94,15 +95,15 @@ namespace OneScript.StandardLibrary.Text
         /// <param name="what">Текст для записи</param>
         /// <param name="delimiter">Разделитель строк</param>
         [ContextMethod("ЗаписатьСтроку", "WriteLine")]
-        public void WriteLine(string what, IValue delimiter = null)
+        public void WriteLine(IBslProcess process, string what, IValue delimiter = null)
         {
             ThrowIfNotOpened();
 
             Write (what);
 
             var sDelimiter = _lineDelimiter;
-            if (delimiter != null && delimiter.GetRawValue ().SystemType != BasicTypes.Undefined)
-                sDelimiter = delimiter.GetRawValue ().AsString ();
+            if (delimiter != null && delimiter.GetRawValue().SystemType != BasicTypes.Undefined)
+                sDelimiter = delimiter.GetRawValue().AsString(process);
 
             Write (sDelimiter);
         }
@@ -131,15 +132,14 @@ namespace OneScript.StandardLibrary.Text
         /// <param name="append">Признак добавления в конец файла (необязательный)</param>
         /// <param name="eolReplacement">Разделитель строк в файле (необязательный).</param>
         [ScriptConstructor(Name = "По имени файла")]
-        public static TextWriteImpl Constructor(IValue path, IValue encoding = null, IValue lineDelimiter = null, IValue append = null, IValue eolReplacement = null)
+        public static TextWriteImpl Constructor(string path, IValue encoding = null, string lineDelimiter = null, bool append = false, string eolReplacement = null)
         {
-            bool isAppend = append != null && append.AsBoolean();
-            var result = new TextWriteImpl ();
+            var result = new TextWriteImpl();
 
-            string sLineDelimiter = lineDelimiter?.GetRawValue().AsString () ?? "\n";
-            string sEolReplacement = eolReplacement?.GetRawValue().AsString () ?? "\r\n";
+            string sLineDelimiter = lineDelimiter ?? "\n";
+            string sEolReplacement = eolReplacement ?? "\r\n";
 
-            result.Open (path.AsString (), encoding, sLineDelimiter, isAppend, sEolReplacement);
+            result.Open (path, encoding, sLineDelimiter, append, sEolReplacement);
 
             return result;
         }

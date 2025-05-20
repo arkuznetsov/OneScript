@@ -51,7 +51,12 @@ namespace OneScript.StandardLibrary.Text
             }
             else
             {
-                OpenFile(input.AsString(), encoding, lineDelimiter, eolDelimiter, monopoly);
+                OpenFile(
+                    ContextValuesMarshaller.ConvertValueStrict<string>(input),
+                    encoding,
+                    lineDelimiter,
+                    eolDelimiter,
+                    monopoly);
             }
         }
 
@@ -192,7 +197,7 @@ namespace OneScript.StandardLibrary.Text
         /// <returns>ЧтениеТекста</returns>
         [ScriptConstructor(Name = "На основании потока или файла")]
         public static TextReadImpl ConstructorWithEncoding(IValue input, IValue encoding = null,
-            IValue lineDelimiter = null, IValue eolDelimiter = null, IValue monopoly = null)
+            string lineDelimiter = null, string eolDelimiter = null, bool monopoly = true)
         {
             var reader = new TextReadImpl();
             if (lineDelimiter != null)
@@ -200,16 +205,20 @@ namespace OneScript.StandardLibrary.Text
 
             if(IsStream(input, out var wrapper))
             {
-                reader.OpenStream(wrapper, encoding,
-                        lineDelimiter?.GetRawValue().AsString() ?? "\n",
-                        eolDelimiter?.GetRawValue().AsString());
+                reader.OpenStream(
+                    wrapper,
+                    encoding,
+                    lineDelimiter ?? "\n",
+                    eolDelimiter);
             }
             else
             {
-                reader.OpenFile(input.AsString(), encoding,
-                    lineDelimiter?.GetRawValue().AsString() ?? "\n",
-                    eolDelimiter?.GetRawValue().AsString(),
-                    monopoly?.AsBoolean() ?? true);
+                reader.OpenFile(
+                    ContextValuesMarshaller.ConvertValueStrict<string>(input),
+                    encoding,
+                    lineDelimiter ?? "\n",
+                    eolDelimiter,
+                    monopoly);
             }
 
             return reader;

@@ -25,8 +25,6 @@ namespace OneScript.Values
 
         public abstract bool Equals(BslValue other);
         
-        public static explicit operator string(BslValue value) => value.ConvertToString(ForbiddenBslProcess.Instance);
-
         public static explicit operator bool(BslValue target) =>
             target switch
             {

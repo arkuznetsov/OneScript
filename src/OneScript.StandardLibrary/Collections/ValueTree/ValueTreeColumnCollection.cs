@@ -241,9 +241,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             if (index.SystemType == BasicTypes.String)
             {
-                var column = FindColumnByName(index.AsString());
+                var column = FindColumnByName(index.ToString());
                 if (column == null)
-                    throw PropertyAccessException.PropNotFoundException(index.AsString());
+                    throw PropertyAccessException.PropNotFoundException(index.ToString());
                 return column;
             }
 

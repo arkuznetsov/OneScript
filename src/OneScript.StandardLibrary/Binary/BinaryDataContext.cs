@@ -90,7 +90,7 @@ namespace OneScript.StandardLibrary.Binary
         {
             if(filenameOrStream.SystemType == BasicTypes.String)
             {
-                var filename = filenameOrStream.AsString();
+                var filename = filenameOrStream.ToString()!;
 
                 using(var fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
                 {
@@ -141,7 +141,7 @@ namespace OneScript.StandardLibrary.Binary
             }
         }
 
-        public override string ConvertToString(IBslProcess process)
+        public override string ToString()
         {
             const int LIMIT = 64;
             int length;
@@ -197,9 +197,9 @@ namespace OneScript.StandardLibrary.Binary
         }
 
         [ScriptConstructor(Name = "На основании файла")]
-        public static BinaryDataContext Constructor(IValue filename)
+        public static BinaryDataContext Constructor(string filename)
         {
-            return new BinaryDataContext(filename.AsString());
+            return new BinaryDataContext(filename);
         }
 
         public override bool Equals(IValue other)

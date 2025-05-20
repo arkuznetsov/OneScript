@@ -214,9 +214,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             if (index.SystemType == BasicTypes.String)
             {
-                ValueTableColumn Column = FindColumnByName(index.AsString());
+                ValueTableColumn Column = FindColumnByName(index.ToString());
                 if (Column == null)
-                    throw PropertyAccessException.PropNotFoundException(index.AsString());
+                    throw PropertyAccessException.PropNotFoundException(index.ToString());
                 return Column;
             }
 
@@ -242,7 +242,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             if (index.SystemType == BasicTypes.String)
             {
-                return GetPropertyNumber(index.AsString());
+                return GetPropertyNumber(index.ToString());
             }
 
             if (index.SystemType == BasicTypes.Number)

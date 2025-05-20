@@ -143,7 +143,14 @@ namespace ScriptEngine.Machine.Contexts
             if (arguments[1].AsBoolean() == true)
                 return base.ConvertToString(process);
 
-            return arguments[0].AsString();
+            if (arguments[0].SystemType != BasicTypes.String && arguments[0].SystemType != BasicTypes.Undefined)
+            {
+                throw new RuntimeException(new BilingualString(
+                    $"Полученное представление имеет тип {arguments[0].SystemType}. Ожидается тип Строка",
+                    $"Returned presentation has type {arguments[0].SystemType}. Expected type is String"));
+            }
+
+            return arguments[0].ToString();
         }
 
         public void AddProperty(string name, string alias, IValue value)
@@ -252,7 +259,7 @@ namespace ScriptEngine.Machine.Contexts
             if (eventProcessor == default)
                 return;
 
-            var eventName = arguments[0].AsString();
+            var eventName = arguments[0].ExplicitString();
             IValue[] eventArgs = null;
             if (arguments.Length > 1)
             {

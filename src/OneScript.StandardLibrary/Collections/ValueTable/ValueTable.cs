@@ -270,9 +270,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             foreach (var kv in Filter)
             {
-                var Column = Columns.FindColumnByName(kv.Key.AsString());
+                var Column = Columns.FindColumnByName(kv.Key.ToString());
                 if (Column == null)
-                    throw WrongColumnNameException(kv.Key.AsString());
+                    throw WrongColumnNameException(kv.Key.ToString());
 
                 IValue current = Row.Get(Column);
                 if (!current.StrictEquals(kv.Value))
@@ -313,7 +313,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             var result = new MapImpl();
             foreach (var kv in filter)
             {
-                var key = Columns.FindColumnByName(kv.Key.AsString());
+                var key = Columns.FindColumnByName(kv.Key.ToString());
                 result.Insert(key, kv.Value);
             }
 
@@ -440,7 +440,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             {
                 int hash = 0;
                 foreach (var column in _columns)
-                    hash ^= row.Get(column).AsString().GetHashCode();
+                    hash ^= row.Get(column).GetHashCode();
                 return hash;
             }
         }

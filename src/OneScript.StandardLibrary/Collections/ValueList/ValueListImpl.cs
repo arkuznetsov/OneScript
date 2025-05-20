@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
@@ -272,19 +273,19 @@ namespace OneScript.StandardLibrary.Collections.ValueList
         /// </summary>
         /// <param name="direction">НаправлениеСортировки (необязательный) - Направление сортировки элементов. По умолчанию - по возрастанию.</param>
         [ContextMethod("СортироватьПоЗначению", "SortByValue")]
-        public void SortByValue(SortDirectionEnum? direction = null)
+        public void SortByValue(IBslProcess process, SortDirectionEnum? direction = null)
         {
             if (direction == null || direction == SortDirectionEnum.Asc)
             {
-                _items.Sort((x, y) => SafeCompare(x.Value, y.Value));
+                _items.Sort((x, y) => SafeCompare(process, x.Value, y.Value));
             }
             else
             {
-                _items.Sort((x, y) => SafeCompare(y.Value, x.Value));
+                _items.Sort((x, y) => SafeCompare(process, y.Value, x.Value));
             }
         }
 
-        private int SafeCompare(IValue x, IValue y)
+        private int SafeCompare(IBslProcess p, IValue x, IValue y)
         {
             try
             {
@@ -293,7 +294,7 @@ namespace OneScript.StandardLibrary.Collections.ValueList
             catch(RuntimeException)
             {
                 // Сравнение типов не поддерживается
-                return string.Compare(x?.AsString(), y?.AsString(), StringComparison.Ordinal);
+                return string.Compare(x?.AsString(p), y?.AsString(p), StringComparison.Ordinal);
             }
         }
 

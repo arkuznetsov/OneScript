@@ -143,7 +143,7 @@ namespace OneScript.StandardLibrary.Tasks
                 var result = true;
                 foreach (var filterItem in filter)
                 {
-                    switch (filterItem.Key.AsString().ToLower())
+                    switch (filterItem.Key.ToString()!.ToLower())
                     {
                         case "состояние":
                         case "state":
@@ -156,7 +156,7 @@ namespace OneScript.StandardLibrary.Tasks
                         
                         case "имяметода":
                         case "methodname":
-                            result = result && task.MethodName.ToLower() == filterItem.Value.AsString();
+                            result = result && task.MethodName.ToLower() == filterItem.Value.ToString();
                             break;
                         
                         case "объект":

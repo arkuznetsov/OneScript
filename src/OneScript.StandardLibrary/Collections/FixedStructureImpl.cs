@@ -28,7 +28,7 @@ namespace OneScript.StandardLibrary.Collections
         {
         	DefineType(typeDescriptor);
             foreach (KeyAndValueImpl keyValue in structure)
-        		_structure.Insert(keyValue.Key.AsString(), keyValue.Value);
+        		_structure.Insert(keyValue.Key.ToString(), keyValue.Value);
         }
 
         public FixedStructureImpl(string strProperties, params IValue[] values)

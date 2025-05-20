@@ -102,13 +102,19 @@ namespace OneScript.StandardLibrary.NativeApi
 
         public IValue GetIndexedValue(IValue index)
         {
-            var propNum = GetPropertyNumber(index.AsString());
+            if (index.SystemType != BasicTypes.String)
+                throw RuntimeException.InvalidArgumentType();
+            
+            var propNum = GetPropertyNumber(index.ToString());
             return GetPropValue(propNum);
         }
 
         public void SetIndexedValue(IValue index, IValue value)
         {
-            var propNum = GetPropertyNumber(index.AsString());
+            if (index.SystemType != BasicTypes.String)
+                throw RuntimeException.InvalidArgumentType();
+            
+            var propNum = GetPropertyNumber(index.ToString());
             SetPropValue(propNum, value);
         }
 

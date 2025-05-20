@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using OneScript.Contexts;
+using OneScript.Execution;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -60,7 +61,10 @@ namespace OneScript.StandardLibrary.TypeDescriptions
 
 		public IValue Adjust(IValue value)
 		{
-			var stringValue = value?.AsString() ?? "";
+			// FIXME: не пробрасывается процесс в приведение значения
+			// Кастомизированные представления из UserScriptContextInstance при присваивании в строковые
+			// колонки ТаблицыЗначений будут получать стандартное приведение, а не кастомное.
+			var stringValue = value?.ToString() ?? "";
 
 			if (Length != 0 && stringValue.Length > Length)
 			{
@@ -70,7 +74,7 @@ namespace OneScript.StandardLibrary.TypeDescriptions
 			if (AllowedLength == AllowedLengthEnum.Fixed && stringValue.Length < Length)
 			{
 				var tail = new string(' ', Length - stringValue.Length);
-				stringValue = string.Format("{0}{1}", stringValue, tail);
+				stringValue += tail;
 			}
 
 			return ValueFactory.Create(stringValue);

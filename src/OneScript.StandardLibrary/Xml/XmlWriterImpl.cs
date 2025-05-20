@@ -246,7 +246,7 @@ namespace OneScript.StandardLibrary.Xml
             else if ((encodingOrSettings?.SystemType ?? BasicTypes.String) == BasicTypes.String)
             {
                 _settings = XmlWriterSettingsImpl.Constructor(
-                    encodingOrSettings?.AsString(),
+                    encodingOrSettings?.ToString(),
                     null,
                     Indent,
                     false,

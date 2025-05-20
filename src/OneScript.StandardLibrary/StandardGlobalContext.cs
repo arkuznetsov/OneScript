@@ -163,7 +163,7 @@ namespace OneScript.StandardLibrary
             }
             else if (filledProperties.SystemType == BasicTypes.String)
             {
-                strFilled = filledProperties.AsString();
+                strFilled = filledProperties.ToString();
             }
             else
             {
@@ -176,7 +176,7 @@ namespace OneScript.StandardLibrary
             }
             else if (ignoredProperties.SystemType == BasicTypes.String)
             {
-                strIgnored = ignoredProperties.AsString();
+                strIgnored = ignoredProperties.ToString();
             }
             else
             {

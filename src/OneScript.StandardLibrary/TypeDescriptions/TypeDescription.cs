@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary.Collections;
 using OneScript.Types;
 using OneScript.Values;
@@ -243,7 +244,7 @@ namespace OneScript.StandardLibrary.TypeDescriptions
 			
 			if (types.SystemType == BasicTypes.String)
 			{
-				return FromTypeNames(typeManager, types.AsString());
+				return FromTypeNames(typeManager, types.ToString());
 			}
 			if (types is ArrayImpl arrayOfTypes)
 			{

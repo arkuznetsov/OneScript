@@ -391,8 +391,8 @@ namespace OneScript.StandardLibrary.Http
             {
                 System.Diagnostics.Trace.Assert(item != null);
 
-                var key = item.Key.AsString();
-                var value = item.Value.AsString();
+                var key = item.Key.ToString();
+                var value = item.Value.ToString();
 
                 switch (key.ToUpperInvariant())
                 {

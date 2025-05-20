@@ -62,7 +62,7 @@ namespace OneScript.StandardLibrary.Collections
         {
             foreach (KeyAndValueImpl keyValue in structure)
             {
-                Insert(keyValue.Key.AsString(), keyValue.Value);
+                Insert(keyValue.Key.ToString(), keyValue.Value);
             }
         }
       

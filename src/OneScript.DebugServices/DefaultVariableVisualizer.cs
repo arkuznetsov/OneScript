@@ -33,7 +33,8 @@ namespace OneScript.DebugServices
 
             try
             {
-                presentation = value.AsString();
+                // FIXME: В отладочном представлении не вызываются кастомные bsl-представления
+                presentation = value.ToString();
             }
             catch (Exception e)
             {

@@ -986,7 +986,7 @@ namespace ScriptEngine.Machine
             var objIValue = _operationStack.Pop();
             
             var context = objIValue.AsObject();
-            var propName = _module.Constants[arg].AsString();
+            var propName = _module.Constants[arg].ConvertToString(_process);
             var propNum = context.GetPropertyNumber(propName);
 
             var propReference = Variable.CreateContextPropertyReference(context, propNum, "stackvar");
@@ -1023,7 +1023,7 @@ namespace ScriptEngine.Machine
  
             var objIValue = _operationStack.Pop();
             context = objIValue.AsObject();
-            var methodName = _module.Constants[arg].AsString();
+            var methodName = _module.Constants[arg].ConvertToString(_process);
             methodId = context.GetMethodNumber(methodName);
             
             if (context.DynamicMethodSignatures)

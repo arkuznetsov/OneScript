@@ -89,7 +89,7 @@ namespace OneScript.Native.Runtime
         
         public static string ToString(BslValue value)
         {
-            return (string)value;
+            return value.ToString();
         }
 
         // FIXME: тут не должно быть Null, но из-за несовершенства мира они тут бывают. Когда задолбает - надо починить и убрать отсюда проверки на null

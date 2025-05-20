@@ -74,7 +74,7 @@ namespace OneScript.StandardLibrary.Binary
             Stream stream;
             if (dataSource.SystemType == BasicTypes.String)
             {
-                stream = new FileStream(dataSource.AsString(), FileMode.Open, FileAccess.Read, FileShare.Read);
+                stream = new FileStream(dataSource.ToString()!, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
             else
             {

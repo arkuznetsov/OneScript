@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.StandardLibrary.Collections;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
@@ -140,7 +141,7 @@ namespace OneScript.StandardLibrary.Json
 
                         while (ReadJsonToken() == JsonToken.PropertyName)
                         {
-                            var propertyName = _reader.CurrentValue.AsString();
+                            var propertyName = (string)_reader.ReaderValue;
                             if (!ReadJsonValue(out value))
                                 return false;
 
@@ -272,7 +273,7 @@ namespace OneScript.StandardLibrary.Json
         ///
         ///
         [ContextMethod("ЗаписатьJSON", "WriteJSON")]
-        public void WriteJSON(JSONWriter Writer, IValue Value, IValue SerializationSettings = null, string ConversionFunctionName = null, IValue ConversionFunctionModule = null, IValue ConversionFunctionAdditionalParameters = null)
+        public void WriteJSON(IBslProcess process, JSONWriter Writer, IValue Value, IValue SerializationSettings = null, string ConversionFunctionName = null, IValue ConversionFunctionModule = null, IValue ConversionFunctionAdditionalParameters = null)
         {
 
             var RawValue = Value.GetRawValue();
@@ -282,7 +283,7 @@ namespace OneScript.StandardLibrary.Json
                 Writer.WriteStartArray();
                 foreach (var item in (ArrayImpl)RawValue)
                 {
-                        WriteJSON(Writer, item);
+                    WriteJSON(process, Writer, item);
                 }
                 Writer.WriteEndArray();
             }
@@ -291,7 +292,7 @@ namespace OneScript.StandardLibrary.Json
                 Writer.WriteStartArray();
                 foreach (var item in (FixedArrayImpl)RawValue)
                 {
-                        WriteJSON(Writer, item);
+                    WriteJSON(process, Writer, item);
                 }
                 Writer.WriteEndArray();
             }
@@ -300,8 +301,8 @@ namespace OneScript.StandardLibrary.Json
                 Writer.WriteStartObject();
                 foreach (var item in (StructureImpl)RawValue)
                 {
-                        Writer.WritePropertyName(item.Key.AsString());
-                        WriteJSON(Writer, item.Value);
+                    Writer.WritePropertyName(item.Key.ToString());
+                    WriteJSON(process, Writer, item.Value);
                 }
                 Writer.WriteEndObject();
             }
@@ -310,8 +311,8 @@ namespace OneScript.StandardLibrary.Json
                 Writer.WriteStartObject();
                 foreach (var item in (FixedStructureImpl)RawValue)
                 {
-                        Writer.WritePropertyName(item.Key.AsString());
-                        WriteJSON(Writer, item.Value);
+                    Writer.WritePropertyName(item.Key.ToString());
+                    WriteJSON(process, Writer, item.Value);
                 }
                 Writer.WriteEndObject();
             }
@@ -320,8 +321,8 @@ namespace OneScript.StandardLibrary.Json
                 Writer.WriteStartObject();
                 foreach (var item in (MapImpl)RawValue)
                 {
-                        Writer.WritePropertyName(item.Key.AsString());
-                        WriteJSON(Writer, item.Value);
+                    Writer.WritePropertyName(item.Key.AsString(process));
+                    WriteJSON(process, Writer, item.Value);
                 }
                 Writer.WriteEndObject();
             }
@@ -330,8 +331,8 @@ namespace OneScript.StandardLibrary.Json
                 Writer.WriteStartObject();
                 foreach (var item in (FixedMapImpl)RawValue)
                 {
-                       Writer.WritePropertyName(item.Key.AsString());
-                       WriteJSON(Writer, item.Value);
+                   Writer.WritePropertyName(item.Key.AsString(process));
+                   WriteJSON(process, Writer, item.Value);
                 }
                 Writer.WriteEndObject();
             }
