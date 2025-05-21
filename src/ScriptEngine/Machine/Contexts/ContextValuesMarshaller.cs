@@ -11,6 +11,7 @@ using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
+using OneScript.Types;
 using OneScript.Values;
 
 namespace ScriptEngine.Machine.Contexts
@@ -122,7 +123,7 @@ namespace ScriptEngine.Machine.Contexts
             {
                 valueObj = value;
             }
-            else if (value == BslUndefinedValue.Instance)
+            else if (value.SystemType == BasicTypes.Undefined)
             {
                 // Если тип параметра не IValue и не IVariable && Неопределено -> null
                 valueObj = null;
