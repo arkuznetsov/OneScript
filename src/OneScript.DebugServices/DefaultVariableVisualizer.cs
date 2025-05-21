@@ -66,7 +66,7 @@ namespace OneScript.DebugServices
         {
             var presenter = new DefaultValueVisitor();
             
-            if (value.GetRawValue() is IRuntimeContextInstance)
+            if (value is IRuntimeContextInstance)
             {
                 var objectValue = value.AsObject();
                 if (objectValue is IDebugPresentationAcceptor customPresenter)
@@ -96,7 +96,7 @@ namespace OneScript.DebugServices
 
         private bool IsStructured(IVariable variable)
         {
-            var rawValue = variable?.GetRawValue();
+            var rawValue = variable?.Value;
             return HasProperties(rawValue as IRuntimeContextInstance) 
                    || HasIndexes(rawValue as ICollectionContext<IValue>);
         }

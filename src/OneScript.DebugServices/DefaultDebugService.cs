@@ -173,8 +173,7 @@ namespace OneScript.DebugServices
             try
             {
                 var value = GetMachine(threadId)
-                    .EvaluateInFrame(expression, contextFrame)
-                    .GetRawValue();
+                    .EvaluateInFrame(expression, contextFrame);
                 
                 var variable = _visualizer.GetVariable(MachineVariable.Create(value, "$evalResult"));
                 return variable;
@@ -246,7 +245,7 @@ namespace OneScript.DebugServices
 
         private IList<IVariable> GetChildVariables(IVariable src)
         {
-            return _visualizer.GetChildVariables(src).ToList();
+            return _visualizer.GetChildVariables(src.Value).ToList();
         }
     }
 }

@@ -115,11 +115,18 @@ namespace ScriptEngine.Machine.Contexts
                 return ConvertValueType(value, Nullable.GetUnderlyingType(type), process);
             }
 
-            if (type == typeof(IValue))
+            if (type == typeof(IVariable))
             {
-                valueObj = value;
+                return value;
             }
-            else if (type == typeof(IVariable))
+
+            if (value is IValueReference r)
+            {
+                // Если целевой тип не требовал именно переменную, то разыменовываем ее
+                value = r.Value;
+            }
+
+            if (type == typeof(IValue) || type == typeof(BslValue))
             {
                 valueObj = value;
             }
@@ -130,7 +137,7 @@ namespace ScriptEngine.Machine.Contexts
             }
             else if (type == typeof(string))
             {
-                valueObj = ((BslValue)value.GetRawValue()).ToString(process);
+                valueObj = value.AsString(process);
             }
             else if (type == typeof(int))
             {
@@ -190,13 +197,12 @@ namespace ScriptEngine.Machine.Contexts
             }
             else
             {
-                var rawValue = value.GetRawValue();
-                if (rawValue is IObjectWrapper wrapped)
+                if (value is IObjectWrapper wrapped)
                 {
                     if (!type.IsInstanceOfType(wrapped.UnderlyingObject))
                         throw new InvalidCastException();
                 }
-                else if (!type.IsInstanceOfType(rawValue))
+                else if (!type.IsInstanceOfType(value))
                 {
                     throw new InvalidCastException();
                 }
@@ -264,7 +270,7 @@ namespace ScriptEngine.Machine.Contexts
             if (enumeration == null)
                 return defValue;
 
-            if (enumeration.GetRawValue() is ClrEnumValueWrapper<T> wrapped)
+            if (enumeration is ClrEnumValueWrapper<T> wrapped)
             {
                 return wrapped.UnderlyingValue;
             }
@@ -297,9 +303,12 @@ namespace ScriptEngine.Machine.Contexts
 		{
             if (value == null)
                 return null;
+
+            // TODO: Вероятно, можно просто заменить на ассерт, что это не IValueReference
+            if (value is IValueReference r)
+                return ConvertToClrObject(r.Value);
             
-            var raw = value.GetRawValue();
-            return raw switch
+            return value switch
             {
                 BslNumericValue num => (decimal)num,
                 BslBooleanValue boolean => (bool)boolean,
@@ -310,21 +319,20 @@ namespace ScriptEngine.Machine.Contexts
                 BslTypeValue type => type.SystemType.ImplementingClass,
                 IObjectWrapper wrapper => wrapper.UnderlyingObject,
                 BslObjectValue obj => obj,
-                _ => throw ValueMarshallingException.NoConversionToCLR(raw.GetType())
+                _ => throw ValueMarshallingException.NoConversionToCLR(value.GetType())
             };
         }
 
         private static object CastToClrObject(IValue val)
         {
-            var rawValue = val.GetRawValue();
             object objectRef;
-            if (rawValue is IObjectWrapper wrapper)
+            if (val is IObjectWrapper wrapper)
             {
                 objectRef = wrapper.UnderlyingObject;
             }
             else
             {
-                objectRef = ConvertToClrObject(rawValue);
+                objectRef = ConvertToClrObject(val);
             }
 
             return objectRef;

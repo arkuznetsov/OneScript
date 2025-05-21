@@ -12,10 +12,6 @@ namespace ScriptEngine.Machine
     public interface IValue : IComparable<IValue>, IEquatable<IValue>
     {
         TypeDescriptor SystemType { get; }
-
-        // TODO: Избавиться нахер от этого ужоса
-        [Obsolete("Планируется удаление.")]
-        IValue GetRawValue();
     }
 
     public static class IValueExtension

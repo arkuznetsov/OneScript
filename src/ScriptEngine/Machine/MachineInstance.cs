@@ -236,7 +236,7 @@ namespace ScriptEngine.Machine
             return _operationStack.Pop();
         }
 
-        internal IValue EvaluateInFrame(string expression, ExecutionFrame selectedFrame)
+        internal BslValue EvaluateInFrame(string expression, ExecutionFrame selectedFrame)
         {
             MachineInstance runner = new MachineInstance
             {
@@ -268,10 +268,10 @@ namespace ScriptEngine.Machine
             runner.PushFrame(frame);
             runner.MainCommandLoop();
 
-            return runner.PopRawValue();
+            return (BslValue)runner.PopRawValue();
         }
 
-        public IValue EvaluateInFrame(string expression, int frameId)
+        public BslValue EvaluateInFrame(string expression, int frameId)
         {
             System.Diagnostics.Debug.Assert(_fullCallstackCache != null);
             if (frameId < 0 || frameId >= _fullCallstackCache.Count)

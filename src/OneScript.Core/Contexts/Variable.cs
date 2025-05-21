@@ -62,11 +62,6 @@ namespace OneScript.Contexts
 
         public TypeDescriptor SystemType => Value.SystemType;
 
-        public IValue GetRawValue()
-        {
-            return Value;
-        }
-
         #endregion
 
         #region IComparable<IValue> Members
@@ -126,11 +121,6 @@ namespace OneScript.Contexts
             #region IValue Members
 
             public TypeDescriptor SystemType => Value.SystemType;
-
-            public IValue GetRawValue()
-            {
-                return Value.GetRawValue();
-            }
 
             #endregion
 

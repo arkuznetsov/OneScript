@@ -73,7 +73,7 @@ namespace OneScript.StandardLibrary
                 {
                     if (i < arguments.Count())
                     {
-                        arguments.Set(i, argsToPass[i]?.GetRawValue());
+                        arguments.Set(i, argsToPass[i] is IValueReference r ? r.Value : argsToPass[i]);
                     }
                 }
             }
