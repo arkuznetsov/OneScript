@@ -66,28 +66,17 @@ namespace OneScript.StandardLibrary.Json
             _escapeNonAscii = false;
         }
 
-        private void SetOptions(IValue settings)
+        private void SetOptions(JSONWriterSettings settings)
         {
-            _settings = (JSONWriterSettings)settings.GetRawValue();
+            _settings = settings;
             if (_settings.UseDoubleQuotes)
                 _writer.QuoteChar = '\"';
             else { 
                 _writer.QuoteChar = '\'';
             }
 
-            if (_settings.PaddingSymbols != null && _settings.PaddingSymbols.Length > 0)
-                _writer.IndentChar = _settings.PaddingSymbols[0];
-            else
-                _writer.IndentChar = ' ';
-
-            if (_settings.PaddingSymbols != null && _settings.PaddingSymbols.Length > 0)
-            {
-                _writer.Indentation = 1;
-            }
-            else
-            {
-                _writer.Indentation = INDENT_SIZE;
-            }
+            _writer.IndentChar = !string.IsNullOrEmpty(_settings.PaddingSymbols) ? _settings.PaddingSymbols[0] : ' ';
+            _writer.Indentation = !string.IsNullOrEmpty(_settings.PaddingSymbols) ? 1 : INDENT_SIZE;
             _writer.Formatting = Formatting.Indented;
 
             if (_settings.EscapeCharacters != JSONCharactersEscapeModeEnum.None)
@@ -325,7 +314,7 @@ namespace OneScript.StandardLibrary.Json
             if (!IsOpen())
                 throw NotOpenException();
 
-            var clrValue = value.GetRawValue().UnwrapToClrObject();
+            var clrValue = value.UnwrapToClrObject();
             switch (clrValue)
             {
                 case string v:
@@ -445,20 +434,16 @@ namespace OneScript.StandardLibrary.Json
         /// <param name="settings">
         /// Параметры, используемые при открытии файла для настройки записи в формате JSON. </param>
         [ContextMethod("ОткрытьФайл", "OpenFile")]
-        public void OpenFile(string fileName, string encoding = null, IValue addBOM = null, IValue settings = null)
+        public void OpenFile(string fileName, string encoding = null, bool addBOM = false, JSONWriterSettings settings = null)
         {
-            bool bAddBOM = false;
-            if (addBOM != null)
-                bAddBOM = addBOM.AsBoolean();
-
             StreamWriter streamWriter;
             
             try
             {
                 if (encoding != null)
-                    streamWriter = FileOpener.OpenWriter(fileName, TextEncodingEnum.GetEncodingByName(encoding, bAddBOM));
+                    streamWriter = FileOpener.OpenWriter(fileName, TextEncodingEnum.GetEncodingByName(encoding, addBOM));
                 else
-                    streamWriter = FileOpener.OpenWriter(fileName, TextEncodingEnum.GetEncodingByName("UTF-8", bAddBOM));
+                    streamWriter = FileOpener.OpenWriter(fileName, TextEncodingEnum.GetEncodingByName("UTF-8", addBOM));
             }
             catch (Exception e)
             {
@@ -487,7 +472,7 @@ namespace OneScript.StandardLibrary.Json
         /// Параметры, используемые при записи объекта JSON.
         /// По умолчанию, содержит ПараметрыЗаписиJSON, сгенерированные автоматически. </param>
         [ContextMethod("УстановитьСтроку", "SetString")]
-        public void SetString(IValue settings = null)
+        public void SetString(JSONWriterSettings settings = null)
         {
             if (IsOpen())
                 Close();

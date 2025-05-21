@@ -125,7 +125,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Удалить", "Delete")]
         public void Delete(IValue column)
         {
-            column = column.GetRawValue();
             var vtColumn = GetColumnByIIndex(column);
             _owner.ForEach((ValueTableRow x)=>
             {
@@ -254,7 +253,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 return iIndex;
             }
 
-            var column = index.GetRawValue() as ValueTableColumn;
+            var column = index as ValueTableColumn;
             if (column != null)
             {
                 return IndexOf(column);

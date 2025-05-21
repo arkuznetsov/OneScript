@@ -190,10 +190,8 @@ namespace OneScript.StandardLibrary.Collections.ValueList
             return item;
         }
 
-        private int IndexByValue(IValue item)
+        private int IndexByValue(BslValue item)
         {
-            item = item.GetRawValue();
-
             int index;
 
             if (item is ValueListItem)
@@ -229,7 +227,7 @@ namespace OneScript.StandardLibrary.Collections.ValueList
         /// </param>
         /// <param name="offset">Количество позиций, на которое сдвигается элемент. Если значение положительное - сдвиг вниз, иначе вверх</param>
         [ContextMethod("Сдвинуть", "Move")]
-        public void Move(IValue item, int offset)
+        public void Move(BslValue item, int offset)
         {
             int index_source = IndexByValue(item);
 
@@ -323,7 +321,7 @@ namespace OneScript.StandardLibrary.Collections.ValueList
         /// Число - Индекс удаляемого элемента
         /// </param>
         [ContextMethod("Удалить", "Delete")]
-        public void Delete(IValue item)
+        public void Delete(BslValue item)
         {
             int indexSource = IndexByValue(item);
 

@@ -125,8 +125,10 @@ namespace OneScript.StandardLibrary.Http
         public static HttpRequestContext Constructor(string resource, IValue headers = null)
         {
             var ctx = new HttpRequestContext {ResourceAddress = resource};
-            if (headers == null) return ctx;
-            if (!(headers.GetRawValue() is MapImpl headersMap))
+            if (headers == null) 
+                return ctx;
+
+            if (!(headers is MapImpl headersMap))
                 throw RuntimeException.InvalidArgumentType();
 
             ctx.Headers = headersMap;

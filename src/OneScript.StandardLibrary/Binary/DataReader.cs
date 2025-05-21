@@ -441,15 +441,14 @@ namespace OneScript.StandardLibrary.Binary
             return textRdr.ReadLine(lineSplitter ?? ConvertibleSplitterOfLines);
         }
 
-        private T FromBytes<T>(byte[] bytes, Func<byte[], int, T> leConverter, Func<byte[], int, T> beConverter, IValue byteOrder = null)
+        private T FromBytes<T>(byte[] bytes, Func<byte[], int, T> leConverter, Func<byte[], int, T> beConverter, BslValue byteOrder = null)
         {
             ByteOrderEnum workByteOrder;
             if (byteOrder == null)
                 workByteOrder = ByteOrder;
             else
             {
-                var enumVal = byteOrder.GetRawValue() as IObjectWrapper;
-                if (enumVal == null)
+                if (!(byteOrder is IObjectWrapper enumVal))
                     throw RuntimeException.InvalidArgumentType(nameof(byteOrder));
 
                 try
@@ -479,7 +478,7 @@ namespace OneScript.StandardLibrary.Binary
         /// <returns name="Number"/>
         ///
         [ContextMethod("ПрочитатьЦелое16", "ReadInt16")]
-        public uint ReadInt16(IValue byteOrder = null)
+        public uint ReadInt16(BslValue byteOrder = null)
         {
             var bytes = _reader.ReadBytes(sizeof(ushort));
             return FromBytes(bytes, BitConversionFacility.LittleEndian.ToUInt16, BitConversionFacility.BigEndian.ToUInt16, byteOrder);
@@ -500,7 +499,7 @@ namespace OneScript.StandardLibrary.Binary
         /// Числовым типом может быть представлено любое десятичное число. Над данными числового типа определены основные арифметические операции: сложение, вычитание, умножение и деление. Максимально допустимая разрядность числа 38 знаков.</returns>
         ///
         [ContextMethod("ПрочитатьЦелое32", "ReadInt32")]
-        public uint ReadInt32(IValue byteOrder = null)
+        public uint ReadInt32(BslValue byteOrder = null)
         {
             var bytes = _reader.ReadBytes(sizeof(uint));
             return FromBytes(bytes, BitConversionFacility.LittleEndian.ToUInt32, BitConversionFacility.BigEndian.ToUInt32, byteOrder);
@@ -520,7 +519,7 @@ namespace OneScript.StandardLibrary.Binary
         /// Числовым типом может быть представлено любое десятичное число. Над данными числового типа определены основные арифметические операции: сложение, вычитание, умножение и деление. Максимально допустимая разрядность числа 38 знаков.</returns>
         ///
         [ContextMethod("ПрочитатьЦелое64", "ReadInt64")]
-        public ulong ReadInt64(IValue byteOrder = null)
+        public ulong ReadInt64(BslValue byteOrder = null)
         {
             var bytes = _reader.ReadBytes(sizeof(ulong));
             return FromBytes(bytes, BitConversionFacility.LittleEndian.ToUInt64, BitConversionFacility.BigEndian.ToUInt64, byteOrder);

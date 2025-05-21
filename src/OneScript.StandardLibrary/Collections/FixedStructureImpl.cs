@@ -176,10 +176,10 @@ namespace OneScript.StandardLibrary.Collections
         [ScriptConstructor(Name = "По ключам и значениям")]
         public static FixedStructureImpl Constructor(IValue param1, IValue[] args)
         {
-            return param1?.GetRawValue() switch
+            return param1 switch
             {
                 null => new FixedStructureImpl(""),
-                BslStringValue s => new FixedStructureImpl((string)s, args),
+                BslStringValue s => new FixedStructureImpl(s, args),
                 StructureImpl structure => new FixedStructureImpl(structure),
                  
                 _ => throw new RuntimeException("В качестве параметра для конструктора можно передавать только Структура или Ключи и Значения")

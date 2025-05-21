@@ -6,12 +6,14 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.StandardLibrary.Binary;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -226,8 +228,10 @@ namespace OneScript.StandardLibrary.Text
 
         private static bool IsStream(IValue input, out IStreamWrapper wrapper)
         {
+            Debug.Assert(!(input is IValueReference));
+            
             wrapper = null;
-            if (input.GetRawValue() is IStreamWrapper wrap)
+            if (input is IStreamWrapper wrap)
             {
                 wrapper = wrap;
                 return true;

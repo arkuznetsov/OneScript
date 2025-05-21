@@ -33,7 +33,7 @@ namespace OneScript.StandardLibrary.Collections
         {
             foreach (var kv in source)
             {
-                _content.Add(kv.Key.GetRawValue(), kv.Value.GetRawValue());
+                _content.Add(kv.Key, kv.Value);
             }
         }
         
@@ -130,12 +130,9 @@ namespace OneScript.StandardLibrary.Collections
         }
         
         [ScriptConstructor(Name = "Из фиксированного соответствия")]
-        public static MapImpl Constructor(IValue source)
+        public static MapImpl Constructor(FixedMapImpl source)
         {
-            if (!(source.GetRawValue() is FixedMapImpl fix))
-                throw RuntimeException.InvalidArgumentType();
-            
-            return new MapImpl(fix);
+            return new MapImpl(source);
         }
     }
 }

@@ -13,6 +13,7 @@ using OneScript.Exceptions;
 using OneScript.Execution;
 using OneScript.StandardLibrary.TypeDescriptions;
 using OneScript.Types;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using ScriptEngine.Types;
@@ -110,9 +111,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         /// </summary>
         /// <param name="column">КолонкаДереваЗначений. Колонка.</param>
         [ContextMethod("Удалить", "Delete")]
-        public void Delete(IValue column)
+        public void Delete(BslValue column)
         {
-            column = column.GetRawValue();
             _columns.Remove(GetColumnByIIndex(column));
         }
 
@@ -146,7 +146,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         /// <param name="column">КолонкаДереваЗначений. Колонка.</param>
         /// <param name="offset">Число. Смещение.</param>
         [ContextMethod("Сдвинуть", "Move")]
-        public void Move(IValue column, int offset)
+        public void Move(BslValue column, int offset)
         {
             var treeColumn = GetColumnByIIndex(column);
             int indexSource = _columns.IndexOf(treeColumn);
@@ -237,7 +237,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
             return true;
         }
 
-        public ValueTreeColumn GetColumnByIIndex(IValue index)
+        public ValueTreeColumn GetColumnByIIndex(BslValue index)
         {
             if (index.SystemType == BasicTypes.String)
             {
@@ -267,7 +267,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
 
         public override IValue GetIndexedValue(IValue index)
         {
-            return GetColumnByIIndex(index);
+            return GetColumnByIIndex((BslValue)index);
         }
 
         internal List<ValueTreeColumn> GetProcessingColumnList(string columnNamesString)

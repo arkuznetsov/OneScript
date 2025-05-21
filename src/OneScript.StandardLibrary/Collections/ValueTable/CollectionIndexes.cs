@@ -64,7 +64,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
         private CollectionIndex GetIndex(IValue index)
         {
-            index = index.GetRawValue();
             if (index is CollectionIndex collectionIndex)
             {
                 if (_indexes.Contains(collectionIndex))

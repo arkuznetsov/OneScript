@@ -121,54 +121,17 @@ namespace OneScript.StandardLibrary.Text
         }
         
         [ContextProperty("ЦветТекста", "TextColor")]
-        public IValue TextColor
+        public ClrEnumValueWrapper<ConsoleColor> TextColor
         {
-            get
-            {
-                try
-                {
-                    return ConsoleColorEnum.Instance.FromNativeValue(Console.ForegroundColor);
-                }
-                catch (InvalidOperationException)
-                {
-                    return null;
-                }
-            }
-            set
-            {
-                if (value.GetRawValue() is ClrEnumValueWrapper<ConsoleColor> typed)
-                {
-                    Console.ForegroundColor = typed.UnderlyingValue;
-                }
-                else
-                    throw new TypeConversionException();
-            }
+            get => ConsoleColorEnum.Instance.FromNativeValue(Console.ForegroundColor);
+            set => Console.ForegroundColor = value.UnderlyingValue;
         }
 
         [ContextProperty("ЦветФона", "BackgroundColor")]
-        public IValue BackgroundColor
+        public ClrEnumValueWrapper<ConsoleColor> BackgroundColor
         {
-            get
-            {
-                try
-                {
-                    return _executionContext.GlobalInstances.GetInstance<ConsoleColorEnum>()
-                        .FromNativeValue(Console.BackgroundColor);
-                }
-                catch (InvalidOperationException)
-                {
-                    return null;
-                }
-            }
-            set
-            {
-                if (value.GetRawValue() is ClrEnumValueWrapper<ConsoleColor> typed)
-                {
-                    Console.BackgroundColor = typed.UnderlyingValue;
-                }
-                else
-                    throw new TypeConversionException();
-            }
+            get => ConsoleColorEnum.Instance.FromNativeValue(Console.BackgroundColor);
+            set => Console.BackgroundColor = value.UnderlyingValue;
         }
 
         /// <summary>

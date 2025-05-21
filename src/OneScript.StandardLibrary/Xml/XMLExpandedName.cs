@@ -8,6 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System.Xml;
 using OneScript.Contexts;
 using OneScript.Execution;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -51,9 +52,9 @@ namespace OneScript.StandardLibrary.Xml
         public static XMLExpandedName Create(string namespaceURI, string localName)
             => new XMLExpandedName(namespaceURI, localName);
 
-        public override bool Equals(IValue other)
+        public override bool Equals(BslValue other)
         {
-            if (other.AsObject() is XMLExpandedName _expandedName)
+            if (other?.AsObject() is XMLExpandedName _expandedName)
                 return NativeValue.Equals(_expandedName.NativeValue);
             else
                 return base.Equals(other);

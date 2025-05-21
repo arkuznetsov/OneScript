@@ -112,12 +112,11 @@ namespace OneScript.StandardLibrary
         /// <summary>
         /// Проверяет заполненность значения по принципу, заложенному в 1С:Предприятии
         /// </summary>
-        /// <param name="inValue"></param>
-        /// <returns></returns>
+        /// <param name="value"></param>
+        /// <returns>Булево. Истина, если значение считается заполненным.</returns>
         [ContextMethod("ЗначениеЗаполнено","ValueIsFilled")]
-        public bool ValueIsFilled(IBslProcess process, IValue inValue)
+        public bool ValueIsFilled(IBslProcess process, BslValue value)
         {
-            var value = inValue?.GetRawValue();
             if (value == null)
             {
                 return false;

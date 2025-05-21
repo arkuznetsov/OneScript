@@ -5,10 +5,12 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -46,14 +48,14 @@ namespace OneScript.StandardLibrary.TypeDescriptions
 			    && AllowedSign == asThis.AllowedSign;
 		}
 
-		public override bool Equals(IValue other)
+		public override bool Equals(BslValue other)
 		{
-			return object.Equals(this, other?.GetRawValue());
+			return Equals((object)other);
 		}
 
 		public override int GetHashCode()
 		{
-			return Digits.GetHashCode();
+			return HashCode.Combine(Digits, FractionDigits, AllowedSign);
 		}
 
 		public IValue Adjust(IValue value)

@@ -117,13 +117,13 @@ namespace OneScript.StandardLibrary
         /// <param name="methodName">Имя метода для вызова</param>
         /// <returns>Истина, если метод существует, и Ложь в обратном случае. </returns>
         [ContextMethod("МетодСуществует", "MethodExists")]
-        public bool MethodExists(IValue target, string methodName)
+        public bool MethodExists(BslValue target, string methodName)
         {
-            if(target.GetRawValue() is BslObjectValue)
+            if(target is BslObjectValue)
                 return MethodExistsForObject(target.AsObject(), methodName);
 
             if (target.SystemType == BasicTypes.Type)
-                return MethodExistsForType(target.GetRawValue() as BslTypeValue, methodName);
+                return MethodExistsForType(target as BslTypeValue, methodName);
 
             throw RuntimeException.InvalidArgumentType("target");
         }
@@ -220,13 +220,13 @@ namespace OneScript.StandardLibrary
         /// <param name="target">Объект, из которого получаем таблицу методов.</param>
         /// <returns>Таблица значений с колонками: Имя, Количество, ЭтоФункция, Аннотации, Параметры, Экспорт</returns>
         [ContextMethod("ПолучитьТаблицуМетодов", "GetMethodsTable")]
-        public ValueTable GetMethodsTable(IValue target)
+        public ValueTable GetMethodsTable(BslValue target)
         {
             var result = new ValueTable();
-            if(target.GetRawValue() is BslObjectValue)
+            if(target is BslObjectValue)
                 FillMethodsTableForObject(target.AsObject(), result);
             else if (target.SystemType == BasicTypes.Type)
-                FillMethodsTableForType(target.GetRawValue() as BslTypeValue, result);
+                FillMethodsTableForType(target as BslTypeValue, result);
             else
                 throw RuntimeException.InvalidArgumentType();
 
@@ -383,15 +383,15 @@ namespace OneScript.StandardLibrary
         /// <param name="withPrivate">Включить в результат приватные поля</param>
         /// <returns>Таблица значений с колонками - Имя, Аннотации, Экспорт</returns>
         [ContextMethod("ПолучитьТаблицуСвойств", "GetPropertiesTable")]
-        public ValueTable GetPropertiesTable(IValue target, bool withPrivate = false)
+        public ValueTable GetPropertiesTable(BslValue target, bool withPrivate = false)
         {
             var result = new ValueTable();
 
-            if(target.GetRawValue() is BslObjectValue)
+            if(target is BslObjectValue)
                 FillPropertiesTableForObject(result, target, withPrivate);
             else if (target.SystemType == BasicTypes.Type)
             {
-                var type = target.GetRawValue() as BslTypeValue;
+                var type = target as BslTypeValue;
                 FillPropertiesTableForType(type, result, withPrivate);
             }
             else

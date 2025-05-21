@@ -37,7 +37,7 @@ namespace ScriptEngine.Machine
         public static string AsString(this IValue val, IBslProcess process) => ((BslValue)val).ToString(process);
 
         // Метод для совместимости внешних компонент
-        [Obsolete]
+        [Obsolete("Just don't use. IValue is always marshalled as raw value.")]
         public static IValue GetRawValue(this IValue val)
         {
             return UnwrapReference(val);

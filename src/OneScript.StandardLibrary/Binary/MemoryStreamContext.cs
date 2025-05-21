@@ -67,7 +67,7 @@ namespace OneScript.StandardLibrary.Binary
         [ScriptConstructor(Name = "По буферу или начальной емкости")]
         public static MemoryStreamContext Constructor(IValue bufferOrCapacity)
         {
-            if (bufferOrCapacity.GetRawValue() is BslNumericValue n)
+            if (bufferOrCapacity is BslNumericValue n)
             {
                 return new MemoryStreamContext((int)n);
             }

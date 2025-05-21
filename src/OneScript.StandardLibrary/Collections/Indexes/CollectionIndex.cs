@@ -103,8 +103,7 @@ namespace OneScript.StandardLibrary.Collections.Indexes
 
         public override IValue GetIndexedValue(IValue index)
         {
-            var rawValue = index.GetRawValue();
-            if (rawValue is BslNumericValue numericValue)
+            if (index is BslNumericValue numericValue)
             {
                 var numeric = numericValue.AsNumber();
                 if (numeric >= 0 && numeric < _fields.Count)

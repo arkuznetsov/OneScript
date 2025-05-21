@@ -313,7 +313,7 @@ namespace OneScript.Core.Tests
         public void ValueFilledTest(IValue value)
         {
             var globCtx = new StandardGlobalContext();
-            Assert.True(globCtx.ValueIsFilled(ForbiddenBslProcess.Instance, value));
+            Assert.True(globCtx.ValueIsFilled(ForbiddenBslProcess.Instance, (BslValue)value));
         }
         
         [Theory]
@@ -321,7 +321,7 @@ namespace OneScript.Core.Tests
         public void ValueEmptyTest(IValue value)
         {
             var globCtx = new StandardGlobalContext();
-            Assert.False(globCtx.ValueIsFilled(ForbiddenBslProcess.Instance, value));
+            Assert.False(globCtx.ValueIsFilled(ForbiddenBslProcess.Instance, (BslValue)value));
         }
     }
 }

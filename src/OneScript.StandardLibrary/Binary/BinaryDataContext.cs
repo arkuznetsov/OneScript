@@ -13,6 +13,7 @@ using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
 using OneScript.Types;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -202,14 +203,14 @@ namespace OneScript.StandardLibrary.Binary
             return new BinaryDataContext(filename);
         }
 
-        public override bool Equals(IValue other)
+        public override bool Equals(BslValue other)
         {
             if (other == null)
                 return false;
 
             if (other.SystemType == SystemType)
             {
-                var binData = other.GetRawValue() as BinaryDataContext;
+                var binData = other as BinaryDataContext;
                 Debug.Assert(binData != null);
 
                 if (InMemory && binData.InMemory)

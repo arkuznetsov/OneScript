@@ -12,6 +12,7 @@ using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
 using OneScript.Types;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
@@ -95,15 +96,15 @@ namespace OneScript.StandardLibrary.Text
         /// <param name="what">Текст для записи</param>
         /// <param name="delimiter">Разделитель строк</param>
         [ContextMethod("ЗаписатьСтроку", "WriteLine")]
-        public void WriteLine(IBslProcess process, string what, IValue delimiter = null)
+        public void WriteLine(IBslProcess process, string what, BslValue delimiter = null)
         {
             ThrowIfNotOpened();
 
             Write (what);
 
             var sDelimiter = _lineDelimiter;
-            if (delimiter != null && delimiter.GetRawValue().SystemType != BasicTypes.Undefined)
-                sDelimiter = delimiter.GetRawValue().AsString(process);
+            if (delimiter != null && delimiter.SystemType != BasicTypes.Undefined)
+                sDelimiter = delimiter.ToString(process);
 
             Write (sDelimiter);
         }

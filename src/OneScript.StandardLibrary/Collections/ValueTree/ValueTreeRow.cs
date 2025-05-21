@@ -10,6 +10,7 @@ using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
 using OneScript.Types;
+using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using ScriptEngine.Types;
@@ -94,7 +95,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
 
         public IValue Get(IValue index)
         {
-            var column = Owner().Columns.GetColumnByIIndex(index);
+            var column = Owner().Columns.GetColumnByIIndex((BslValue)index);
             return TryValue(column);
         }
 
@@ -117,7 +118,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
 
 		public void Set(IValue index, IValue value)
 		{
-			var column = Owner().Columns.GetColumnByIIndex(index);
+			var column = Owner().Columns.GetColumnByIIndex((BslValue)index);
 			_data[column] = column.ValueType.AdjustValue(value);
 		}
 
@@ -215,7 +216,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
 
         private ValueTreeColumn GetColumnByIIndex(IValue index)
         {
-            return Owner().Columns.GetColumnByIIndex(index);
+            return Owner().Columns.GetColumnByIIndex((BslValue)index);
         }
 
         public override IValue GetIndexedValue(IValue index)

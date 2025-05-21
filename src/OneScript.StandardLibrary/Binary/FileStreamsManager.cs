@@ -116,7 +116,7 @@ namespace OneScript.StandardLibrary.Binary
         public FileStreamContext Open(IValue p1, IValue p2, IValue p3 = null, IValue p4 = null)
         {
             // Диспетчеризуем перегрузки по типам параметров
-            if (p1.GetRawValue() is ClrEnumValueWrapper<FileAccessEnum> fileAccess)
+            if (p1 is ClrEnumValueWrapper<FileAccessEnum> fileAccess)
             {
                 // это вариант с 4-мя параметрами
                 return Open(

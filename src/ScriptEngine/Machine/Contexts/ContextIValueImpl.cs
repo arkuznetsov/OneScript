@@ -60,7 +60,7 @@ namespace ScriptEngine.Machine.Contexts
 
         #region IComparable<IValue> Members
 
-        public override int CompareTo(IValue other)
+        public override int CompareTo(BslValue other)
         {
             throw RuntimeException.ComparisonNotSupportedException();
         }
@@ -69,7 +69,7 @@ namespace ScriptEngine.Machine.Contexts
 
         #region IEquatable<IValue> Members
 
-        public override bool Equals(IValue other)
+        public override bool Equals(BslValue other)
         {
             if (!(other is BslObjectValue _))
                 return false;
@@ -263,33 +263,6 @@ namespace ScriptEngine.Machine.Contexts
         }
 
         #endregion
-        
-        public override int CompareTo(BslValue other)
-        {
-            if (other.GetType() == GetType())
-            {
-                if (this.Equals(other))
-                {
-                    return 0;
-                }
-                else
-                {
-                    throw RuntimeException.ComparisonNotSupportedException();
-                }
-            }
-            else
-            {
-                return this.GetType().ToString().CompareTo(other.GetType().ToString());
-            }
-        }
-
-        public override bool Equals(BslValue other)
-        {
-            if (other == null)
-                return false;
-
-            return ReferenceEquals(this, other);
-        }
     }
 
 }

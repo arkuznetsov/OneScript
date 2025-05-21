@@ -94,7 +94,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// Число - Индекс удаляемой строки
         /// </param>
         [ContextMethod("Удалить", "Delete")]
-        public void Delete(IValue row)
+        public void Delete(BslValue row)
         {
             var index = IndexByValue(row);
             Indexes.ElementRemoved(_rows[index]);
@@ -207,8 +207,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Индекс", "IndexOf")]
         public int IndexOf(IValue row)
         {
-            row = row.GetRawValue();
-
             if (row is ValueTableRow tableRow)
                 return _rows.IndexOf(tableRow);
 
@@ -448,10 +446,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             }
         }
 
-        private int IndexByValue(IValue item)
+        private int IndexByValue(BslValue item)
         {
-            item = item.GetRawValue();
-
             int index;
 
             if (item is ValueTableRow row)
@@ -487,7 +483,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// </param>
         /// <param name="offset">Количество строк, на которое сдвигается строка. Если значение положительное - сдвиг вниз, иначе вверх</param>
         [ContextMethod("Сдвинуть", "Move")]
-        public void Move(IValue row, int offset)
+        public void Move(BslValue row, int offset)
         {
             int index_source = IndexByValue(row);
 
@@ -553,10 +549,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             }
             else
             {
-                var rowsRaw = rows.GetRawValue();
-                if (rowsRaw is StructureImpl structure)
+                if (rows is StructureImpl structure)
                     requestedRows = FindRows(structure).Select(x => x as ValueTableRow);
-                else if (rowsRaw is ArrayImpl array)
+                else if (rows is ArrayImpl array)
                     requestedRows = GetRowsEnumByArray(array);
                 else
                     throw RuntimeException.InvalidArgumentType();
@@ -581,16 +576,16 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             return Result;
         }
 
-        private IEnumerable<ValueTableRow> GetRowsEnumByArray(IValue Rows)
+        private IEnumerable<ValueTableRow> GetRowsEnumByArray(IValue rows)
         {
             IEnumerable<ValueTableRow> requestedRows;
-            var rowsArray = Rows.GetRawValue() as ArrayImpl;
+            var rowsArray = rows as ArrayImpl;
             if (rowsArray == null)
                 throw RuntimeException.InvalidArgumentType();
 
             requestedRows = rowsArray.Select(x =>
             {
-                var vtr = x.GetRawValue() as ValueTableRow;
+                var vtr = x as ValueTableRow;
                 if (vtr == null || vtr.Owner() != this)
                     throw RuntimeException.InvalidArgumentValue();
 

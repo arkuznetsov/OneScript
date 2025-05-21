@@ -44,8 +44,10 @@ namespace OneScript.StandardLibrary
 
         public DelegateAction(Func<IBslProcess, BslValue[], BslValue> action)
         {
-            _action = (process, parameters) => action(process, parameters.Select(x=>x.GetRawValue())
-                .Cast<BslValue>().ToArray() );
+            _action = (process, parameters) => action(process, parameters
+                .Select(x => x is IValueReference r ? r.BslValue : (BslValue)x)
+                .ToArray()
+            );
         }
         
         public override bool DynamicMethodSignatures => true;

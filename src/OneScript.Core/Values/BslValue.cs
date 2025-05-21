@@ -70,9 +70,9 @@ namespace OneScript.Values
 
         public virtual TypeDescriptor SystemType => BasicTypes.UnknownType;
 
-        public virtual int CompareTo(IValue other) => CompareTo(UnwrapReference(other));
+        public int CompareTo(IValue other) => CompareTo(UnwrapReference(other));
 
-        public virtual bool Equals(IValue other) => Equals(UnwrapReference(other));
+        public bool Equals(IValue other) => Equals(UnwrapReference(other));
 
         public virtual IValue GetRawValue() => this;
 

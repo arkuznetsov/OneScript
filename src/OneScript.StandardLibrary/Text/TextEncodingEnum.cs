@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using System.Diagnostics;
 using System.Text;
 using OneScript.Contexts.Enums;
 using OneScript.Exceptions;
@@ -140,7 +141,9 @@ namespace OneScript.StandardLibrary.Text
                 return GetEncodingByName(encoding.ToString(), addBOM);
             else
             {
-                if (!(encoding.GetRawValue() is ClrEnumValueWrapper<TextEncodingValues> encValue))
+                Debug.Assert(!(encoding is IValueReference));
+                
+                if (!(encoding is ClrEnumValueWrapper<TextEncodingValues> encValue))
                     throw RuntimeException.InvalidArgumentType();
 
                 return encValue.UnderlyingValue switch
