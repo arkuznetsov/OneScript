@@ -122,14 +122,14 @@ namespace ScriptEngine.Machine.Contexts
             {
                 valueObj = value;
             }
-            else if (type == typeof(string))
-            {
-                valueObj = ((BslValue)value.GetRawValue()).ToString(process);
-            }
             else if (value == BslUndefinedValue.Instance)
             {
                 // Если тип параметра не IValue и не IVariable && Неопределено -> null
                 valueObj = null;
+            }
+            else if (type == typeof(string))
+            {
+                valueObj = ((BslValue)value.GetRawValue()).ToString(process);
             }
             else if (type == typeof(int))
             {
