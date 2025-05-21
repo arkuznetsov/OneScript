@@ -8,6 +8,7 @@
         <Platform Condition="'$(Platform)' == ''">x86</Platform>
         <LangVersion>8.0</LangVersion>
         <TargetFrameworkVersion>net6.0</TargetFrameworkVersion>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 	
     <PropertyGroup>
