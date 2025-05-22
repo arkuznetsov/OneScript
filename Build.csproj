@@ -106,6 +106,7 @@
         </ItemGroup>
         
         <Exec Command="dotnet publish &quot;src/oscript/oscript.csproj&quot; -r %(RuntimeID.Identity) --self-contained -c $(Configuration) -o &quot;$(ArtifactsRoot)/%(RuntimeID.Identity)/bin&quot;" UseUtf8Encoding="Always"/>
+        <Exec Command="dotnet publish &quot;src/TestApp/TestApp.csproj&quot; -f net6.0-windows -c $(Configuration) -p:Platform=%(PlatformItem.MSBuildName) -p:UseAppHost=true -o &quot;$(ArtifactsRoot)/win-%(PlatformItem.Identity)/bin&quot;" UseUtf8Encoding="Always"/>
 
         <PropertyGroup>
             <CppBinPrefix>$(MSBuildProjectDirectory)/src/ScriptEngine.NativeApi/bin/$(Configuration)</CppBinPrefix>
