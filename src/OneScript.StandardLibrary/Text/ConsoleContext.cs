@@ -123,14 +123,20 @@ namespace OneScript.StandardLibrary.Text
         [ContextProperty("ЦветТекста", "TextColor")]
         public ClrEnumValueWrapper<ConsoleColor> TextColor
         {
-            get => ConsoleColorEnum.Instance.FromNativeValue(Console.ForegroundColor);
+            get =>
+                ConsoleColorEnum.Instance.TryGetFromNativeValue(Console.ForegroundColor) 
+                ?? ConsoleColorEnum.Instance.FromNativeValue(ConsoleColor.Gray);
+            
             set => Console.ForegroundColor = value.UnderlyingValue;
         }
 
         [ContextProperty("ЦветФона", "BackgroundColor")]
         public ClrEnumValueWrapper<ConsoleColor> BackgroundColor
         {
-            get => ConsoleColorEnum.Instance.FromNativeValue(Console.BackgroundColor);
+            get =>
+                ConsoleColorEnum.Instance.TryGetFromNativeValue(Console.BackgroundColor) 
+                ?? ConsoleColorEnum.Instance.FromNativeValue(ConsoleColor.Black);
+            
             set => Console.BackgroundColor = value.UnderlyingValue;
         }
 
@@ -150,6 +156,15 @@ namespace OneScript.StandardLibrary.Text
             {
                 Console.InputEncoding = TextEncodingEnum.GetEncoding(value);                
             }
+        }
+
+        /// <summary>
+        /// Сбрасывает цвета консоли к их исходному состоянию
+        /// </summary>
+        [ContextMethod("СброситьЦвет", "ResetColor")]
+        public void ResetColor()
+        {
+            Console.ResetColor();
         }
         
         /// <summary>
