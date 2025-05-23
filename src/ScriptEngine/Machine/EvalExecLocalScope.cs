@@ -12,13 +12,13 @@ using ScriptEngine.Machine.Contexts;
 
 namespace ScriptEngine.Machine
 {
-    internal class EvalExecLocalScope : ScriptDrivenObject
+    internal class EvalExecLocalScope : ScriptDrivenObject, IAttachableContext
     {
         public EvalExecLocalScope(IExecutableModule module) : base(module, false)
         {
         }
 
-        public void OnAttach(out IVariable[] variables, out BslMethodInfo[] methods)
+        void IAttachableContext.OnAttach(out IVariable[] variables, out BslMethodInfo[] methods)
         {
             variables = Array.Empty<IVariable>();
             methods = Array.Empty<BslMethodInfo>();

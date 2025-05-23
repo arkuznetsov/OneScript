@@ -368,7 +368,7 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
 
-        public void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
+        public override void CallAsProcedure(int methodNumber, IValue[] arguments, IBslProcess process)
         {
             if (MethodDefinedInScript(methodNumber))
             {
@@ -380,7 +380,7 @@ namespace ScriptEngine.Machine.Contexts
             }
         }
 
-        public void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
+        public override void CallAsFunction(int methodNumber, IValue[] arguments, out IValue retValue, IBslProcess process)
         {
             if (MethodDefinedInScript(methodNumber))
             {
