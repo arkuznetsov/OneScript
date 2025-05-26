@@ -24,6 +24,7 @@ namespace ScriptEngine.HostedScript
         private readonly List<Library> _libs = new List<Library>();
         private LibraryLoader _defaultLoader;
         private object _defaultLoaderLocker = new object();
+        private string _libraryRoot;
 
         #region Private classes
 
@@ -48,8 +49,27 @@ namespace ScriptEngine.HostedScript
         
         public IList<string> SearchDirectories { get;} = new List<string>();
 
-        public string LibraryRoot => SearchDirectories.FirstOrDefault() ?? string.Empty;
-        
+        public string LibraryRoot
+        {
+            get
+            {
+                if (_libraryRoot == null)
+                    _libraryRoot = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+
+                return _libraryRoot;
+            }
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    _libraryRoot = null;
+                }
+                
+                _libraryRoot = value;
+            }
+        }
+            
+
         private ScriptingEngine Engine { get; set; }
         
         public void Initialize(ScriptingEngine engine)
