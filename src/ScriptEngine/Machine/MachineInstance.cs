@@ -1118,17 +1118,18 @@ namespace ScriptEngine.Machine
             else
             {
                 PopFrame();
-                if(DebugStepInProgress())
+                if(IsSteppingOutFromHere())
                     EmitStopEventIfNecessary();
             }
         }
 
-        private bool DebugStepInProgress()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsSteppingOutFromHere()
         {
             if (_stopManager == null)
                 return false;
 
-            return _stopManager.CurrentState == DebugState.SteppingOut || _stopManager.CurrentState == DebugState.SteppingOver;
+            return _stopManager.CurrentState == DebugState.SteppingOut;
         }
 
         private void JmpCounter(int arg)
