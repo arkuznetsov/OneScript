@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Xml.Linq;
 using OneScript.Contexts;
+using OneScript.Execution;
 using OneScript.Localization;
 using OneScript.Types;
 using OneScript.Values;
@@ -300,13 +301,13 @@ namespace OneScriptDocumenter.Secondary
             model.Description = XmlSummary(documentation);
             model.ReturnTypeDocumentation = XmlReturns(documentation);
             model.Example = XmlTextBlock(documentation, "example", true);
-            model.Parameters = CreateParameters(method, documentation);
+            model.Parameters = CreateParameters(method, documentation, p => p.ParameterType != typeof(IBslProcess));
             model.SeeAlso = XmlSeeAlso(documentation);
 
             return model;
         }
 
-        private List<ParameterModel> CreateParameters(MethodInfo method, XElement documentation)
+        private List<ParameterModel> CreateParameters(MethodInfo method, XElement documentation, Func<ParameterInfo, bool> filter)
         {
             var documentedParams = documentation?.Elements("param")
                 .ToDictionary(elem => elem.Attribute("name")?.Value ?? 
@@ -315,7 +316,7 @@ namespace OneScriptDocumenter.Secondary
 
             var models = new List<ParameterModel>();
             
-            foreach (var parameter in method.GetParameters())
+            foreach (var parameter in method.GetParameters().Where(filter))
             {
                 documentedParams.TryGetValue(parameter.Name!, out var paramDoc);
                 var model = new ParameterModel
@@ -352,18 +353,7 @@ namespace OneScriptDocumenter.Secondary
                 model.Description = XmlSummary(documentation);
                 model.ReturnTypeDocumentation = XmlReturns(documentation);
                 model.Example = XmlTextBlock(documentation, "example", true);
-
-                // Параметры конструкторов могут содержать не-bsl-параметры, например TypeActivationContext
-                // Поэтому берем не из самого метода, а только из документации
-                var documentedParams = documentation?.Elements("param");
-                var paramModels = documentedParams
-                    .Select(parameter => new ParameterModel
-                    {
-                        Name = parameter.Attribute("name").Value,
-                        Description = _docConverter.ConvertTextBlock(parameter)
-                    }).ToList();
-
-                model.Parameters = paramModels;
+                model.Parameters = CreateParameters(method, documentation, p => p.ParameterType != typeof(TypeActivationContext));
             }
 
             return model;
