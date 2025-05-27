@@ -310,12 +310,33 @@ namespace ScriptEngine.Compiler
             
             base.VisitMethodBody(methodNode);
             
-            if (methodNode.Signature.IsFunction)
+            var isDebugCode = ExtraCodeConditionsMet(CodeGenerationFlags.DebugCode);
+            int codeEnd;
+            if (isDebugCode)
             {
-                AddCommand(OperationCode.PushUndef);
+                // В отладочном коде всегда есть LineNum перед Return
+                // Нам надо перейти из явных ретурнов именно на него,
+                // чтобы при раннем возврате отладчик встал на КонецПроцедуры/КонецФункции
+                Debug.Assert(_module.Code.Count > 0 && _module.Code[^1].Code == OperationCode.LineNum);
+                if (methodNode.Signature.IsFunction)
+                {
+                    // перед финальным linenum надо вставить неявный возврат undefined
+                    var lineNumOp = _module.Code[^1];
+                    _module.Code[^1] = new Command() { Code = OperationCode.PushUndef };
+                    _module.Code.Add(lineNumOp);
+                }
+                codeEnd = _module.Code.Count - 1;
+            }
+            else
+            {
+                if (methodNode.Signature.IsFunction)
+                {
+                    // неявный возврат Undefined
+                    AddCommand(OperationCode.PushUndef);
+                }
+                codeEnd = _module.Code.Count;
             }
             
-            var codeEnd = _module.Code.Count;
             
             AddCommand(OperationCode.Return);
 
