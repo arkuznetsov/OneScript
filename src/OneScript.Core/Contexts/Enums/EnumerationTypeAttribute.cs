@@ -12,7 +12,7 @@ namespace OneScript.Contexts.Enums
     /// <summary>
     /// Атрибут для простых перечислений, являющихся обычными Clr-перечислениями
     /// </summary>
-	[AttributeUsage(AttributeTargets.Enum, AllowMultiple = true)]
+	[AttributeUsage(AttributeTargets.Enum)]
     public class EnumerationTypeAttribute : Attribute, IEnumMetadataProvider
     {
         public EnumerationTypeAttribute (string name, string alias = null, bool createProperty = true)
@@ -29,6 +29,5 @@ namespace OneScript.Contexts.Enums
 		public string TypeUUID { get; set; }
 		
 		public string ValueTypeUUID { get; set; }
-		public bool IsDeprecated { get; set; }
     }
 }
