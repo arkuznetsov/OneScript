@@ -37,8 +37,7 @@ namespace OneScript.StandardLibrary.Binary
         ReadAndWrite
     }
 
-    [EnumerationType("StreamPosition", IsDeprecated = true)]
-    [EnumerationType("ПозицияВПотоке", "PositionInStream")]
+    [EnumerationType("ПозицияВПотоке", "StreamPosition")]
     public enum StreamPositionEnum
     {
         [EnumValue("Начало", "Begin")]
