@@ -97,13 +97,20 @@ namespace OneScript.Language
             get
             {
                 var sb = new StringBuilder(MessageWithoutCodeFragment);
-                sb.AppendLine("    ");
-                sb.Append(Code);
+                sb.AppendLine();
+                sb.AppendLine(Code.Replace('\t', ' ').TrimEnd());
+
+                if (ColumnNumber != ErrorPositionInfo.OUT_OF_TEXT)
+                {
+                    if (ColumnNumber > 1)
+                        sb.Append(' ', ColumnNumber - 1);
+                    sb.AppendLine(BilingualString.Localize("^--здесь", "^--here"));
+                }
 
                 return sb.ToString();
             }
         }
-        
+
         public object RuntimeSpecificInfo { get; set; }
         
         public void SetPositionIfEmpty(ErrorPositionInfo newPosition)

@@ -1366,8 +1366,8 @@ namespace OneScript.Language.SyntaxAnalysis
                 }
                 else
                 {
+                    AddError(LocalizedErrors.TokenExpected(stopToken), false);
                     SkipToNextStatement(new []{stopToken});
-                    AddError(LocalizedErrors.ExpressionSyntax(), false);
                     if (_lastExtractedLexem.Token == stopToken)
                     {
                         NextLexem();
@@ -1640,6 +1640,7 @@ namespace OneScript.Language.SyntaxAnalysis
         private void AddError(CodeError err, bool doFastForward = true)
         {
             err.Position = _lexer.GetErrorPosition();
+            err.Position.ColumnNumber -= _lastExtractedLexem.Content.Length;
             ErrorSink.AddError(err);
 
             if (doFastForward)
