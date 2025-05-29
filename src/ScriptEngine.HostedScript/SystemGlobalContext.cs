@@ -160,7 +160,8 @@ namespace ScriptEngine.HostedScript
         /// Каталог исполняемых файлов OneScript
         /// </summary>
         /// <returns></returns>
-        [ContextMethod("КаталогПрограммы","ProgramDirectory")]
+        [ContextMethod("ProgramDirectory", IsDeprecated = true)]
+        [ContextMethod("КаталогПрограммы","BinDir")]
         public string ProgramDirectory()
         {
             var asm = System.Reflection.Assembly.GetExecutingAssembly();

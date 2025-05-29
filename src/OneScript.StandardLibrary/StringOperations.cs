@@ -260,9 +260,9 @@ namespace OneScript.StandardLibrary
     [EnumerationType("НаправлениеПоиска", "SearchDirection")]
     public enum SearchDirection
     {
-        [EnumValue("СНачала")]
+        [EnumValue("СНачала", "FromBegin")]
         FromBegin,
-        [EnumValue("СКонца")]
+        [EnumValue("СКонца", "FromEnd")]
         FromEnd
     }
 
