@@ -61,7 +61,7 @@ namespace OneScript.Language.SyntaxAnalysis
             var names = String.Join("/", expected.Select(x => LanguageDef.GetTokenName(x)));
             var aliases = String.Join("/", expected.Select(x => LanguageDef.GetTokenAlias(x)));
            
-            return Create($"Ожидается один из симолов: {names}", $"Expecting  one of symbols: {names}");
+            return Create($"Ожидается один из символов: {names}", $"Expecting  one of symbols: {aliases}");
             
         }
 
