@@ -5,7 +5,9 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using OneScript.Commons;
 using OneScript.Contexts;
@@ -19,37 +21,46 @@ namespace ScriptEngine.Machine.Contexts
     public static class ContextValuesMarshaller
     {
         public static MethodInfo BslParameterConverter { get; private set; }
-        public static MethodInfo BslParameterGenericConverter { get; private set; }
+        public static MethodInfo BslGenericParameterConverter { get; private set; }
         public static MethodInfo BslReturnValueGenericConverter { get; private set; }
 
         static ContextValuesMarshaller()
         {
             BslParameterConverter = typeof(ContextValuesMarshaller).GetMethods()
-                .First(x => x.Name == nameof(ConvertParam) && x.GetGenericArguments().Length == 0 && x.GetParameters().Length == 3);
+                .First(x => x.Name == nameof(ConvertParam) && x.GetGenericArguments().Length == 0 &&
+                            x.GetParameters().Length == 4);
             
-            BslParameterGenericConverter = typeof(ContextValuesMarshaller).GetMethods()
-                .First(x => x.Name == nameof(ConvertParam) && x.GetGenericArguments().Length == 1 && x.GetParameters().Length == 3);
+            BslGenericParameterConverter = typeof(ContextValuesMarshaller).GetMethods()
+                .First(x => x.Name == nameof(ConvertParam) && x.GetGenericArguments().Length == 1 &&
+                            x.GetParameters().Length == 3);
             
             BslReturnValueGenericConverter = typeof(ContextValuesMarshaller).GetMethods()
                 .First(x => x.Name == nameof(ConvertReturnValue) && x.GetGenericArguments().Length == 1);
         }
         
-        public static T ConvertParam<T>(IValue value, T defaultValue = default)
+        /// <summary>
+        /// Выполняет конвертацию значения из Bsl в значение параметра метода C#
+        /// </summary>
+        /// <param name="value">Универсальное значение из Bsl</param>
+        /// <param name="type">Целевой тип в который надо сконвертировать значение.</param>
+        /// <param name="defaultValue">Значение по умолчанию, которое будет возвращено, если <paramref name="value"/> не заполнен.</param>
+        /// <param name="process">Текущий BSL-процесс, в рамках которого вызывается метод</param>
+        /// <returns>Значение целевого типа</returns>
+        public static object ConvertParam(IValue value, Type type, object defaultValue, IBslProcess process)
         {
-            return ConvertParam<T>(value, ForbiddenBslProcess.Instance, defaultValue);
+            Debug.Assert(defaultValue == null || type.IsInstanceOfType(defaultValue));
+            
+            var converted = ConvertParam(value, type, process);
+            return converted ?? defaultValue;
         }
         
-        public static T ConvertParam<T>(IValue value, IBslProcess process, T defaultValue = default)
-        {
-            object valueObj = ConvertParam(value, typeof(T), process);
-            return valueObj != null ? (T)valueObj : defaultValue;
-        }
-        
-        public static object ConvertParam(IValue value, Type type)
-        {
-            return ConvertParam(value, type, ForbiddenBslProcess.Instance);
-        }
-
+        /// <summary>
+        /// Выполняет конвертацию значения из Bsl в значение параметра метода C#
+        /// </summary>
+        /// <param name="value">Универсальное значение из Bsl</param>
+        /// <param name="type">Целевой тип в который надо сконвертировать значение.</param>
+        /// <param name="process">Текущий BSL-процесс, в рамках которого вызывается метод</param>
+        /// <returns>Значение целевого типа</returns>
         public static object ConvertParam(IValue value, Type type, IBslProcess process)
         {
             try
@@ -65,12 +76,40 @@ namespace ScriptEngine.Machine.Contexts
                 throw RuntimeException.InvalidArgumentValue();
             }
         }
-
+        
         /// <summary>
-        /// Выполняет строгую конвертацию парамтера в запрошенный тип.
+        /// Выполняет конвертацию значения из Bsl в значение параметра метода C#.
+        /// В данный метод нельзя передавать значения, конвертация которых в целевой тип (напр. строку)
+        /// может приводить к вызову другого Bsl-кода. Метод выбросит исключение, если конвертация захочет выполнить bsl-код.
+        /// </summary>
+        /// <param name="value">Универсальное значение из Bsl</param>
+        /// <param name="defaultValue">Значение по умолчанию, которое будет возвращено, если <paramref name="value"/> не заполнен.</param>
+        /// <typeparam name="T">Целевой тип в который надо сконвертировать значение</typeparam>
+        /// <returns>Значение целевого типа</returns>
+        public static T ConvertParam<T>(IValue value, T defaultValue = default)
+        {
+            return ConvertParam<T>(value, defaultValue, ForbiddenBslProcess.Instance);
+        }
+        
+        /// <summary>
+        /// Выполняет конвертацию значения из Bsl в значение параметра метода C#
+        /// </summary>
+        /// <param name="value">Универсальное значение из Bsl</param>
+        /// <param name="process">Текущий BSL-процесс, в рамках которого вызывается метод</param>
+        /// <param name="defaultValue">Значение по умолчанию, которое будет возвращено, если <paramref name="value"/> не заполнен.</param>
+        /// <typeparam name="T">Целевой тип в который надо сконвертировать значение</typeparam>
+        /// <returns>Значение целевого типа</returns>
+        public static T ConvertParam<T>(IValue value, T defaultValue, IBslProcess process)
+        {
+            object valueObj = ConvertParam(value, typeof(T), process);
+            return valueObj != null ? (T)valueObj : defaultValue;
+        }
+        
+        /// <summary>
+        /// Выполняет строгую конвертацию параметра в запрошенный тип.
         /// Не выполняет приведение объектов к строке, в отличие от ConvertParam.
         /// Это значит, что нельзя скормить объект в C# параметр с типом string через конверсию в AsString.
-        /// Выдает исключение о неверном типе парамтера.
+        /// Выдает исключение о неверном типе параметра.
         /// </summary>
         public static T ConvertValueStrict<T>(IValue value)
         {
@@ -100,6 +139,21 @@ namespace ScriptEngine.Machine.Contexts
             {
                 throw RuntimeException.InvalidArgumentType();
             }
+        }
+
+        public static Expression GetDefaultBslValueConstant(Type targetType)
+        {
+            if (targetType == typeof(string))
+            {
+                return Expression.Constant("");
+            }
+
+            return Expression.Default(targetType);
+        }
+
+        public static object ConvertParam(IValue value, Type type)
+        {
+            return ConvertParam(value, type, ForbiddenBslProcess.Instance);
         }
 
         private static object ConvertValueType(IValue value, Type type, IBslProcess process)

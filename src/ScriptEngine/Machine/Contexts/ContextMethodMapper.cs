@@ -234,21 +234,26 @@ namespace ScriptEngine.Machine.Contexts
                 
                 for (int bslIndex = 0,clrIndex = clrIndexStart; bslIndex < argsLen; bslIndex++, clrIndex++)
                 {
-                    var convertMethod = _genConvertParamMethod.MakeGenericMethod(parameters[clrIndex].ParameterType);
-
+                    var targetType = parameters[clrIndex].ParameterType;
+                    var convertMethod = ContextValuesMarshaller.BslGenericParameterConverter.MakeGenericMethod(targetType);
+                    
                     Expression defaultArg;
                     if (parameters[clrIndex].HasDefaultValue)
                     {
-                        defaultArg = Expression.Constant(parameters[clrIndex].DefaultValue, parameters[clrIndex].ParameterType);
+                        defaultArg = Expression.Constant(parameters[clrIndex].DefaultValue, targetType);
                     }
                     else
                     {
-                        defaultArg = Expression.Default(parameters[clrIndex].ParameterType);
+                        defaultArg = ContextValuesMarshaller.GetDefaultBslValueConstant(targetType);
                     }
 
                     var indexedArg = Expression.ArrayIndex(argsParam, Expression.Constant(bslIndex));
-                    var conversionCall = Expression.Call(convertMethod, indexedArg, defaultArg, processParam);
-                    argsPass.Add(conversionCall);
+                    var conversionCall = Expression.Call(convertMethod,
+                        indexedArg,
+                        defaultArg,
+                        processParam);
+                    
+                    argsPass.Add(Expression.Convert(conversionCall, targetType));
                 }
 
                 var methodCall = Expression.Invoke(methodClojure, argsPass);
@@ -281,19 +286,6 @@ namespace ScriptEngine.Machine.Contexts
 
                 return methodClojure;
             }
-
-            private static readonly MethodInfo _genConvertParamMethod =
-                typeof(InternalMethInfo).GetMethod(nameof(ConvertParam),
-                    BindingFlags.Static | BindingFlags.NonPublic);
-
-            private static T ConvertParam<T>(IValue value, T def, IBslProcess process)
-            {
-                if (value == null || value.IsSkippedArgument())
-                    return def;
-
-                return ContextValuesMarshaller.ConvertParam<T>(value, process, def);
-            }
         }
-
     }
 }

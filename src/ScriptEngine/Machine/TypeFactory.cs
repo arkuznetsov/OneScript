@@ -115,33 +115,30 @@ namespace ScriptEngine.Machine
                     ++paramIndex;
                     break;
                 }
-
                 
                 if (parameters[paramIndex].ParameterType == typeof(IValue))
                     argsToPass.Add(Expression.ArrayIndex(argsParam, Expression.Constant(i)));
                 else
                 {
                     var conversionArg = Expression.ArrayIndex(argsParam, Expression.Constant(i));
-                    if (parameters[i].HasDefaultValue)
-                    {
-                        var convertMethod = ContextValuesMarshaller.BslParameterGenericConverter.MakeGenericMethod(parameters[i].ParameterType);
-                        var defaultArg = Expression.Constant(parameters[i].DefaultValue, parameters[i].ParameterType);
+                    var targetType = parameters[paramIndex].ParameterType;
+                    var convertMethod = ContextValuesMarshaller.BslGenericParameterConverter.MakeGenericMethod(targetType);
 
-                        var marshalledArg = Expression.Call(convertMethod, conversionArg, bslProcessParameter, defaultArg);
-                        argsToPass.Add(marshalledArg);
+                    Expression marshalledArg;
+                    if (parameters[paramIndex].HasDefaultValue)
+                    {
+                        var defaultArg = Expression.Constant(parameters[paramIndex].DefaultValue, targetType);
+                        marshalledArg = Expression.Call(convertMethod, conversionArg, defaultArg, bslProcessParameter);
                     }
                     else
                     {
-                        // FIXME: Сомнительно, что тут надо использовать non-generic вариант вызова
-                        // а потом делать cast в тип параметра. Кажется, что можно использовать BslParameterGenericConverter
-                        var marshalledArg = Expression.Call(
-                            ContextValuesMarshaller.BslParameterConverter,
+                        marshalledArg = Expression.Call(
+                            convertMethod,
                             conversionArg,
-                            Expression.Constant(parameters[paramIndex].ParameterType),
+                            ContextValuesMarshaller.GetDefaultBslValueConstant(targetType),
                             bslProcessParameter);
-                        
-                        argsToPass.Add(Expression.Convert(marshalledArg, parameters[paramIndex].ParameterType));
                     }
+                    argsToPass.Add(Expression.Convert(marshalledArg, targetType));
                 }
 
                 ++paramIndex;
