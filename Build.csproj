@@ -227,10 +227,19 @@
     
     <Target Name="ComposeDistributionFolders">
         <ItemGroup>
+            <TargetDir Include="fdd-x64"/>
+            <TargetDir Include="fdd-x86"/>
+            <TargetDir Include="win-x64"/>
+            <TargetDir Include="win-x86"/>
+            <TargetDir Include="osx-x64"/>
+            <TargetDir Include="osx-arm64"/>
+            <TargetDir Include="linux-x64"/>
             <LibraryFiles Include="$(LibDir)/**/*" Exclude="package-loader.os"/>
         </ItemGroup>
         
-        <!--Заставить Copy копировать batching-ом в несколько директорий - не удалось :(-->
+        <Copy SourceFiles="$(MSBuildProjectDirectory)\install\release-notes.md" DestinationFiles="$(ArtifactsRoot)/%(TargetDir.Identity)/release-notes.md" />
+        
+        <!--Заставить Copy копировать batching-ом в несколько директорий рекурсивно - не удалось :(-->
         <Copy SourceFiles="@(LibraryFiles)" DestinationFolder="$(ArtifactsRoot)/fdd-x64/lib/%(RecursiveDir)" />
         <Copy SourceFiles="@(LibraryFiles)" DestinationFolder="$(ArtifactsRoot)/fdd-x86/lib/%(RecursiveDir)" />
         <Copy SourceFiles="@(LibraryFiles)" DestinationFolder="$(ArtifactsRoot)/win-x64/lib/%(RecursiveDir)" />
