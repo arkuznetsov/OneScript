@@ -5,11 +5,27 @@ pipeline {
 
     environment {
         VersionPrefix = '2.0.0'
-        VersionSuffix = 'rc.7'
+        VersionSuffix = 'rc.7'+"+${BUILD_NUMBER}"
         outputEnc = '65001'
     }
 
     stages {
+        //stage('Prepare Linux Environment') {
+        //    agent{ label 'master'}
+        //    steps{
+        //        dir('install'){
+        //            sh 'chmod +x make-dockers.sh && ./make-dockers.sh'
+        //        }
+        //        withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'dockerpassword', usernameVariable: 'dockeruser')]) {
+        //            sh """
+        //            docker login -p $dockerpassword -u $dockeruser
+        //            docker push oscript/onescript-builder:deb
+        //            docker push oscript/onescript-builder:rpm
+        //            docker push oscript/onescript-builder:gcc
+        //            """.stripIndent()
+        //        }
+        //    }
+        //}
         stage('Build'){
             parallel {
                 stage('Windows Build') {
