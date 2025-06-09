@@ -5,27 +5,11 @@ pipeline {
 
     environment {
         VersionPrefix = '2.0.0'
-        VersionSuffix = 'rc.7'+"+${BUILD_NUMBER}"
+        VersionSuffix = 'rc.8'+"+${BUILD_NUMBER}"
         outputEnc = '65001'
     }
 
     stages {
-        //stage('Prepare Linux Environment') {
-        //    agent{ label 'master'}
-        //    steps{
-        //        dir('install'){
-        //            sh 'chmod +x make-dockers.sh && ./make-dockers.sh'
-        //        }
-        //        withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'dockerpassword', usernameVariable: 'dockeruser')]) {
-        //            sh """
-        //            docker login -p $dockerpassword -u $dockeruser
-        //            docker push oscript/onescript-builder:deb
-        //            docker push oscript/onescript-builder:rpm
-        //            docker push oscript/onescript-builder:gcc
-        //            """.stripIndent()
-        //        }
-        //    }
-        //}
         stage('Build'){
             parallel {
                 stage('Windows Build') {
@@ -206,16 +190,8 @@ pipeline {
                     xcopy output\\na-proxy\\*64.so built\\linux-x64\\bin\\ /F
                     '''.stripIndent()
                     
-                    script
-                    {
-                        if (env.BRANCH_NAME == "preview") {
-                            echo 'Building preview'
-                            bat "chcp $outputEnc > nul\r\n\"${tool 'MSBuild'}\" Build.csproj /t:PackDistributions /p:Suffix=-pre%BUILD_NUMBER%"
-                        }
-                        else{
-                            bat "chcp $outputEnc > nul\r\n\"${tool 'MSBuild'}\" Build.csproj /t:PackDistributions"
-                        }
-                    }
+                    bat "chcp $outputEnc > nul\r\n\"${tool 'MSBuild'}\" Build.csproj /t:PackDistributions"
+                    
                     archiveArtifacts artifacts: 'built/**', fingerprint: true
                     stash includes: 'built/**', name: 'dist'
                 }
@@ -263,6 +239,7 @@ pipeline {
             }
             
             steps {
+                cleanWs()
                 checkout scm
                 unstash 'dist'
                 unstash 'vsix'
@@ -280,41 +257,18 @@ pipeline {
                     '''.stripIndent()
                 }
                 
-                sh '''
-                TARGET_DIR="/var/www/oscript.io/markdown/versions/"
-                cp install/release-notes.md "${TARGET_DIR}/${CODENAME}.md"
-                cp install/release-notes.md "${TARGET_DIR}/${VersionPrefix}.md"
-                '''.stripIndent()
-            }
-        }
-        
-        stage ('Publishing latest') {
-            when { anyOf {
-                    branch 'release/latest';
-                }
-            }
-            agent { label 'master' }
-            options { skipDefaultCheckout() }
+                dir('markdownContent') {
+                    script {
+                        def version="${env.VersionPrefix}-${env.VersionSuffix}".replaceAll("\.", "_")
+                        def targetDir='/var/www/oscript.io/markdown/versions'
                         
-            environment {
-                CODENAME = 'preview'
-            }
-            
-            steps {
-                checkout scm
-                unstash 'dist'
-                unstash 'vsix'
-                
-                dir('targetContent') {
-                    sh '''
-                    ZIPS=../built
-                    VSIX=../built/vscode
-                    mv $ZIPS/*.zip ./
-                    mv $VSIX/*.vsix ./
-                    
-                    TARGET="/var/www/oscript.io/download/versions/latest/"
-                    sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
-                    '''.stripIndent()
+                        sh """
+                        cp ../install/release-notes.md "./${env.CODENAME}.md"
+                        cp ../install/release-notes.md "./${version}.md"
+                        
+                        sudo rsync -rv . ${targetDir}
+                        """.stripIndent()        
+                    }
                 }
             }
         }
@@ -330,7 +284,9 @@ pipeline {
             agent { label 'windows' }
 
             steps{
-                unstash 'dist'
+                
+                unstash 'buildResults'
+                
                 withCredentials([string(credentialsId: 'NuGetToken', variable: 'NUGET_TOKEN')]) {
                     bat "chcp $outputEnc > nul\r\n\"${tool 'MSBuild'}\" Build.csproj /t:PublishNuget /p:NugetToken=$NUGET_TOKEN"
                 }
