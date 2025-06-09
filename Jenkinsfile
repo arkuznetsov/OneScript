@@ -228,16 +228,17 @@ pipeline {
                 }
             }
             agent { label 'master' }
+            options { skipDefaultCheckout() }
 
             steps {
                 cleanWs()
+                
                 unstash 'dist'
                 unstash 'vsix'
 
                 dir('targetContent') {
                     sh '''
                     ZIPS=../built
-                    NUGET=../built/nuget
                     VSIX=../built/vscode
                     mv $ZIPS/*.zip ./
                     mv $VSIX/*.vsix ./
@@ -255,9 +256,14 @@ pipeline {
                 }
             }
             agent { label 'master' }
-
+            options { skipDefaultCheckout() }
+            
+            environment {
+                CODENAME = 'preview'
+            }
+            
             steps {
-                
+                checkout scm
                 unstash 'dist'
                 unstash 'vsix'
 
@@ -269,29 +275,39 @@ pipeline {
                     mv $ZIPS/*.zip ./
                     mv $VSIX/*.vsix ./
                     
-                    TARGET="/var/www/oscript.io/download/versions/preview/"
+                    TARGET="/var/www/oscript.io/download/versions/${CODENAME}/"
                     sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
                     '''.stripIndent()
                 }
+                
+                sh '''
+                TARGET_DIR="/var/www/oscript.io/markdown/versions/"
+                cp install/release-notes.md "${TARGET_DIR}/${CODENAME}.md"
+                cp install/release-notes.md "${TARGET_DIR}/${VersionPrefix}.md"
+                '''.stripIndent()
             }
         }
-
+        
         stage ('Publishing latest') {
             when { anyOf {
-                branch 'latest';
+                    branch 'release/latest';
                 }
             }
             agent { label 'master' }
-
+            options { skipDefaultCheckout() }
+                        
+            environment {
+                CODENAME = 'preview'
+            }
+            
             steps {
-                
+                checkout scm
                 unstash 'dist'
                 unstash 'vsix'
-
+                
                 dir('targetContent') {
                     sh '''
                     ZIPS=../built
-                    NUGET=../built/nuget
                     VSIX=../built/vscode
                     mv $ZIPS/*.zip ./
                     mv $VSIX/*.vsix ./
@@ -299,6 +315,24 @@ pipeline {
                     TARGET="/var/www/oscript.io/download/versions/latest/"
                     sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
                     '''.stripIndent()
+                }
+            }
+        }
+        
+        stage ('Publishing artifacts to clouds') {
+            when {
+                anyOf { 
+                    branch 'release/latest';
+                    branch 'release/preview';
+                } 
+            }
+            
+            agent { label 'windows' }
+
+            steps{
+                unstash 'dist'
+                withCredentials([string(credentialsId: 'NuGetToken', variable: 'NUGET_TOKEN')]) {
+                    bat "chcp $outputEnc > nul\r\n\"${tool 'MSBuild'}\" Build.csproj /t:PublishNuget /p:NugetToken=$NUGET_TOKEN"
                 }
             }
         }
