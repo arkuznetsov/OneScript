@@ -1654,9 +1654,9 @@ namespace OneScript.Language.SyntaxAnalysis
                 throw new InternalParseException(err);
         }
 
-        private static bool IsUserSymbol(in Lexem lex)
+        private bool IsUserSymbol(in Lexem lex)
         {
-            return LanguageDef.IsUserSymbol(in lex);
+            return LanguageDef.IsUserSymbol(in lex) || (!_isInAsyncMethod && lex.Token == Token.Await);
         }
 
         private void PushStructureToken(params Token[] tok)
