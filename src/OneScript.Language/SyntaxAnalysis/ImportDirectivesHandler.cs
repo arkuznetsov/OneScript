@@ -17,8 +17,10 @@ namespace OneScript.Language.SyntaxAnalysis
         public ImportDirectivesHandler(IErrorSink errorSink) : base(errorSink)
         {
             var builder = new LexerBuilder();
-            builder.Detect((cs, i) => !char.IsWhiteSpace(cs))
-                .HandleWith(new NonWhitespaceLexerState());
+            builder
+                .DetectComments()
+                .Detect((cs, i) => !char.IsWhiteSpace(cs))
+                    .HandleWith(new NonWhitespaceLexerState());
 
             _importClauseLexer = builder.Build();
         }
@@ -46,7 +48,7 @@ namespace OneScript.Language.SyntaxAnalysis
             parserContext.AddChild(node);
 
             lex = _importClauseLexer.NextLexemOnSameLine();
-            if (lex.Type != LexemType.EndOfText)
+            if (lex.Type != LexemType.EndOfText && lex.Type != LexemType.Comment)
             {
                 ErrorSink.AddError(LocalizedErrors.UnexpectedOperation());
                 return;
