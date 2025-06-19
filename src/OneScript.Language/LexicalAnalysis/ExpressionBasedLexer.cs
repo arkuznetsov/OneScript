@@ -10,11 +10,13 @@ using OneScript.Language.SyntaxAnalysis;
 
 namespace OneScript.Language.LexicalAnalysis
 {
+    public delegate LexerState LexerStateSelector(SourceCodeIterator iterator, char symbol);
+    
     public class ExpressionBasedLexer : ILexer
     {
-        private readonly Func<SourceCodeIterator, char, LexerState> _selector;
+        private readonly LexerStateSelector _selector;
 
-        internal ExpressionBasedLexer(Func<SourceCodeIterator, char, LexerState> selector)
+        internal ExpressionBasedLexer(LexerStateSelector selector)
         {
             _selector = selector;
         }

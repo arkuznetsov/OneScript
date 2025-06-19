@@ -13,16 +13,23 @@ namespace OneScript.Language.SyntaxAnalysis
     public class ImportDirectivesHandler : ModuleAnnotationDirectiveHandler
     {
         private readonly ILexer _importClauseLexer;
+        
+        private static readonly LexerBuilder InstanceBuilder = SetupLexerBuilder();
 
         public ImportDirectivesHandler(IErrorSink errorSink) : base(errorSink)
+        {
+            _importClauseLexer = InstanceBuilder.Build();
+        }
+        
+        private static LexerBuilder SetupLexerBuilder()
         {
             var builder = new LexerBuilder();
             builder
                 .DetectComments()
                 .Detect((cs, i) => !char.IsWhiteSpace(cs))
-                    .HandleWith(new NonWhitespaceLexerState());
-
-            _importClauseLexer = builder.Build();
+                    .HandleWith(new WordLexerState());
+            
+            return builder;
         }
 
         protected override void ParseAnnotationInternal(
