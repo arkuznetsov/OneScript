@@ -1283,6 +1283,38 @@ namespace OneScript.Language.Tests
         }
         
         [Fact]
+        public void AwaitIsNotKeywordInNonAsyncContext_VariableFor()
+        {
+            var code = 
+                @"Процедура Проц1()
+	                А = Ждать;
+                КонецПроцедуры";
+
+            var validator = ParseModuleAndGetValidator(code)
+                .DownTo(NodeKind.Assignment);
+            
+            validator
+                .NextChildIs(NodeKind.Identifier)
+                .NextChildIs(NodeKind.Identifier);
+        }
+        
+        [Fact]
+        public void AwaitIsNotKeywordInNonAsyncContext_VariableForEach()
+        {
+            var code = 
+                @"Процедура Проц1()
+	                А = Ждать;
+                КонецПроцедуры";
+
+            var validator = ParseModuleAndGetValidator(code)
+                .DownTo(NodeKind.Assignment);
+            
+            validator
+                .NextChildIs(NodeKind.Identifier)
+                .NextChildIs(NodeKind.Identifier);
+        }
+        
+        [Fact]
         public void AwaitIsNotKeywordInNonAsyncContext_Method()
         {
             var code = 
@@ -1328,6 +1360,30 @@ namespace OneScript.Language.Tests
             validator
                 .NextChildIs(NodeKind.Identifier)
                 .NextChildIs(NodeKind.MethodCall);
+        }
+        
+        [Fact]
+        public void AwaitIsNotKeywordInNonAsyncContext_MethodName()
+        {
+            var code = 
+                @"Процедура Ждать()
+	                А = 1;
+                КонецПроцедуры";
+
+            var validator = ParseModuleAndGetValidator(code);
+            validator.DownOneLevel().Is(NodeKind.Method);
+        }
+        
+        [Fact]
+        public void AwaitIsNotKeywordInNonAsyncContext_ModuleVariable()
+        {
+            var code = @"Перем Ждать;";
+
+            var validator = ParseModuleAndGetValidator(code);
+            validator
+                .DownTo(NodeKind.VariableDefinition)
+                .CurrentNode.RealNode.As<VariableDefinitionNode>()
+                .Name.Should().Be("Ждать");
         }
         
         [Fact]
