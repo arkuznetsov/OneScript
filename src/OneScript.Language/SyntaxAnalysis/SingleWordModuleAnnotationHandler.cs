@@ -23,19 +23,25 @@ namespace OneScript.Language.SyntaxAnalysis
 
         public SingleWordModuleAnnotationHandler(ISet<string> knownNames, IErrorSink errorSink) : base(errorSink)
         {
-            var builder = new LexerBuilder();
-            builder.Detect((cs, i) => !char.IsWhiteSpace(cs))
-                .HandleWith(new WordLexerState());
+            var builder = SetupLexerBuilder();
 
             _allLineContentLexer = builder.Build();
             _knownNames = knownNames;
         }
-        
-        public SingleWordModuleAnnotationHandler(ISet<BilingualString> knownNames, IErrorSink errorSink) : base(errorSink)
+
+        private static LexerBuilder SetupLexerBuilder()
         {
             var builder = new LexerBuilder();
-            builder.Detect((cs, i) => !char.IsWhiteSpace(cs))
+            builder
+                .DetectComments()
+                .Detect((cs, i) => !char.IsWhiteSpace(cs))
                 .HandleWith(new WordLexerState());
+            return builder;
+        }
+
+        public SingleWordModuleAnnotationHandler(ISet<BilingualString> knownNames, IErrorSink errorSink) : base(errorSink)
+        {
+            var builder = SetupLexerBuilder();
 
             _allLineContentLexer = builder.Build();
 
@@ -61,7 +67,7 @@ namespace OneScript.Language.SyntaxAnalysis
             // после ничего не должно находиться
             var nextLexem = _allLineContentLexer.NextLexemOnSameLine();
             lastExtractedLexem = lexer.NextLexem(); // сдвиг основного лексера
-            if (nextLexem.Type != LexemType.EndOfText)
+            if (nextLexem.Type != LexemType.EndOfText && nextLexem.Type != LexemType.Comment)
             {
                 var err = LocalizedErrors.ExpressionSyntax();
                 err.Position = new ErrorPositionInfo
