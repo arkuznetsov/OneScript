@@ -27,7 +27,7 @@ namespace OneScript.Language.SyntaxAnalysis
             builder
                 .DetectComments()
                 .Detect((cs, i) => !char.IsWhiteSpace(cs))
-                    .HandleWith(new WordLexerState());
+                    .HandleWith(new NonWhitespaceLexerState());
             
             return builder;
         }
