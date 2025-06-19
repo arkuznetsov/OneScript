@@ -98,13 +98,17 @@ namespace OneScript.Language
             {
                 var sb = new StringBuilder(MessageWithoutCodeFragment);
                 sb.AppendLine();
-                sb.AppendLine(Code?.Replace('\t', ' ').TrimEnd());
+                var codeLine = Code?.Replace('\t', ' ').TrimEnd();
 
                 if (ColumnNumber != ErrorPositionInfo.OUT_OF_TEXT)
                 {
-                    if (ColumnNumber > 1)
-                        sb.Append(' ', ColumnNumber - 1);
-                    sb.AppendLine(BilingualString.Localize("^--здесь", "^--here"));
+                    sb.Append(codeLine[..ColumnNumber]);
+                    sb.Append("<<?>>");
+                    sb.AppendLine(codeLine[ColumnNumber..]);
+                }
+                else
+                {
+                    sb.AppendLine(codeLine);
                 }
 
                 return sb.ToString();
