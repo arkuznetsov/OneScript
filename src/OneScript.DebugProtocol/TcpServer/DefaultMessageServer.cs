@@ -81,6 +81,10 @@ namespace OneScript.DebugProtocol.TcpServer
                         // свойство в исключении может быть уcтановлено в обработчике евента
                         _serverStopped = e.StopChannel;
                     }
+                    catch (ObjectDisposedException)
+                    {
+                        _serverStopped = true;
+                    }
                     catch (Exception e)
                     {
                         var eventData = new CommunicationEventArgs
