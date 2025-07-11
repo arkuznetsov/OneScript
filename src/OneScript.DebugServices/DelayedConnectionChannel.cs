@@ -62,6 +62,6 @@ namespace OneScript.DebugServices
             return _connectedChannel.Read();
         }
 
-        public bool Connected => _connectedChannel.Connected;
+        public bool Connected => _connectedChannel?.Connected ?? false;
     }
 }
