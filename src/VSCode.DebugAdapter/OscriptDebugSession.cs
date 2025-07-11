@@ -9,22 +9,22 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using OneScript.DebugProtocol;
 using Serilog;
 using VSCode.DebugAdapter.OscriptProtocols;
 using VSCodeDebug;
-using static System.Net.WebRequestMethods;
 
 
 namespace VSCode.DebugAdapter
 {
     internal class OscriptDebugSession : DebugSession, IDebugEventListener
     {
-        private DebugeeProcess _process;
+        private DebugeeProcess _debuggee;
         private bool _startupPerformed = false;
         private readonly Handles<OneScript.DebugProtocol.StackFrame> _framesHandles;
         private readonly Handles<IVariableLocator> _variableHandles;
+
+        private readonly ILogger Log = Serilog.Log.ForContext<OscriptDebugSession>(); 
 
         public OscriptDebugSession() : base(true, false)
         {
@@ -39,7 +39,7 @@ namespace VSCode.DebugAdapter
             LogCommandReceived();
             AdapterID = (string) args.adapterID;
 
-            _process = DebugeeFactory.CreateProcess(AdapterID, PathStrategy);
+            _debuggee = DebugeeFactory.CreateProcess(AdapterID, PathStrategy);
 
             SendResponse(response, new Capabilities
             {
@@ -79,7 +79,7 @@ namespace VSCode.DebugAdapter
             try
             {
                 Log.Debug("Initializing process settings");
-                _process.Init(args);
+                _debuggee.Init(args);
             }
             catch (InvalidDebugeeOptionsException e)
             {
@@ -88,22 +88,12 @@ namespace VSCode.DebugAdapter
                 return;
             }
 
-            _process.OutputReceived += (s, e) =>
-            {
-                Log.Debug("Output received {Output}", e.Content);
-                SendOutput(e.Category, e.Content);
-            };
+            SubscribeForDebuggeeProcessEvents();
 
-            _process.ProcessExited += (s, e) =>
-            {
-                Log.Information("Debuggee has exited");
-                SendEvent(new TerminatedEvent());
-            };
-            
             try
             {
                 Log.Verbose("Starting debuggee");
-                _process.Start();
+                _debuggee.Start();
                 Log.Information("Debuggee started");
             }
             catch (Exception e)
@@ -115,14 +105,14 @@ namespace VSCode.DebugAdapter
             
             try
             {
-                var tcpConnector = new TcpDebugServerClient(_process.DebugPort, this);
+                var tcpConnector = new TcpDebugServerClient(_debuggee.DebugPort, this);
                 tcpConnector.Connect();
 
-                _process.SetConnection(tcpConnector);
+                _debuggee.SetConnection(tcpConnector);
             }
             catch (Exception e)
             {
-                _process.Kill();
+                _debuggee.Kill();
                 SendEvent(new TerminatedEvent());
                 Log.Error(e, "Can't connect to debug server");
                 SendErrorResponse(response, 4550, "Can't connect: " + e.ToString());
@@ -134,33 +124,44 @@ namespace VSCode.DebugAdapter
             SendResponse(response);
         }
 
+        private void SubscribeForDebuggeeProcessEvents()
+        {
+            _debuggee.OutputReceived += (s, e) =>
+            {
+                Log.Debug("Output received {Output}", e.Content);
+                SendOutput(e.Category, e.Content);
+            };
+
+            _debuggee.ProcessExited += (s, e) =>
+            {
+                Log.Information("Debuggee has exited");
+                SendEvent(new TerminatedEvent());
+            };
+        }
+
         private void SetupProtocol(dynamic args)
         {
             int protocolVersion = GetFromContainer(args, "protocolVersion", 0);
             if (ProtocolVersions.IsValid(protocolVersion))
             {
-                _process.ProtocolVersion = protocolVersion;
+                _debuggee.ProtocolVersion = protocolVersion;
             }
         }
 
         public override void Attach(Response response, dynamic arguments)
         {
             LogCommandReceived();
-            _process.DebugPort = GetFromContainer(arguments, "debugPort", 2801);
-            _process.ProcessExited += (s, e) =>
-            {
-                Log.Information("Debuggee has exited");
-                SendEvent(new TerminatedEvent());
-            };
+            SubscribeForDebuggeeProcessEvents();
+            _debuggee.DebugPort = GetFromContainer(arguments, "debugPort", 2801);
             
             try
             {
-                var tcpConnector = new TcpDebugServerClient(_process.DebugPort, this);
+                var tcpConnector = new TcpDebugServerClient(_debuggee.DebugPort, this);
                 tcpConnector.Connect();
-                Log.Debug("Connected to debuggee on port {Port}", _process.DebugPort);
+                Log.Debug("Connected to debuggee on port {Port}", _debuggee.DebugPort);
                 
-                _process.SetConnection(tcpConnector);
-                _process.InitAttached();
+                _debuggee.SetConnection(tcpConnector);
+                _debuggee.InitAttached();
             }
             catch (Exception e)
             {
@@ -176,17 +177,17 @@ namespace VSCode.DebugAdapter
 
         public override void Disconnect(Response response, dynamic arguments)
         {
-            LogCommandReceived(arguments);
+            LogCommandReceived(new { Terminate = arguments.terminateDebuggee });
             bool terminateDebuggee = arguments.terminateDebuggee == true;
             
-            _process.HandleDisconnect(terminateDebuggee);
+            _debuggee.HandleDisconnect(terminateDebuggee);
             SendResponse(response);
         }
 
         public override void SetExceptionBreakpoints(Response response, dynamic arguments)
         {
-            LogCommandReceived(arguments);
-            Log.Debug("Exception breakpoints: {Data}", JsonConvert.SerializeObject(arguments));
+            LogCommandReceived();
+            Log.Verbose("Exception breakpoints: {@Data}", arguments);
 
             var acceptedFilters = new List<VSCodeDebug.Breakpoint>();
             var filters = new List<(string Id, string Condition)>();
@@ -203,7 +204,7 @@ namespace VSCode.DebugAdapter
                 acceptedFilters.Add(new VSCodeDebug.Breakpoint(true));
             }
 
-            _process.SetExceptionsBreakpoints(filters.ToArray());
+            _debuggee.SetExceptionsBreakpoints(filters.ToArray());
 
             SendResponse(response, new SetExceptionBreakpointsResponseBody(acceptedFilters));
         }
@@ -211,7 +212,7 @@ namespace VSCode.DebugAdapter
         public override void SetBreakpoints(Response response, dynamic arguments)
         {
             LogCommandReceived();
-            Log.Debug("Breakpoints: {Data}", JsonConvert.SerializeObject(arguments));
+            Log.Verbose("Breakpoints: {@Data}", arguments);
             
             if ((bool)arguments.sourceModified)
             {
@@ -255,7 +256,7 @@ namespace VSCode.DebugAdapter
                 breaks.Add(bpt);
             }
             
-            var confirmedBreaks = _process.SetBreakpoints(breaks);
+            var confirmedBreaks = _debuggee.SetBreakpoints(breaks);
             var confirmedBreaksVSCode = new List<VSCodeDebug.Breakpoint>(confirmedBreaks.Length);
             for (int i = 0; i < confirmedBreaks.Length; i++)
             {
@@ -303,14 +304,14 @@ namespace VSCode.DebugAdapter
 
         public override void ConfigurationDone(Response response, dynamic args)
         {
-            if (_process == null)
+            if (_debuggee == null)
             {
                 Log.Debug("Config Done. Process is not started");
                 SendResponse(response);
                 return;
             }
             Log.Debug("Config Done. Process is started, sending Execute");
-            _process.BeginExecution(-1);
+            _debuggee.BeginExecution(-1);
             _startupPerformed = true;
             SendResponse(response);
         }
@@ -319,18 +320,18 @@ namespace VSCode.DebugAdapter
         {
             LogCommandReceived();
             SendResponse(response);
-            _process.BeginExecution(-1);
+            _debuggee.BeginExecution(-1);
         }
 
         public override void Next(Response response, dynamic arguments)
         {
             LogCommandReceived();
             SendResponse(response);
-            lock (_process)
+            lock (_debuggee)
             {
-                if (!_process.HasExited)
+                if (!_debuggee.HasExited)
                 {
-                    _process.Next((int)arguments.threadId);
+                    _debuggee.Next((int)arguments.threadId);
                 }
             }
             
@@ -340,11 +341,11 @@ namespace VSCode.DebugAdapter
         {
             LogCommandReceived();
             SendResponse(response);
-            lock (_process)
+            lock (_debuggee)
             {
-                if (!_process.HasExited)
+                if (!_debuggee.HasExited)
                 {
-                    _process.StepIn((int)arguments.threadId);
+                    _debuggee.StepIn((int)arguments.threadId);
                 }
             }
         }
@@ -353,11 +354,11 @@ namespace VSCode.DebugAdapter
         {
             LogCommandReceived();
             SendResponse(response);
-            lock (_process)
+            lock (_debuggee)
             {
-                if (!_process.HasExited)
+                if (!_debuggee.HasExited)
                 {
-                    _process.StepOut((int)arguments.threadId);
+                    _debuggee.StepOut((int)arguments.threadId);
                 }
             }
         }
@@ -374,7 +375,7 @@ namespace VSCode.DebugAdapter
             var firstFrameIdx = (int?)arguments.startFrame ?? 0;
             var limit = (int?) arguments.levels ?? 0;
             var threadId = (int) arguments.threadId;
-            var processFrames = _process.GetStackTrace(threadId, firstFrameIdx, limit);
+            var processFrames = _debuggee.GetStackTrace(threadId, firstFrameIdx, limit);
             var frames = new VSCodeDebug.StackFrame[processFrames.Length];
             for (int i = 0; i < processFrames.Length; i++)
             {
@@ -415,7 +416,7 @@ namespace VSCode.DebugAdapter
                 return;
             }
 
-            _process.FillVariables(variables);
+            _debuggee.FillVariables(variables);
 
             var responseArray = new VSCodeDebug.Variable[variables.Count];
 
@@ -442,7 +443,7 @@ namespace VSCode.DebugAdapter
         {
             LogCommandReceived();
             var threads = new List<VSCodeDebug.Thread>();
-            var processThreads = _process.GetThreads();
+            var processThreads = _debuggee.GetThreads();
             for (int i = 0; i < processThreads.Length; i++)
             {
                 threads.Add(new VSCodeDebug.Thread(processThreads[i], $"Thread {processThreads[i]}"));
@@ -472,7 +473,7 @@ namespace VSCode.DebugAdapter
             OneScript.DebugProtocol.Variable evalResult;
             try
             {
-                evalResult = _process.Evaluate(frame, expression);
+                evalResult = _debuggee.Evaluate(frame, expression);
 
                 if (evalResult.IsStructured)
                 {
@@ -530,7 +531,7 @@ namespace VSCode.DebugAdapter
             if (args == null)
                 Log.Debug("Command received {Command}", commandName);
             else
-                Log.Debug("Command received {Command}: {Args}", commandName, JsonConvert.SerializeObject(args));
+                Log.Debug("Command received {Command}: {@Args}", commandName, args);
         }
         
         private void LogEventOccured([CallerMemberName] string eventName = "")

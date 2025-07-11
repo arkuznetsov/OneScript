@@ -102,7 +102,7 @@ namespace VSCode.DebugAdapter
 
         private void WriteCommand<T>(T data, [CallerMemberName] string command = "")
         {
-            Log.Verbose("Sending {Command} to debuggee, param {Parameter}", command, data); 
+            Log.Verbose("Sending {Command} to debuggee, param {@Parameter}", command, data); 
             var dto = RpcCall.Create(nameof(IDebuggerService), command, data);
             _commandsChannel.Write(dto);
             Log.Verbose("Successfully written: {Command}", command);
@@ -111,7 +111,7 @@ namespace VSCode.DebugAdapter
         
         private void WriteCommand(object[] data, [CallerMemberName] string command = "")
         {
-            Log.Verbose("Sending {Command} to debuggee, params {Parameters}", command, data);
+            Log.Verbose("Sending {Command} to debuggee, params {@Parameters}", command, data);
             var dto = RpcCall.Create(nameof(IDebuggerService), command, data);
             _commandsChannel.Write(dto);
             Log.Verbose("Successfully written: {Command}", command);
@@ -120,10 +120,10 @@ namespace VSCode.DebugAdapter
         private T GetResponse<T>()
         {
             var rpcResult = _processor.GetResult();
-            Log.Debug("Response received {Result} = {Value}", rpcResult.Id, rpcResult.ReturnValue);
+            Log.Verbose("Response received {Result} = {@Value}", rpcResult.Id, rpcResult.ReturnValue);
             if (rpcResult.ReturnValue is RpcExceptionDto excDto)
             {
-                Log.Debug("RPC Exception received: {Description}", excDto.Description);
+                Log.Verbose("RPC Exception received: {Description}", excDto.Description);
                 throw new RpcOperationException(excDto);
             }
             
@@ -207,6 +207,7 @@ namespace VSCode.DebugAdapter
         public void Disconnect(bool terminate)
         {
             WriteCommand(terminate);
+            Disconnect();
         }
 
         public int[] GetThreads()

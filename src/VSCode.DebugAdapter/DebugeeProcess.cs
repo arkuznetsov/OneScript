@@ -35,6 +35,8 @@ namespace VSCode.DebugAdapter
 
         private int _activeProtocolVersion;
 
+        private ILogger Log { get; } = Serilog.Log.ForContext<DebugeeProcess>();
+
         public DebugeeProcess(PathHandlingStrategy pathHandling)
         {
             _strategy = pathHandling;
@@ -227,9 +229,19 @@ namespace VSCode.DebugAdapter
             
             if (mustKill && _process != null && !_process.HasExited)
             {
-                if (!_process.WaitForExit(2000))
+                Log.Debug("Stopping child process...");
+                if (_process.WaitForExit(2000))
+                {
+                    Log.Debug("Process stopped");
+                }
+                else
+                {
                     _process.Kill();
+                    Log.Debug("Process killed");
+                }
             }
+            
+            Log.Debug("Debuggee disconnected");
         }
 
         public void Kill()

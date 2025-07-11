@@ -35,30 +35,30 @@ namespace OneScript.DebugProtocol
         {
             get
             {
-                ThrowIfNoVariables();
-
+                if (Variables == null)
+                    return 0;
+                
                 return Variables.Length;
             }
-        }
-
-        private void ThrowIfNoVariables()
-        {
-            if (Variables == null)
-                throw new InvalidOperationException("No variables aquired yet");
         }
 
         Variable IVariableLocator.this[int index]
         {
             get
             {
-                ThrowIfNoVariables();
+                if (Variables == null)
+                    throw new ArgumentOutOfRangeException();
+                
                 return Variables[index];
             }
         }
 
         IEnumerator<Variable> IEnumerable<Variable>.GetEnumerator()
         {
-            ThrowIfNoVariables();
+            if (Variables == null)
+            {
+                return EmptyEnumerator<Variable>.Instance;
+            }
 
             return ((IEnumerable<Variable>)Variables).GetEnumerator();
         }
@@ -79,6 +79,32 @@ namespace OneScript.DebugProtocol
         public IVariableLocator CreateChildLocator(int variableIndex)
         {
             return new VariableLocator(ThreadId, Index, variableIndex);
+        }
+    }
+    
+    internal class EmptyEnumerator<T> : IEnumerator<T>
+    {
+        public static EmptyEnumerator<T> Instance { get; } = new EmptyEnumerator<T>();
+        
+        private EmptyEnumerator()
+        {
+        }
+
+        public bool MoveNext()
+        {
+            return false;
+        }
+
+        public void Reset()
+        {
+        }
+
+        public T Current { get; } = default;
+
+        object IEnumerator.Current => Current;
+
+        public void Dispose()
+        {
         }
     }
 }

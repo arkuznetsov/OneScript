@@ -11,6 +11,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace VSCode.DebugAdapter
 {
@@ -41,7 +43,7 @@ namespace VSCode.DebugAdapter
                 Log.Logger = new LoggerConfiguration()
                     .ReadFrom.AppSettings()
                     .Enrich.FromLogContext()
-                    .WriteTo.File(file, outputTemplate: "{SourceContext} [{Level:u3}] {Message:lj} {Timestamp:yyyy-MM-dd HH:mm:ss} {NewLine}{Exception}")
+                    .WriteTo.File(file, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj} ({SourceContext}){NewLine}{Exception}")
                     .CreateLogger();
             }
             
