@@ -38,7 +38,7 @@ namespace VSCode.DebugAdapter.OscriptProtocols
         public const int Version2 = 2;
 
         /// <summary>
-        /// После появления метода GetVersion, который запрашивает Debuggee
+        /// После появления метода GetProtocolVersion, который запрашивает Debuggee
         /// </summary>
         public const int Version3 = 3;
 

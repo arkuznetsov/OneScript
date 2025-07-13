@@ -177,7 +177,9 @@ namespace VSCode.DebugAdapter
 
             try
             {
+                Log.Debug("Requesting max protocol version");
                 _activeProtocolVersion = _debugger.GetProtocolVersion();
+                Log.Information("Protocol version is {ProtocolVersion}", _activeProtocolVersion);
             }
             catch (Exception e)
             {

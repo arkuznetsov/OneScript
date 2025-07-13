@@ -22,6 +22,8 @@ namespace OneScript.DebugServices
 {
     public class DefaultDebugService : IDebuggerService
     {
+        private const int CURRENT_PROTOCOL_VERSION = 3;
+        
         private readonly IBreakpointManager _breakpointManager;
         private readonly IVariableVisualizer _visualizer;
         private readonly ThreadManager _threadManager;
@@ -246,6 +248,11 @@ namespace OneScript.DebugServices
         private IList<IVariable> GetChildVariables(IVariable src)
         {
             return _visualizer.GetChildVariables(src.Value).ToList();
+        }
+
+        public int GetProtocolVersion()
+        {
+            return CURRENT_PROTOCOL_VERSION;
         }
     }
 }

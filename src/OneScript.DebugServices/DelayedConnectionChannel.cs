@@ -15,7 +15,7 @@ namespace OneScript.DebugServices
     public class DelayedConnectionChannel : ICommunicationChannel
     {
         private TcpListener _listener;
-        private BinaryChannel _connectedChannel;
+        private ICommunicationChannel _connectedChannel;
 
         public DelayedConnectionChannel(TcpListener listener)
         {
