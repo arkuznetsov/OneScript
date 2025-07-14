@@ -10,8 +10,9 @@ using OneScript.DebugProtocol;
 using OneScript.DebugProtocol.Abstractions;
 using OneScript.DebugProtocol.TcpServer;
 using Serilog;
+using VSCode.DebugAdapter.Transport;
 
-namespace VSCode.DebugAdapter.Transport
+namespace VSCode.DebugAdapter
 {
     public class OneScriptDebuggerClient : IDebuggerService
     {

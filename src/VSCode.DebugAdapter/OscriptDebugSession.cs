@@ -16,19 +16,16 @@ using VSCodeDebug;
 
 namespace VSCode.DebugAdapter
 {
-    internal class OscriptDebugSession : DebugSession, IDebugEventListener
+    internal class OscriptDebugSession : DebugSession
     {
         private DebugeeProcess _debuggee;
         private bool _startupPerformed = false;
-        private readonly Handles<OneScript.DebugProtocol.StackFrame> _framesHandles;
-        private readonly Handles<IVariableLocator> _variableHandles;
+        private ThreadStateContainer _threadState = new ThreadStateContainer();
 
         private readonly ILogger Log = Serilog.Log.ForContext<OscriptDebugSession>(); 
 
         public OscriptDebugSession() : base(true, false)
         {
-            _framesHandles = new Handles<OneScript.DebugProtocol.StackFrame>();
-            _variableHandles = new Handles<IVariableLocator>();
         }
         
         private string AdapterID { get; set; }
@@ -105,8 +102,7 @@ namespace VSCode.DebugAdapter
             DebugClientFactory debugClientFactory;
             try
             {
-                var tcpConnection = ConnectionFactory.Connect(_debuggee.DebugPort);
-                debugClientFactory = new DebugClientFactory(tcpConnection, this);
+                debugClientFactory = ConnectDebugServer();
             }
             catch (Exception e)
             {
@@ -146,8 +142,7 @@ namespace VSCode.DebugAdapter
             DebugClientFactory debugClientFactory;
             try
             {
-                var tcpConnection = ConnectionFactory.Connect(_debuggee.DebugPort);
-                debugClientFactory = new DebugClientFactory(tcpConnection, this);
+                debugClientFactory = ConnectDebugServer();
             }
             catch (Exception e)
             {
@@ -169,6 +164,13 @@ namespace VSCode.DebugAdapter
             }
 
             SendResponse(response);
+        }
+
+        private DebugClientFactory ConnectDebugServer()
+        {
+            var tcpConnection = ConnectionFactory.Connect(_debuggee.DebugPort);
+            var listener = new OscriptDebugEventsListener(this, _threadState);
+            return new DebugClientFactory(tcpConnection, listener);
         }
 
         public override void Disconnect(Response response, dynamic arguments)
@@ -273,33 +275,6 @@ namespace VSCode.DebugAdapter
 
         }
 
-        public void ThreadStopped(int threadId, ThreadStopReason reason)
-        {
-            LogEventOccured();
-            _framesHandles.Reset();
-            _variableHandles.Reset();
-
-            SendEvent(new StoppedEvent(threadId, reason.ToString()));
-        }
-        
-        public void ThreadStoppedEx(int threadId, ThreadStopReason reason, string errorMessage)
-        {
-            LogEventOccured();
-            _framesHandles.Reset();
-            _variableHandles.Reset();
-
-            if (!string.IsNullOrEmpty(errorMessage))
-                SendOutput("stderr", errorMessage);
-
-            SendEvent(new StoppedEvent(threadId, reason.ToString()));
-        }
-        
-        public void ProcessExited(int exitCode)
-        {
-            LogEventOccured();
-            SendEvent(new ExitedEvent(exitCode));
-        }
-
         public override void ConfigurationDone(Response response, dynamic args)
         {
             if (_debuggee == null)
@@ -378,7 +353,7 @@ namespace VSCode.DebugAdapter
             for (int i = 0; i < processFrames.Length; i++)
             {
                 frames[i] = new VSCodeDebug.StackFrame(
-                    _framesHandles.Create(processFrames[i]),
+                    _threadState.RegisterFrame(processFrames[i]),
                     processFrames[i].MethodName,
                     processFrames[i].GetSource(),
                     processFrames[i].LineNumber, 0);
@@ -391,14 +366,14 @@ namespace VSCode.DebugAdapter
         {
             LogCommandReceived();
             int frameId = GetFromContainer(arguments, "frameId", 0);
-            var frame = _framesHandles.Get(frameId, null);
+            var frame = _threadState.GetFrameById(frameId);
             if (frame == null)
             {
                 SendErrorResponse(response, 10001, "No active stackframe");
                 return;
             }
-            
-            var frameVariablesHandle = _variableHandles.Create(frame);
+
+            var frameVariablesHandle = _threadState.RegisterVariableContainer(frame); 
             var localScope = new Scope("Локальные переменные", frameVariablesHandle);
             SendResponse(response, new ScopesResponseBody(new Scope[] {localScope}));
         }
@@ -407,7 +382,7 @@ namespace VSCode.DebugAdapter
         {
             LogCommandReceived();
             int varsHandle = GetFromContainer(arguments, "variablesReference", 0);
-            var variables = _variableHandles.Get(varsHandle, null);
+            var variables = _threadState.GetVariableContainerById(varsHandle);
             if (variables == null)
             {
                 SendErrorResponse(response, 10001, "No active stackframe");
@@ -424,7 +399,7 @@ namespace VSCode.DebugAdapter
 
                 if (variable.IsStructured && variable.ChildrenHandleID == 0)
                 {
-                    variable.ChildrenHandleID = _variableHandles.Create(variables.CreateChildLocator(i));
+                    variable.ChildrenHandleID = _threadState.RegisterVariableContainer(variables.CreateChildLocator(i));
                 }
 
                 responseArray[i] = new VSCodeDebug.Variable(
@@ -455,7 +430,7 @@ namespace VSCode.DebugAdapter
             LogCommandReceived();
             // expression, frameId, context
             int frameId = GetFromContainer(arguments, "frameId", 0);
-            var frame = _framesHandles.Get(frameId, null);
+            var frame = _threadState.GetFrameById(frameId);
             if (frame == null)
             {
                 SendErrorResponse(response, 10001, "No active stackframe");
@@ -476,7 +451,7 @@ namespace VSCode.DebugAdapter
                 if (evalResult.IsStructured)
                 {
                     var loc = new EvaluatedVariableLocator(expression, frame.ThreadId, frame.Index);
-                    id = _variableHandles.Create(loc);
+                    id = _threadState.RegisterVariableContainer(loc);
                 }
             }
             catch (Exception e)
@@ -530,11 +505,6 @@ namespace VSCode.DebugAdapter
                 Log.Debug("Command received {Command}", commandName);
             else
                 Log.Debug("Command received {Command}: {@Args}", commandName, args);
-        }
-        
-        private void LogEventOccured([CallerMemberName] string eventName = "")
-        {
-            Log.Debug("Event occured {Event}", eventName);
         }
     }
 }
