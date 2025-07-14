@@ -6,8 +6,11 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using OneScript.DebugProtocol;
 using OneScript.DebugProtocol.Abstractions;
@@ -24,11 +27,15 @@ namespace VSCode.DebugAdapter
         private BinaryChannel _commandsChannel;
         private RpcProcessor _processor;
         
+        private readonly ILogger Log = Serilog.Log.ForContext<TcpDebugServerClient>();
+        
         public TcpDebugServerClient(int port, IDebugEventListener eventBackChannel)
         {
             _port = port;
             _eventBackChannel = eventBackChannel;
         }
+
+        private int _protocolVersion = ProtocolVersions.SafestVersion;
         
         public void Connect()
         {
@@ -36,11 +43,73 @@ namespace VSCode.DebugAdapter
             
             var client = new TcpClient();
             TryConnect(client, debuggerUri);
+            
             _commandsChannel = new BinaryChannel(client);
             
             Log.Debug("Connected to {Host}:{Port}", debuggerUri.Host, debuggerUri.Port);
+            ReconcileDataFormat(client);
 
             RunEventsListener(_commandsChannel);
+        }
+
+        private void ReconcileDataFormat(TcpClient client)
+        {
+            Log.Verbose("Sending reconcile message");
+            var stream = client.GetStream();
+            stream.Write(FormatReconcileUtils.FORMAT_RECONCILE_MAGIC, 0, FormatReconcileUtils.FORMAT_RECONCILE_MAGIC.Length);
+
+            var pollResult = client.Client
+                .Poll(FormatReconcileUtils.FORMAT_RECONCILE_TIMEOUT.Milliseconds * 1000, SelectMode.SelectRead);
+            
+            if (pollResult)
+            {
+                Log.Verbose("Reconcile data available. Waiting for full data");
+                var attempts = 0;
+                const int WAIT_ATTEMPTS = 3;
+                const int ATTEMPT_INTERVAL = 250;
+                
+                var requiredDataLength = FormatReconcileUtils.FORMAT_RECONCILE_RESPONSE_PREFIX.Length + sizeof(int);
+                while (client.Client.Available < requiredDataLength && attempts < WAIT_ATTEMPTS)
+                {
+                    attempts++;
+                    Log.Verbose("Attempt # {Attempt}", attempts);
+                    Thread.Sleep(ATTEMPT_INTERVAL);
+                }
+
+                if (client.Client.Available >= requiredDataLength)
+                {
+                    Log.Verbose("We have data available. Reading reconcile response");
+                    var dataBuffer = new byte[requiredDataLength];
+                    using var binaryReader = new BinaryReader(stream, Encoding.ASCII, true);
+                    binaryReader.Read(dataBuffer, 0, FormatReconcileUtils.FORMAT_RECONCILE_RESPONSE_PREFIX.Length);
+
+                    if (!FormatReconcileUtils.CheckReconcilePrefix(dataBuffer))
+                    {
+                        Log.Verbose("Received data is not reconcile message");
+                        SelectSafestFormat();
+                        return;
+                    }
+
+                    var formatVersion = binaryReader.ReadInt32();
+                    Log.Verbose("Received format version {FormatVersion}", formatVersion);
+                    _protocolVersion = ProtocolVersions.Adjust(formatVersion);
+                    Log.Verbose("Active protocol version {ProtocolVersion}", _protocolVersion);
+                }
+                else
+                {
+                    SelectSafestFormat();
+                }
+            }
+            else
+            {
+                SelectSafestFormat();
+            }
+        }
+
+        private void SelectSafestFormat()
+        {
+            Log.Verbose("Reconcilation failed, selecting safest format");
+            _protocolVersion = ProtocolVersions.SafestVersion;
         }
 
         public void Disconnect()
@@ -59,7 +128,7 @@ namespace VSCode.DebugAdapter
             return builder.Uri;
         }
 
-        private static void TryConnect(TcpClient client, Uri debuggerUri)
+        private void TryConnect(TcpClient client, Uri debuggerUri)
         {
             const int limit = 3;
             // TODO: параметризовать ожидания и попытки
