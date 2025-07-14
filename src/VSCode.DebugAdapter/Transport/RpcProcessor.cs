@@ -13,7 +13,7 @@ using OneScript.DebugProtocol.Abstractions;
 using OneScript.DebugProtocol.TcpServer;
 using Serilog;
 
-namespace VSCode.DebugAdapter
+namespace VSCode.DebugAdapter.Transport
 {
     public class RpcProcessor
     {

@@ -8,7 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using OneScript.DebugProtocol.TcpServer;
 
-namespace VSCode.DebugAdapter
+namespace VSCode.DebugAdapter.Transport
 {
     public class RpcOperationException : ApplicationException
     {

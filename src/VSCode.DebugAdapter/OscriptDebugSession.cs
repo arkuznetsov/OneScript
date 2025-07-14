@@ -8,10 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
-using Newtonsoft.Json;
 using OneScript.DebugProtocol;
 using Serilog;
-using VSCode.DebugAdapter.OscriptProtocols;
+using VSCode.DebugAdapter.Transport;
 using VSCodeDebug;
 
 
@@ -102,13 +101,12 @@ namespace VSCode.DebugAdapter
                 SendErrorResponse(response, 3012, "Can't launch debugee ({reason}).", new { reason = e.Message });
                 return;
             }
-            
+
+            DebugClientFactory debugClientFactory;
             try
             {
-                var tcpConnector = new TcpDebugServerClient(_debuggee.DebugPort, this);
-                tcpConnector.Connect();
-
-                _debuggee.SetConnection(tcpConnector);
+                var tcpConnection = ConnectionFactory.Connect(_debuggee.DebugPort);
+                debugClientFactory = new DebugClientFactory(tcpConnection, this);
             }
             catch (Exception e)
             {
@@ -118,9 +116,9 @@ namespace VSCode.DebugAdapter
                 SendErrorResponse(response, 4550, "Can't connect: " + e.ToString());
                 return;
             }
-
-            SetupProtocol(args);
             
+            _debuggee.SetClient(debugClientFactory.CreateDebugClient());
+
             SendResponse(response);
         }
 
@@ -139,29 +137,17 @@ namespace VSCode.DebugAdapter
             };
         }
 
-        private void SetupProtocol(dynamic args)
-        {
-            int protocolVersion = GetFromContainer(args, "protocolVersion", 0);
-            if (ProtocolVersions.IsValid(protocolVersion))
-            {
-                _debuggee.ProtocolVersion = protocolVersion;
-            }
-        }
-
         public override void Attach(Response response, dynamic arguments)
         {
             LogCommandReceived();
             SubscribeForDebuggeeProcessEvents();
             _debuggee.DebugPort = GetFromContainer(arguments, "debugPort", 2801);
             
+            DebugClientFactory debugClientFactory;
             try
             {
-                var tcpConnector = new TcpDebugServerClient(_debuggee.DebugPort, this);
-                tcpConnector.Connect();
-                Log.Debug("Connected to debuggee on port {Port}", _debuggee.DebugPort);
-                
-                _debuggee.SetConnection(tcpConnector);
-                _debuggee.InitAttached();
+                var tcpConnection = ConnectionFactory.Connect(_debuggee.DebugPort);
+                debugClientFactory = new DebugClientFactory(tcpConnection, this);
             }
             catch (Exception e)
             {
@@ -169,9 +155,19 @@ namespace VSCode.DebugAdapter
                 SendErrorResponse(response, 4550, "Can't connect: " + e.ToString());
                 return;
             }
-
-            SetupProtocol(arguments);
             
+            _debuggee.SetClient(debugClientFactory.CreateDebugClient());
+            try
+            {
+                _debuggee.InitAttached();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, "Attach failed");
+                SendErrorResponse(response, 4550, "Attach failed: " + e.ToString());
+                return;
+            }
+
             SendResponse(response);
         }
 
@@ -235,13 +231,15 @@ namespace VSCode.DebugAdapter
             
             var breaks = new List<OneScript.DebugProtocol.Breakpoint>();
 
+            var useConditions = _debuggee.ProtocolVersion >= ProtocolVersions.Version2;
+            
             foreach (var srcBreakpoint in arguments.breakpoints)
             {
                 var bpt = new OneScript.DebugProtocol.Breakpoint
                 {
                     Line = (int)srcBreakpoint.line,
                     Source = path,
-                    Condition = srcBreakpoint.condition ?? string.Empty
+                    Condition = useConditions ? srcBreakpoint.condition ?? string.Empty : string.Empty
                 };
                 breaks.Add(bpt);
             }

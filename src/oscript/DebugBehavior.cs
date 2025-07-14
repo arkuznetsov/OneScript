@@ -56,6 +56,7 @@ namespace oscript
                 }
                 else if (parsedArg.Name == "-protocol")
                 {
+                    // Обратная совместимость, не используется в реальности
                     continue;
                 }
                 else

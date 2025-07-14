@@ -77,7 +77,5 @@ namespace OneScript.DebugProtocol
         int[] GetThreads();
         
         int GetProcessId();
-
-        int GetProtocolVersion();
     }
 }
