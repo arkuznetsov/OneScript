@@ -16,7 +16,7 @@ namespace VSCode.DebugAdapter.Transport
 
         public static int Adjust(int valueToAdjust)
         {
-            if (valueToAdjust < 0 || valueToAdjust > LatestKnownVersion)
+            if (valueToAdjust <= 0 || valueToAdjust > LatestKnownVersion)
                 return SafestVersion;
 
             return valueToAdjust;
@@ -36,6 +36,11 @@ namespace VSCode.DebugAdapter.Transport
         /// После появления условных брейкпоинтов 
         /// </summary>
         public const int Version2 = 2;
+        
+        /// <summary>
+        /// Выделенный тип для параметра в SetExceptionBreakpoints 
+        /// </summary>
+        public const int Version3 = 3;
 
         /// <summary>
         /// Значение, безопасное для всех версий движка
@@ -45,6 +50,6 @@ namespace VSCode.DebugAdapter.Transport
         /// <summary>
         /// Контрольное значение
         /// </summary>
-        public const int LatestKnownVersion = Version2;
+        public const int LatestKnownVersion = Version3;
     }
 }

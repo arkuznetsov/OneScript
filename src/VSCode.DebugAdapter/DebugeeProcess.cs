@@ -235,8 +235,18 @@ namespace VSCode.DebugAdapter
 
         public void SetExceptionsBreakpoints((string Id, string Condition)[] filters)
         {
-            if (ProtocolVersion > ProtocolVersions.Version1)
+            if (ProtocolVersion > ProtocolVersions.Version1 && ProtocolVersion < ProtocolVersions.Version3)
+            {
                 _debugger.SetMachineExceptionBreakpoints(filters);
+            }
+            else if (ProtocolVersion >= ProtocolVersions.Version3)
+            {
+                _debugger.SetExceptionBreakpoints(filters.Select(t => new ExceptionBreakpointFilter
+                {
+                    Id = t.Id,
+                    Condition = t.Condition
+                }).ToArray());
+            }
         }
 
         public Breakpoint[] SetBreakpoints(IEnumerable<Breakpoint> breakpoints)

@@ -186,7 +186,7 @@ namespace VSCode.DebugAdapter
         {
             LogCommandReceived();
             Log.Verbose("Exception breakpoints: {@Data}", arguments);
-
+            
             var acceptedFilters = new List<VSCodeDebug.Breakpoint>();
             var filters = new List<(string Id, string Condition)>();
 

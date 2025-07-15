@@ -41,5 +41,30 @@ namespace OneScript.DebugProtocol.TcpServer
 
             return true;
         }
+
+        public static bool CheckReconcileRequest(byte[] data)
+        {
+            for (int i = 0; i < FORMAT_RECONCILE_MAGIC.Length; i++)
+            {
+                if (data[i] != FORMAT_RECONCILE_MAGIC[i]) 
+                    return false;
+            }
+
+            return true;
+        }
+
+        public static int EncodeFormatMarker(short transport, short dataVersion)
+        {
+            var marker = transport << 16;
+            return marker | dataVersion;
+        }
+        
+        public static (int, int) DecodeFormatMarker(int marker)
+        {
+            var transport = marker >> 16;
+            var dataVersion = marker & 0x0000FFFF;
+
+            return (transport, dataVersion);
+        }
     }
 }

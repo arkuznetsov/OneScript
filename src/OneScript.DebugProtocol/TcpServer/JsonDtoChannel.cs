@@ -12,18 +12,24 @@ namespace OneScript.DebugProtocol.TcpServer
         private readonly TcpClient _tcpClient;
         private readonly Stream _dataStream;
         
-        private bool _enabled;
+        private bool _enabled = true;
 
         public JsonDtoChannel(TcpClient tcpClient)
         {
             _tcpClient = tcpClient;
             _dataStream = tcpClient.GetStream();
         }
+        
+        public JsonDtoChannel(Stream dataStream)
+        {
+            _tcpClient = null;
+            _dataStream = dataStream;
+        }
 
         public void Dispose()
         {
             _dataStream.Dispose();
-            _tcpClient.Close();
+            _tcpClient?.Close();
             _enabled = false;
         }
 
@@ -55,6 +61,6 @@ namespace OneScript.DebugProtocol.TcpServer
             return JsonSerializer.CreateDefault().Deserialize<RpcCall>(reader);
         }
 
-        public bool Connected => _enabled && _tcpClient.Connected;
+        public bool Connected => _enabled && (_tcpClient?.Connected ?? true);
     }
 }

@@ -36,12 +36,13 @@ namespace VSCode.DebugAdapter.Transport
             switch (_transport)
             {
                 case TransportProtocols.Json:
-                    throw new NotImplementedException();
+                    commandsChannel = new JsonDtoChannel(_tcpClient);
+                    break;
                 case TransportProtocols.Binary:
                     commandsChannel = new BinaryChannel(_tcpClient);
                     break;
                 default:
-                    throw new InvalidOperationException("Should not get here. [Transport protocol selection]");
+                    throw new InvalidOperationException($"Should not get here. [Transport protocol selection] {_transport}");
             };
 
             var client = new OneScriptDebuggerClient(commandsChannel, _eventsListener, _protocolVersion);
@@ -88,9 +89,21 @@ namespace VSCode.DebugAdapter.Transport
                         return;
                     }
 
-                    var formatVersion = binaryReader.ReadInt32();
-                    Log.Verbose("Received format version {FormatVersion}", formatVersion);
-                    _protocolVersion = ProtocolVersions.Adjust(formatVersion);
+
+                    var formatMarker = binaryReader.ReadInt32();
+                    var (transport, version) = FormatReconcileUtils.DecodeFormatMarker(formatMarker);
+                    Log.Verbose("Received format marker {FormatVersion}. Transport {Transport}, Format {Format}",
+                        formatMarker,
+                        transport,
+                        version);
+
+                    if (transport != (int)TransportProtocols.Json)
+                    {
+                        throw new ApplicationException($"Transport protocol is out of range {transport}");
+                    }
+
+                    _transport = TransportProtocols.Json;
+                    _protocolVersion = ProtocolVersions.Adjust(formatMarker);
                     Log.Verbose("Active protocol version {ProtocolVersion}", _protocolVersion);
                 }
                 else

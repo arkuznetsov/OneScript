@@ -16,11 +16,16 @@ namespace OneScript.DebugProtocol
     /// <summary>
     /// TCP-канал, использующий стандартную Binary-сериализацию .NET
     /// </summary>
+    [Obsolete("Используется только со стороны адаптера, для работы со старыми версиями 1Script")]
     public sealed class BinaryChannel : ICommunicationChannel
     {
         private readonly TcpClient _client;
         private readonly NetworkStream _clientStream;
+#if NET48
         private readonly BinaryFormatter _serializer;
+#else
+        private readonly IFormatter _serializer = null;
+#endif
 
         private bool _enabled;
 
@@ -28,8 +33,12 @@ namespace OneScript.DebugProtocol
         {
             _client = client;
             _clientStream = _client.GetStream();
-            _serializer = new BinaryFormatter();
             _enabled = true;
+#if NET48
+            _serializer = new BinaryFormatter();
+#else
+            throw new NotSupportedException("Binary channel should be used only in .NET 48.");
+#endif
         }
 
         public bool Connected => _enabled && _client.Connected;
