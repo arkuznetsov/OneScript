@@ -21,7 +21,7 @@ namespace oscript
 
         public override int Execute()
         {
-            var tcpDebugServer = new BinaryTcpDebugServer(_port);
+            var tcpDebugServer = new TcpDebugServer(_port);
                     
             DebugController = tcpDebugServer.CreateDebugController();
             

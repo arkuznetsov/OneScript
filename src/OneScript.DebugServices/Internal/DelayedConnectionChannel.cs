@@ -10,9 +10,9 @@ using System.Net.Sockets;
 using OneScript.DebugProtocol;
 using OneScript.DebugProtocol.Abstractions;
 
-namespace OneScript.DebugServices
+namespace OneScript.DebugServices.Internal
 {
-    public class DelayedConnectionChannel : ICommunicationChannel
+    internal class DelayedConnectionChannel : ICommunicationChannel
     {
         private TcpListener _listener;
         private ICommunicationChannel _connectedChannel;
