@@ -1,0 +1,293 @@
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using Newtonsoft.Json;
+namespace OneScript.DebugProtocol.TcpServer
+{
+    public class JsonDtoConverter : JsonConverter<TcpProtocolDtoBase>
+    {
+        private const string TYPE_PROPERTY_NAME = "$type";
+        private const string VALUE_PROPERTY_NAME = "$value";
+
+        public override void WriteJson(JsonWriter writer, TcpProtocolDtoBase value, JsonSerializer serializer)
+        {
+            switch (value)
+            {
+                case RpcCall rpcCall:
+                    WriteCall(writer, rpcCall, serializer);
+                    break;
+                case RpcCallResult rpcCallResult:
+                    WriteCallResult(writer, rpcCallResult, serializer);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown type {value.GetType()}");
+            }
+        }
+
+        public override TcpProtocolDtoBase ReadJson(JsonReader reader, Type objectType, TcpProtocolDtoBase existingValue,
+            bool hasExistingValue, JsonSerializer serializer)
+        {
+            if (reader.TokenType != JsonToken.StartObject)
+            {
+                throw new JsonReaderException($"Unexpected token parsing {reader.TokenType} for {objectType}");
+            }
+            
+            AdvanceReader(reader);
+            var typeName = ReadExpectedProperty<string>(TYPE_PROPERTY_NAME, reader, serializer);
+            AdvanceReader(reader);
+            
+            Type requiredType;
+            if (objectType == typeof(TcpProtocolDtoBase))
+            {
+                // нам не важен тип, прочитать надо тот, который указан в потоке.
+                requiredType = typeName switch
+                {
+                    nameof(RpcCall) => typeof(RpcCall),
+                    nameof(RpcCallResult) => typeof(RpcCallResult),
+                    _ => throw new JsonSerializationException(
+                        $"Unexpected object type in Json. Expected one of {objectType.Name}, got {typeName}")
+                };
+            }
+            else if (typeName != objectType.Name)
+            {
+                // нам важен тип и он в потоке не такой
+                throw new JsonSerializationException($"Unexpected object type in Json. Expected {objectType.Name}, got {typeName}");
+            }
+            else
+            {
+                requiredType = objectType;
+            }
+
+            TcpProtocolDtoBase readResult;
+            if (requiredType == typeof(RpcCall))
+            {
+                readResult = ReadRpcCall(reader, serializer);
+            }
+            else if (requiredType == typeof(RpcCallResult))
+            {
+                readResult = ReadRpcCallResult(reader, serializer);
+            }
+            else
+            {
+                readResult = null;
+                Trace.Fail($"Unexpected type {requiredType}");
+            }
+            
+            return readResult;
+        }
+
+        private RpcCall ReadRpcCall(JsonReader reader, JsonSerializer serializer)
+        {
+            var value = new RpcCall();
+            while (reader.TokenType != JsonToken.EndObject)
+            {
+                if (reader.TokenType != JsonToken.PropertyName)
+                {
+                    throw new JsonReaderException($"Unexpected token parsing {reader.TokenType}, expected property name");
+                }
+                
+                var propName = (string)reader.Value;
+                AdvanceReader(reader);
+                switch (propName)
+                {
+                    case nameof(RpcCall.Id):
+                        value.Id = serializer.Deserialize<string>(reader);
+                        break;
+                    case nameof(RpcCall.ServiceName):
+                        value.ServiceName = serializer.Deserialize<string>(reader);
+                        break;
+                    case nameof(RpcCall.Parameters):
+                        value.Parameters = DeserializeTypedArray(reader, serializer);
+                        break; 
+                }
+                AdvanceReader(reader);
+            }
+            
+            return value;
+        }
+        
+        private RpcCallResult ReadRpcCallResult(JsonReader reader, JsonSerializer serializer)
+        {
+            var value = new RpcCallResult();
+            while (reader.TokenType != JsonToken.EndObject)
+            {
+                if (reader.TokenType != JsonToken.PropertyName)
+                {
+                    throw new JsonReaderException($"Unexpected token parsing {reader.TokenType}, expected property name");
+                }
+                
+                var propName = (string)reader.Value;
+                AdvanceReader(reader);
+                switch (propName)
+                {
+                    case nameof(RpcCallResult.Id):
+                        value.Id = serializer.Deserialize<string>(reader);
+                        break;
+                    case nameof(RpcCallResult.ServiceName):
+                        value.ServiceName = serializer.Deserialize<string>(reader);
+                        break;
+                    case nameof(RpcCallResult.ReturnValue):
+                        value.ReturnValue = ReadTypedValue(reader, serializer);
+                        break;
+                }
+                AdvanceReader(reader);
+            }
+            
+            return value;
+        }
+
+        private object[] DeserializeTypedArray(JsonReader reader, JsonSerializer serializer)
+        {
+            if (reader.TokenType != JsonToken.StartArray)
+            {
+                throw new JsonReaderException($"Unexpected token parsing {reader.TokenType}, expected array");
+            }
+
+            var data = new List<object>();
+            while (reader.TokenType != JsonToken.EndArray)
+            {
+                AdvanceReader(reader);
+                if (reader.TokenType == JsonToken.EndArray)
+                    break;
+                
+                var item = ReadTypedValue(reader, serializer);
+                data.Add(item);
+            }
+
+            return data.ToArray();
+        }
+
+        private object ReadTypedValue(JsonReader reader, JsonSerializer serializer)
+        {
+            AdvanceReader(reader);
+            var typeName = ReadExpectedProperty<string>(TYPE_PROPERTY_NAME, reader, serializer);
+            AdvanceReader(reader);
+            
+            var type = GetSupportedType(typeName);
+            var value = ReadExpectedProperty(type, VALUE_PROPERTY_NAME, reader, serializer);
+            AdvanceReader(reader);
+
+            if (reader.TokenType != JsonToken.EndObject)
+            {
+                throw new JsonSerializationException("Unexpected token parsing TypedValue " + reader.TokenType);
+            }
+
+            return value;
+        }
+
+        private Type GetSupportedType(string typeName)
+        {
+            bool isArray = false;
+            if (typeName.EndsWith("[]"))
+            {
+                isArray = true;
+                typeName = typeName.Substring(0, typeName.Length - 2);
+            }
+            
+            var baseType = typeName switch
+            {
+                nameof(Breakpoint) => typeof(Breakpoint),
+                nameof(StackFrame) => typeof(StackFrame),
+                nameof(ThreadStopReason) => typeof(ThreadStopReason),
+                nameof(Variable) => typeof(Variable),
+                nameof(ExceptionBreakpointFilter) => typeof(ExceptionBreakpointFilter),
+                nameof(RpcExceptionDto) => typeof(RpcExceptionDto),
+                nameof(String) => typeof(string),
+                nameof(Int32) => typeof(int),
+                nameof(Boolean) => typeof(bool),
+                _ => throw new JsonSerializationException($"Unexpected type name for typed value {typeName}")
+            };
+            
+            return isArray ? baseType.MakeArrayType() : baseType; 
+        }
+
+        private T ReadExpectedProperty<T>(string propertyName, JsonReader reader, JsonSerializer serializer)
+        {
+            return (T)ReadExpectedProperty(typeof(T), propertyName, reader, serializer);
+        }
+        
+        private object ReadExpectedProperty(Type targetType, string propertyName, JsonReader reader, JsonSerializer serializer)
+        {
+            if (reader.TokenType != JsonToken.PropertyName)
+            {
+                throw new JsonReaderException($"Unexpected token '{reader.TokenType}' while reading property {propertyName}");
+            }
+
+            var propNameInStream = (string)reader.Value;
+            if (propNameInStream != propertyName)
+            {
+                throw new JsonSerializationException($"Unexpected property {propNameInStream}, expected {propertyName}");
+            }
+            
+            AdvanceReader(reader);
+            var value = serializer.Deserialize(reader, targetType);
+            if (value != null && value.GetType() != targetType)
+            {
+                throw new JsonSerializationException($"Unexpected object type returned: {value.GetType()}, Expected {targetType}");
+            }
+            
+            return value;
+        }
+
+        private static void AdvanceReader(JsonReader reader)
+        {
+            if (!reader.Read())
+            {
+                throw new JsonReaderException($"Unexpected end of Json");
+            }
+        }
+
+        private void WriteCall(JsonWriter writer, RpcCall rpcCall, JsonSerializer serializer)
+        {
+            writer.WriteStartObject();
+            WriteBaseClass(writer, rpcCall);
+            writer.WritePropertyName(nameof(rpcCall.Parameters));
+            
+            writer.WriteStartArray();
+            foreach (var callParameter in rpcCall.Parameters)
+            {
+                WriteTypedValue(writer, serializer, callParameter);
+            }
+            writer.WriteEndArray();
+            
+            writer.WriteEndObject();
+        }
+        
+        private void WriteCallResult(JsonWriter writer, RpcCallResult rpcCallResult, JsonSerializer serializer)
+        {
+            writer.WriteStartObject();
+            
+            WriteBaseClass(writer, rpcCallResult);
+            writer.WritePropertyName(nameof(rpcCallResult.ReturnValue));
+            WriteTypedValue(writer, serializer, rpcCallResult.ReturnValue);
+            
+            writer.WriteEndObject();
+        }
+
+        private static void WriteTypedValue(JsonWriter writer, JsonSerializer serializer, object callParameter)
+        {
+            writer.WriteStartObject();
+                
+            writer.WritePropertyName(TYPE_PROPERTY_NAME);
+            writer.WriteValue(callParameter.GetType().Name);
+                
+            writer.WritePropertyName(VALUE_PROPERTY_NAME);
+            serializer.Serialize(writer, callParameter);
+                
+            writer.WriteEndObject();
+        }
+
+        private void WriteBaseClass(JsonWriter writer, TcpProtocolDtoBase dto)
+        {
+            writer.WritePropertyName(TYPE_PROPERTY_NAME);
+            writer.WriteValue(dto.GetType().Name);
+            
+            writer.WritePropertyName(nameof(dto.Id));
+            writer.WriteValue(dto.Id);
+            
+            writer.WritePropertyName(nameof(dto.ServiceName));
+            writer.WriteValue(dto.ServiceName);
+        }
+    }
+}

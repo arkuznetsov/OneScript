@@ -8,10 +8,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace OneScript.DebugProtocol
 {
-    [DataContract, Serializable]
+    [DataContract, JsonObject, Serializable]
     public class StackFrame : IVariableLocator
     {
         [DataMember]

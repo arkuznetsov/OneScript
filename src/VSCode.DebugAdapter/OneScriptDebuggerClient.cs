@@ -105,6 +105,11 @@ namespace VSCode.DebugAdapter
             WriteCommand(filters);
         }
 
+        public void SetExceptionBreakpoints(ExceptionBreakpointFilter[] filters)
+        {
+            WriteCommand(filters);
+        }
+
         public Breakpoint[] SetMachineBreakpoints(Breakpoint[] breaksToSet)
         {
             WriteCommand(breaksToSet);
