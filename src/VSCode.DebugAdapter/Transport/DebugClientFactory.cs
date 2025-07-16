@@ -85,32 +85,34 @@ namespace VSCode.DebugAdapter.Transport
                 {
                     Log.Verbose("We have data available. Reading reconcile response");
                     var dataBuffer = new byte[requiredDataLength];
-                    using var binaryReader = new BinaryReader(stream, Encoding.ASCII, true);
-                    binaryReader.Read(dataBuffer, 0, FormatReconcileUtils.FORMAT_RECONCILE_RESPONSE_PREFIX.Length);
-
-                    if (!FormatReconcileUtils.CheckReconcilePrefix(dataBuffer))
+                    using (var binaryReader = new BinaryReader(stream, Encoding.ASCII, true))
                     {
-                        Log.Verbose("Received data is not reconcile message");
-                        SelectSafestFormat();
-                        return;
+                        binaryReader.Read(dataBuffer, 0, FormatReconcileUtils.FORMAT_RECONCILE_RESPONSE_PREFIX.Length);
+
+                        if (!FormatReconcileUtils.CheckReconcilePrefix(dataBuffer))
+                        {
+                            Log.Verbose("Received data is not reconcile message");
+                            SelectSafestFormat();
+                            return;
+                        }
+
+
+                        var formatMarker = binaryReader.ReadInt32();
+                        var (transport, version) = FormatReconcileUtils.DecodeFormatMarker(formatMarker);
+                        Log.Verbose("Received format marker {FormatVersion}. Transport {Transport}, Format {Format}",
+                            formatMarker,
+                            transport,
+                            version);
+
+                        if (transport != (int)TransportProtocols.Json)
+                        {
+                            throw new ApplicationException($"Transport protocol is out of range {transport}");
+                        }
+
+                        _transport = TransportProtocols.Json;
+                        _protocolVersion = ProtocolVersions.Adjust(version);
+                        Log.Verbose("Active protocol version {ProtocolVersion}", _protocolVersion);
                     }
-
-
-                    var formatMarker = binaryReader.ReadInt32();
-                    var (transport, version) = FormatReconcileUtils.DecodeFormatMarker(formatMarker);
-                    Log.Verbose("Received format marker {FormatVersion}. Transport {Transport}, Format {Format}",
-                        formatMarker,
-                        transport,
-                        version);
-
-                    if (transport != (int)TransportProtocols.Json)
-                    {
-                        throw new ApplicationException($"Transport protocol is out of range {transport}");
-                    }
-
-                    _transport = TransportProtocols.Json;
-                    _protocolVersion = ProtocolVersions.Adjust(formatMarker);
-                    Log.Verbose("Active protocol version {ProtocolVersion}", _protocolVersion);
                 }
                 else
                 {

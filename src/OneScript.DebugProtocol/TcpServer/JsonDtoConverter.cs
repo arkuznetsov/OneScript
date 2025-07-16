@@ -73,8 +73,7 @@ namespace OneScript.DebugProtocol.TcpServer
             }
             else
             {
-                readResult = null;
-                Trace.Fail($"Unexpected type {requiredType}");
+                throw new InvalidOperationException($"Unknown type {requiredType}"); 
             }
             
             return readResult;
