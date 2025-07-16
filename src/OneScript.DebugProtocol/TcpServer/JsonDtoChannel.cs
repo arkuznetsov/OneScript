@@ -58,7 +58,7 @@ namespace OneScript.DebugProtocol.TcpServer
             using var streamReader = new StreamReader(_dataStream, Encoding.UTF8, false, 1024, leaveOpen: true);
             using var reader = new JsonTextReader(streamReader);
 
-            return JsonSerializer.CreateDefault().Deserialize<RpcCall>(reader);
+            return JsonSerializer.CreateDefault().Deserialize<TcpProtocolDtoBase>(reader);
         }
 
         public bool Connected => _enabled && (_tcpClient?.Connected ?? true);

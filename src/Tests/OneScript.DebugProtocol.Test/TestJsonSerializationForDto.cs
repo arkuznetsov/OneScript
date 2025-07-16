@@ -6,11 +6,10 @@ using AutoFixture;
 using AutoFixture.Kernel;
 using FluentAssertions;
 using Newtonsoft.Json;
-using OneScript.DebugProtocol;
 using OneScript.DebugProtocol.TcpServer;
 using Xunit;
 
-namespace OneScript.Debugger.Tests
+namespace OneScript.DebugProtocol.Test
 {
     public class TestJsonSerializationForDto
     {
@@ -34,6 +33,27 @@ namespace OneScript.Debugger.Tests
                 var resultFromJson = JsonConvert.DeserializeObject<RpcCallResult>(jsonResult);
                 resultFromJson.Should().BeEquivalentTo(result);
             }
+        }
+
+        [Fact]
+        public void CanReadWriteCallWithNullParams()
+        {
+            var call = RpcCall.Create("Test", "Test", null);
+            var jsonCall = JsonConvert.SerializeObject(call);
+            var callFromJson = JsonConvert.DeserializeObject<RpcCall>(jsonCall);
+            
+            callFromJson.Should().BeEquivalentTo(call);
+        }
+        
+        [Fact]
+        public void CanReadWriteResultWithNullValue()
+        {
+            var call = RpcCall.Create("Test", "Test", null);
+            var result = RpcCallResult.Respond(call, null);
+            var jsonResult = JsonConvert.SerializeObject(result);
+            var resultFromJson = JsonConvert.DeserializeObject<RpcCallResult>(jsonResult);
+            
+            resultFromJson.Should().BeEquivalentTo(result);
         }
 
         public static IEnumerable<object[]> DebuggerServiceCalls()

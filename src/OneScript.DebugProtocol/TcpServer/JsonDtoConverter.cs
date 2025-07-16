@@ -28,10 +28,7 @@ namespace OneScript.DebugProtocol.TcpServer
         public override TcpProtocolDtoBase ReadJson(JsonReader reader, Type objectType, TcpProtocolDtoBase existingValue,
             bool hasExistingValue, JsonSerializer serializer)
         {
-            if (reader.TokenType != JsonToken.StartObject)
-            {
-                throw new JsonReaderException($"Unexpected token parsing {reader.TokenType} for {objectType}");
-            }
+            CheckExpectedToken(reader, JsonToken.StartObject, $"ReadObject {objectType}");
             
             AdvanceReader(reader);
             var typeName = ReadExpectedProperty<string>(TYPE_PROPERTY_NAME, reader, serializer);
@@ -82,10 +79,7 @@ namespace OneScript.DebugProtocol.TcpServer
             var value = new RpcCall();
             while (reader.TokenType != JsonToken.EndObject)
             {
-                if (reader.TokenType != JsonToken.PropertyName)
-                {
-                    throw new JsonReaderException($"Unexpected token parsing {reader.TokenType}, expected property name");
-                }
+                CheckExpectedToken(reader, JsonToken.PropertyName, "ReadRpcCall");
                 
                 var propName = (string)reader.Value;
                 AdvanceReader(reader);
@@ -112,10 +106,7 @@ namespace OneScript.DebugProtocol.TcpServer
             var value = new RpcCallResult();
             while (reader.TokenType != JsonToken.EndObject)
             {
-                if (reader.TokenType != JsonToken.PropertyName)
-                {
-                    throw new JsonReaderException($"Unexpected token parsing {reader.TokenType}, expected property name");
-                }
+                CheckExpectedToken(reader, JsonToken.PropertyName, "ReadRpcCallResult");
                 
                 var propName = (string)reader.Value;
                 AdvanceReader(reader);
@@ -139,11 +130,11 @@ namespace OneScript.DebugProtocol.TcpServer
 
         private object[] DeserializeTypedArray(JsonReader reader, JsonSerializer serializer)
         {
-            if (reader.TokenType != JsonToken.StartArray)
-            {
-                throw new JsonReaderException($"Unexpected token parsing {reader.TokenType}, expected array");
-            }
-
+            if (reader.TokenType == JsonToken.Null)
+                return null;
+                
+            CheckExpectedToken(reader, JsonToken.StartArray, "TypedArray");
+            
             var data = new List<object>();
             while (reader.TokenType != JsonToken.EndArray)
             {
@@ -160,6 +151,13 @@ namespace OneScript.DebugProtocol.TcpServer
 
         private object ReadTypedValue(JsonReader reader, JsonSerializer serializer)
         {
+            if (reader.TokenType == JsonToken.Null)
+            {
+                return null;
+            }
+            
+            CheckExpectedToken(reader, JsonToken.StartObject, "TypedValue");
+            
             AdvanceReader(reader);
             var typeName = ReadExpectedProperty<string>(TYPE_PROPERTY_NAME, reader, serializer);
             AdvanceReader(reader);
@@ -174,6 +172,14 @@ namespace OneScript.DebugProtocol.TcpServer
             }
 
             return value;
+        }
+
+        private void CheckExpectedToken(JsonReader reader, JsonToken expectedToken, string context)
+        {
+            if (reader.TokenType != expectedToken)
+            {
+                throw new JsonReaderException($"Unexpected token {reader.TokenType}, ({context}). Expected {expectedToken}");
+            }
         }
 
         private Type GetSupportedType(string typeName)
@@ -209,11 +215,8 @@ namespace OneScript.DebugProtocol.TcpServer
         
         private object ReadExpectedProperty(Type targetType, string propertyName, JsonReader reader, JsonSerializer serializer)
         {
-            if (reader.TokenType != JsonToken.PropertyName)
-            {
-                throw new JsonReaderException($"Unexpected token '{reader.TokenType}' while reading property {propertyName}");
-            }
-
+            CheckExpectedToken(reader, JsonToken.PropertyName, $"reading expected property {propertyName}");
+            
             var propNameInStream = (string)reader.Value;
             if (propNameInStream != propertyName)
             {
@@ -243,14 +246,21 @@ namespace OneScript.DebugProtocol.TcpServer
             writer.WriteStartObject();
             WriteBaseClass(writer, rpcCall);
             writer.WritePropertyName(nameof(rpcCall.Parameters));
-            
-            writer.WriteStartArray();
-            foreach (var callParameter in rpcCall.Parameters)
+
+            if (rpcCall.Parameters != null)
             {
-                WriteTypedValue(writer, serializer, callParameter);
+                writer.WriteStartArray();
+                foreach (var callParameter in rpcCall.Parameters)
+                {
+                    WriteTypedValue(writer, serializer, callParameter);
+                }
+                writer.WriteEndArray();
             }
-            writer.WriteEndArray();
-            
+            else
+            {
+                writer.WriteNull();
+            }
+
             writer.WriteEndObject();
         }
         
@@ -265,15 +275,21 @@ namespace OneScript.DebugProtocol.TcpServer
             writer.WriteEndObject();
         }
 
-        private static void WriteTypedValue(JsonWriter writer, JsonSerializer serializer, object callParameter)
+        private static void WriteTypedValue(JsonWriter writer, JsonSerializer serializer, object valueToWrite)
         {
+            if (valueToWrite == null)
+            {
+                writer.WriteNull();
+                return;
+            }
+            
             writer.WriteStartObject();
                 
             writer.WritePropertyName(TYPE_PROPERTY_NAME);
-            writer.WriteValue(callParameter.GetType().Name);
+            writer.WriteValue(valueToWrite.GetType().Name);
                 
             writer.WritePropertyName(VALUE_PROPERTY_NAME);
-            serializer.Serialize(writer, callParameter);
+            serializer.Serialize(writer, valueToWrite);
                 
             writer.WriteEndObject();
         }

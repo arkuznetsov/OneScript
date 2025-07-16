@@ -4,34 +4,16 @@ using System.Text;
 using FluentAssertions;
 using Newtonsoft.Json;
 using OneScript.DebugProtocol.TcpServer;
+using OneScript.Exceptions;
 using Xunit;
 
 namespace OneScript.DebugProtocol.Test
 {
     public class JsonChannelTest
     {
-        [Fact]
-        public void TestObjectReading()
-        {
-            var dataStream = new MemoryStream();
-            var streamWriter = new StreamWriter(dataStream, Encoding.UTF8, 1024, leaveOpen: true);
-            var rpcCall = RpcCall.Create("Test", "Hello World", 1, 2, new Breakpoint()
-            {
-                Line = 2, Condition = "true"
-            });
-            
-            var jsonString = JsonConvert.SerializeObject(rpcCall);
-            streamWriter.Write(jsonString);
-            streamWriter.Close();
-            dataStream.Position = 0;
-            
-            var channel = new JsonDtoChannel(dataStream);
-            var actual = channel.Read<RpcCall>();
-            actual.Should().BeEquivalentTo(rpcCall);
-        }
         
         [Fact]
-        public void TestObjectWriting()
+        public void TestObjectWritingReadingCall()
         {
             var dataStream = new MemoryStream();
             var rpcCall = RpcCall.Create("Test", "Hello World", 1, 2, new Breakpoint()
@@ -44,6 +26,46 @@ namespace OneScript.DebugProtocol.Test
             dataStream.Position = 0;
             var actual = channel.Read<RpcCall>();
             actual.Should().BeEquivalentTo(rpcCall);
+        }
+        
+        [Fact]
+        public void TestObjectWritingReadingResponseSuccess()
+        {
+            var dataStream = new MemoryStream();
+            var rpcCall = RpcCall.Create("Test", "Hello World", 1, 2, new Breakpoint()
+            {
+                Line = 2, Condition = "true"
+            });
+
+            var rpcResponse = RpcCallResult.Respond(rpcCall, new Variable
+            {
+                Name = "Test",
+                Presentation = "1"
+            });
+            
+            var channel = new JsonDtoChannel(dataStream);
+            channel.Write(rpcResponse);
+            dataStream.Position = 0;
+            var actual = channel.Read<RpcCallResult>();
+            actual.Should().BeEquivalentTo(rpcResponse);
+        }
+        
+        [Fact]
+        public void TestObjectWritingReadingResponseException()
+        {
+            var dataStream = new MemoryStream();
+            var rpcCall = RpcCall.Create("Test", "Hello World", 1, 2, new Breakpoint()
+            {
+                Line = 2, Condition = "true"
+            });
+
+            var rpcResponse = RpcCallResult.Exception(rpcCall, new RuntimeException("Test", "Test"));
+            
+            var channel = new JsonDtoChannel(dataStream);
+            channel.Write(rpcResponse);
+            dataStream.Position = 0;
+            var actual = channel.Read<RpcCallResult>();
+            actual.Should().BeEquivalentTo(rpcResponse);
         }
 
         [Fact]
