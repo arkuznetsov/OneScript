@@ -191,7 +191,6 @@ namespace OneScript.DebugProtocol.TcpServer
         private Type GetSupportedType(string typeName)
         {
             bool isArray = false;
-            bool isArray = false;
             if (typeName.EndsWith("[]", StringComparison.Ordinal))
             {
                 isArray = true;
