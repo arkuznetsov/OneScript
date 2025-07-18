@@ -71,7 +71,7 @@ namespace OneScript.DebugServices.Internal
             var tcpStream = tcpClient.GetStream();
             
             var buffer = new byte[FormatReconcileUtils.FORMAT_RECONCILE_MAGIC.Length];
-            tcpStream.Read(buffer, 0, buffer.Length);
+            ReadStream(tcpStream, buffer, buffer.Length);
 
             if (FormatReconcileUtils.CheckReconcileRequest(buffer))
             {
@@ -84,6 +84,21 @@ namespace OneScript.DebugServices.Internal
             }
             _reconciled = true;
             _connectedChannel = new JsonDtoChannel(tcpClient);
+        }
+        
+        private void ReadStream(Stream stream, byte[] buffer, int length)
+        {
+            int readPosition = 0;
+            int bytesReceived = 0;
+
+            while (bytesReceived < length)
+            {
+                bytesReceived = stream.Read(buffer, readPosition, length - bytesReceived);
+                if (bytesReceived == 0)
+                    throw new IOException("Unexpected end of stream");
+                
+                readPosition += bytesReceived;
+            }
         }
 
         public bool Connected => _connectedChannel?.Connected ?? false;
