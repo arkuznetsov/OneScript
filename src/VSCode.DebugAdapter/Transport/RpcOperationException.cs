@@ -5,18 +5,15 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-
 using System;
-using Newtonsoft.Json;
+using OneScript.DebugProtocol.TcpServer;
 
-namespace OneScript.DebugProtocol.TcpServer
+namespace VSCode.DebugAdapter.Transport
 {
-    [Serializable]
-    [JsonConverter(typeof(JsonDtoConverter))]
-    public abstract class TcpProtocolDtoBase
+    public class RpcOperationException : ApplicationException
     {
-        public string Id { get; set; }
-        
-        public string ServiceName { get; set; }
+        public RpcOperationException(RpcExceptionDto exceptionData) : base(exceptionData.Description)
+        {
+        }
     }
 }
