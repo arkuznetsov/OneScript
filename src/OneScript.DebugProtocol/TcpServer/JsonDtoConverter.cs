@@ -8,6 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 namespace OneScript.DebugProtocol.TcpServer
 {
@@ -82,26 +83,13 @@ namespace OneScript.DebugProtocol.TcpServer
         private RpcCall ReadRpcCall(JsonReader reader, JsonSerializer serializer)
         {
             var value = new RpcCall();
-            while (reader.TokenType != JsonToken.EndObject)
+            FillRpcDto(value, reader, serializer, (jsonReader, jsonSerializer, prop) =>
             {
-                CheckExpectedToken(reader, JsonToken.PropertyName, "ReadRpcCall");
-                
-                var propName = (string)reader.Value;
-                AdvanceReader(reader);
-                switch (propName)
+                if (prop == nameof(RpcCall.Parameters))
                 {
-                    case nameof(RpcCall.Id):
-                        value.Id = serializer.Deserialize<string>(reader);
-                        break;
-                    case nameof(RpcCall.ServiceName):
-                        value.ServiceName = serializer.Deserialize<string>(reader);
-                        break;
-                    case nameof(RpcCall.Parameters):
-                        value.Parameters = DeserializeTypedArray(reader, serializer);
-                        break; 
+                    value.Parameters = DeserializeTypedArray(reader, serializer);
                 }
-                AdvanceReader(reader);
-            }
+            });
             
             return value;
         }
@@ -109,9 +97,29 @@ namespace OneScript.DebugProtocol.TcpServer
         private RpcCallResult ReadRpcCallResult(JsonReader reader, JsonSerializer serializer)
         {
             var value = new RpcCallResult();
+            FillRpcDto(value, reader, serializer, (jsonReader, jsonSerializer, prop) =>
+            {
+                if (prop == nameof(RpcCallResult.ReturnValue))
+                {
+                    value.ReturnValue = ReadTypedValue(reader, serializer);
+                }
+            });
+            
+            return value;
+        }
+
+        private void FillRpcDto(
+            TcpProtocolDtoBase value,
+            JsonReader reader,
+            JsonSerializer serializer,
+            Action<JsonReader, JsonSerializer, string> readFunction,
+            [CallerMemberName] string caller = ""
+            )
+        {
+            bool hasId = false, hasServiceName = false;
             while (reader.TokenType != JsonToken.EndObject)
             {
-                CheckExpectedToken(reader, JsonToken.PropertyName, "ReadRpcCallResult");
+                CheckExpectedToken(reader, JsonToken.PropertyName, caller);
                 
                 var propName = (string)reader.Value;
                 AdvanceReader(reader);
@@ -119,18 +127,23 @@ namespace OneScript.DebugProtocol.TcpServer
                 {
                     case nameof(RpcCallResult.Id):
                         value.Id = serializer.Deserialize<string>(reader);
+                        hasId = true;
                         break;
                     case nameof(RpcCallResult.ServiceName):
                         value.ServiceName = serializer.Deserialize<string>(reader);
+                        hasServiceName = true;
                         break;
-                    case nameof(RpcCallResult.ReturnValue):
-                        value.ReturnValue = ReadTypedValue(reader, serializer);
+                    default:
+                        readFunction(reader, serializer, propName);
                         break;
                 }
                 AdvanceReader(reader);
             }
-            
-            return value;
+
+            if (!hasId || !hasServiceName)
+            {
+                throw new JsonSerializationException($"Required properties missing ({caller})");
+            }
         }
 
         private object[] DeserializeTypedArray(JsonReader reader, JsonSerializer serializer)
