@@ -22,7 +22,8 @@ namespace OneScript.DebugServices.Internal
 
         // NB! должен быть согласован с перечислением TransportProtocols в адаптере
         private const short JSON_FORMAT_MARKER = 2;
-        private const short SUPPORTED_FORMAT_VERSION = 4;
+        // NB! должен быть согласован с файлом ProtocolVersions в адаптере
+        private const short SUPPORTED_FORMAT_VERSION = 3;
         
         private bool _reconciled;
 

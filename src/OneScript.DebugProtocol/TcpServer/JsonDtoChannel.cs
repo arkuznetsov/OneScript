@@ -45,13 +45,22 @@ namespace OneScript.DebugProtocol.TcpServer
             if (!_enabled)
                 throw new ObjectDisposedException(nameof(JsonDtoChannel));
             
-            using var streamWriter = new StreamWriter(_dataStream, Encoding.UTF8, 1024, leaveOpen: true);
-            using var writer = new JsonTextWriter(streamWriter);
+            var content = JsonConvert.SerializeObject(data);
+            var contentBytes = Encoding.UTF8.GetBytes(content);
 
-            JsonSerializer.CreateDefault().Serialize(writer, data);
-            writer.Flush();
+            using (var bufferedStream = new MemoryStream(contentBytes.Length + sizeof(int)))
+            {
+                using (var writer = new BinaryWriter(bufferedStream, Encoding.UTF8))
+                {
+                    writer.Write(contentBytes.Length);
+                    writer.Write(contentBytes, 0, contentBytes.Length);
+
+                    bufferedStream.Position = 0;
+                    bufferedStream.CopyTo(_dataStream);
+                }
+            }
         }
-
+        
         public T Read<T>()
         {
             return (T)Read();
@@ -61,13 +70,36 @@ namespace OneScript.DebugProtocol.TcpServer
         {
             if (!_enabled)
                 throw new ObjectDisposedException(nameof(JsonDtoChannel));
-            
-            using var streamReader = new StreamReader(_dataStream, Encoding.UTF8, false, 1024, leaveOpen: true);
-            using var reader = new JsonTextReader(streamReader);
 
-            return JsonSerializer.CreateDefault().Deserialize<TcpProtocolDtoBase>(reader);
+            using (var socketReader = new BinaryReader(_dataStream, Encoding.UTF8, true))
+            {
+                var contentLength = socketReader.ReadInt32();
+                var contentBuffer = new byte[contentLength];
+                ReadStream(socketReader, contentBuffer, contentLength);
+
+                using (var textReader = new StreamReader(new MemoryStream(contentBuffer), Encoding.UTF8, false))
+                {
+                    using var reader = new JsonTextReader(textReader);
+                    return JsonSerializer.CreateDefault().Deserialize<TcpProtocolDtoBase>(reader);
+                }
+            }
         }
 
+        private void ReadStream(BinaryReader reader, byte[] buffer, int length)
+        {
+            int readPosition = 0;
+            int bytesReceived = 0;
+
+            while (bytesReceived < length)
+            {
+                bytesReceived = reader.Read(buffer, readPosition, length - bytesReceived);
+                if (bytesReceived == 0)
+                    throw new IOException("Unexpected end of stream");
+                
+                readPosition += bytesReceived;
+            }
+        }
+        
         public bool Connected => _enabled && (_tcpClient?.Connected ?? true);
     }
 }
