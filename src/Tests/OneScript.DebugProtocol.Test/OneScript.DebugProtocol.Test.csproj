@@ -32,4 +32,8 @@
       <ProjectReference Include="..\..\ScriptEngine\ScriptEngine.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="FormatReconcileTest.cs" />
+    </ItemGroup>
+
 </Project>

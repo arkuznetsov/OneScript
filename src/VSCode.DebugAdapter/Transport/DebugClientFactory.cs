@@ -61,7 +61,8 @@ namespace VSCode.DebugAdapter.Transport
         {
             Log.Verbose("Sending reconcile message");
             var stream = client.GetStream();
-            stream.Write(FormatReconcileUtils.FORMAT_RECONCILE_MAGIC, 0, FormatReconcileUtils.FORMAT_RECONCILE_MAGIC.Length);
+            var magic = FormatReconcileUtils.GetReconcileMagic();
+            stream.Write(magic, 0, magic.Length);
 
             var pollResult = client.Client
                 .Poll(FormatReconcileUtils.FORMAT_RECONCILE_TIMEOUT.Milliseconds * 1000, SelectMode.SelectRead);
@@ -93,6 +94,7 @@ namespace VSCode.DebugAdapter.Transport
                         {
                             Log.Verbose("Received data is not reconcile message");
                             SelectSafestFormat();
+                            EmptyIncomingBuffer(client);
                             return;
                         }
 
@@ -116,13 +118,32 @@ namespace VSCode.DebugAdapter.Transport
                 }
                 else
                 {
+                    Log.Verbose("We waited for full reconcile data, but it hadn't arrived");
                     SelectSafestFormat();
+                    EmptyIncomingBuffer(client);
                 }
             }
             else
             {
+                Log.Verbose("No reconciliation response");
                 SelectSafestFormat();
             }
+        }
+
+        private void EmptyIncomingBuffer(TcpClient client)
+        {
+            if (client.Available == 0)
+                return;
+
+            var buf = new byte[1024];
+            do
+            {
+                var hasBytes = client.Available;
+                var bytesRead = client.GetStream().Read(buf, 0, Math.Min(hasBytes, buf.Length));
+                if (bytesRead == 0)
+                    return;
+                
+            } while (client.Available > 0);
         }
 
         private void ReadStream(BinaryReader reader, byte[] buffer, int length)
@@ -142,7 +163,6 @@ namespace VSCode.DebugAdapter.Transport
         
         private void SelectSafestFormat()
         {
-            Log.Verbose("Reconcilation failed, selecting safest format");
             _protocolVersion = ProtocolVersions.SafestVersion;
             _transport = TransportProtocols.Binary;
         }

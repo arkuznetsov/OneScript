@@ -69,36 +69,14 @@ namespace OneScript.DebugServices.Internal
             _listener = null;
             
             var tcpStream = tcpClient.GetStream();
-            
-            var buffer = new byte[FormatReconcileUtils.FORMAT_RECONCILE_MAGIC.Length];
-            ReadStream(tcpStream, buffer, buffer.Length);
 
-            if (FormatReconcileUtils.CheckReconcileRequest(buffer))
+            if (FormatReconcileUtils.CheckReconcileRequest(tcpStream))
             {
                 // Да, это наш фейковый заголовок
-                var formatInfo = FormatReconcileUtils.EncodeFormatMarker(JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
-                
-                using var binaryWriter = new BinaryWriter(tcpStream, Encoding.UTF8, true);
-                binaryWriter.Write(FormatReconcileUtils.FORMAT_RECONCILE_RESPONSE_PREFIX);
-                binaryWriter.Write(formatInfo);
+                FormatReconcileUtils.WriteReconcileResponse(tcpStream, JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
             }
             _reconciled = true;
             _connectedChannel = new JsonDtoChannel(tcpClient);
-        }
-        
-        private void ReadStream(Stream stream, byte[] buffer, int length)
-        {
-            int readPosition = 0;
-            int bytesReceived = 0;
-
-            while (bytesReceived < length)
-            {
-                bytesReceived = stream.Read(buffer, readPosition, length - bytesReceived);
-                if (bytesReceived == 0)
-                    throw new IOException("Unexpected end of stream");
-                
-                readPosition += bytesReceived;
-            }
         }
 
         public bool Connected => _connectedChannel?.Connected ?? false;
