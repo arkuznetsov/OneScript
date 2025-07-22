@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.IO;
 using System.Text;
+using OneScript.DebugProtocol.Internal;
 
 namespace OneScript.DebugProtocol.TcpServer
 {
@@ -19,12 +20,14 @@ namespace OneScript.DebugProtocol.TcpServer
         /// </summary>
         public static byte[] GetReconcileMagic()
         {
-            using (var memoryStream = new MemoryStream(128))
+            using (var memoryStream = new MemoryStream(256))
             {
                 using (var writer = new BinaryFormatWriter(memoryStream))
                 {
                     writer.WriteHeader(1, 1);
-                    writer.WriteStringRecord(1, "1C1C1C");
+                    writer.WriteLibrary(typeof(RpcCall).Assembly, 1);
+                    writer.WriteClassWithNoFields(typeof(RpcCall), 1, 1);
+                    //writer.WriteInstance(new object[]{Array.Empty<object>(), "$NonExistentMethod$", nameof(IDebuggerService)});
                     writer.WriteEnd();
                 }
 

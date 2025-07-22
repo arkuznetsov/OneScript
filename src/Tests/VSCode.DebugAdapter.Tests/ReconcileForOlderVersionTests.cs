@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using FluentAssertions;
+using OneScript.DebugProtocol;
 using OneScript.DebugProtocol.TcpServer;
 using Xunit;
 
@@ -16,11 +17,33 @@ namespace VSCode.DebugAdapter.Tests
             using (var stream = new MemoryStream(FormatReconcileUtils.GetReconcileMagic()))
             {
                 var reader = new BinaryFormatter();
+                
                 var value = reader.Deserialize(stream);
-                value.Should().Be("1C1C1C");
+                value.Should().BeEquivalentTo(new RpcCall());
             }
         }
 
+        [Fact(Skip = "Manual run only")]
+        public void DumpBinaryStream()
+        {
+            const string filePath = "<path>";
+            using (var stream = new MemoryStream(FormatReconcileUtils.GetReconcileMagic()))
+            {
+                var serializer = new BinaryFormatter();
+                var sampleCall = RpcCall.Create(nameof(IDebuggerService), "$NonExistent$");
+                
+                using (var dest = new MemoryStream())
+                {
+                    serializer.Serialize(dest, sampleCall);
+                    using (var file = new FileStream(filePath, FileMode.Create))
+                    {
+                        dest.Position = 0;
+                        dest.CopyTo(file);
+                    }
+                }
+            }
+        }
+        
         [Fact]
         public void ExchangeReconcileVersions()
         {
