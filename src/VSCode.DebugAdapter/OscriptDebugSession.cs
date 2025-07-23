@@ -185,8 +185,6 @@ namespace VSCode.DebugAdapter
         public override void SetExceptionBreakpoints(Response response, dynamic arguments)
         {
             LogCommandReceived();
-            Log.Verbose("Exception breakpoints: {@Data}", arguments);
-            
             var acceptedFilters = new List<VSCodeDebug.Breakpoint>();
             var filters = new List<(string Id, string Condition)>();
 
@@ -210,7 +208,6 @@ namespace VSCode.DebugAdapter
         public override void SetBreakpoints(Response response, dynamic arguments)
         {
             LogCommandReceived();
-            Log.Verbose("Breakpoints: {@Data}", arguments);
             
             if ((bool)arguments.sourceModified)
             {
