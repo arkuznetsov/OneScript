@@ -24,11 +24,7 @@ namespace VSCode.DebugAdapter.Transport
             
             var client = new TcpClient();
             TryConnect(client, debuggerUri);
-            var waitSec = 15;
-            Log.Information("Waiting {waitSec} seconds", waitSec);
-            Thread.Sleep(waitSec * 1000);
-            Log.Information("Waiting completed");
-
+            
             return client;
         }
         

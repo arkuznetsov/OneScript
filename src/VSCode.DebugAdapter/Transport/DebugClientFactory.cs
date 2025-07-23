@@ -132,18 +132,33 @@ namespace VSCode.DebugAdapter.Transport
 
         private void EmptyIncomingBuffer(TcpClient client)
         {
-            if (client.Available == 0)
-                return;
+            Log.Verbose("Reading out all incoming buffer");
+            const int waitForDataInterval = 300;
+            const int gotNothingAttempts = 3;
+            
+            int gotNothingCount = 0;
 
             var buf = new byte[1024];
             do
             {
                 var hasBytes = client.Available;
-                var bytesRead = client.GetStream().Read(buf, 0, Math.Min(hasBytes, buf.Length));
-                if (bytesRead == 0)
-                    return;
+                if (hasBytes > 0)
+                {
+                    gotNothingCount = 0;
+                    var bytesRead = client.GetStream().Read(buf, 0, Math.Min(hasBytes, buf.Length));
+                    if (bytesRead == 0)
+                        return;
+                }
+                else
+                {
+                    gotNothingCount++;
+                }
+
+                Log.Verbose("We have {Bytes} incoming bytes ({Attempt}). Waiting for more", hasBytes, gotNothingCount);
+                Thread.Sleep(waitForDataInterval);
                 
-            } while (client.Available > 0);
+            } while (gotNothingCount < gotNothingAttempts);
+            Log.Verbose("Reading out completed");
         }
 
         private void ReadStream(BinaryReader reader, byte[] buffer, int length)
