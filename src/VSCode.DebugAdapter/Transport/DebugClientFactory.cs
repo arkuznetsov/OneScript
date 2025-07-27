@@ -113,7 +113,7 @@ namespace VSCode.DebugAdapter.Transport
 
                         _transport = TransportProtocols.Json;
                         _protocolVersion = ProtocolVersions.Adjust(version);
-                        Log.Verbose("Active protocol version {ProtocolVersion}", _protocolVersion);
+                        Log.Debug("Active protocol version {ProtocolVersion}", _protocolVersion);
                     }
                 }
                 else
