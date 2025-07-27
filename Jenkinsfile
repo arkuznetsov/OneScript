@@ -230,10 +230,11 @@ pipeline {
                 unstash 'dist'
                 unstash 'vsix'
                 
-                // Положит файлы дистрибутива в целевую папку
-                publishRelease('preview', true)
                 // Положит описание для сайта
                 publishReleaseNotes('preview')
+                
+                // Положит файлы дистрибутива в целевую папку
+                publishRelease('preview', true)
             }
         }
         
@@ -265,12 +266,12 @@ def publishRelease(codename, isNumbered) {
         ZIPS=../built
         NUGET=../built/nuget
         VSIX=../built/vscode
-        mv $ZIPS/*.zip ./
-        mv $VSIX/*.vsix ./
+        mv \$ZIPS/*.zip ./
+        mv \$VSIX/*.vsix ./
         
         TARGET="/var/www/oscript.io/download/versions/${codename}/"
-        mkdir -p $TARGET
-        sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
+        mkdir -p \$TARGET
+        sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . \$TARGET
         """.stripIndent()
         
         if (isNumbered) {
@@ -278,8 +279,8 @@ def publishRelease(codename, isNumbered) {
             
             sh """
             TARGET="/var/www/oscript.io/download/versions/${version}/"
-            mkdir -p $TARGET
-            sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
+            mkdir -p \$TARGET
+            sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . \$TARGET
             """.stripIndent()
         }
     }
