@@ -212,17 +212,7 @@ pipeline {
                 unstash 'dist'
                 unstash 'vsix'
 
-                dir('targetContent') {
-                    sh '''
-                    ZIPS=../built
-                    VSIX=../built/vscode
-                    mv $ZIPS/*.zip ./
-                    mv $VSIX/*.vsix ./
-                    
-                    TARGET="/var/www/oscript.io/download/versions/night-build/"
-                    sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
-                    '''.stripIndent()
-                }
+                publishRelease('night-build', false)
             }
         }
 
@@ -234,42 +224,16 @@ pipeline {
             agent { label 'master' }
             options { skipDefaultCheckout() }
             
-            environment {
-                CODENAME = 'preview'
-            }
-            
             steps {
                 cleanWs()
-                checkout scm
+                checkout scm // чтобы получить файл release-notes
                 unstash 'dist'
                 unstash 'vsix'
-
-                dir('targetContent') {
-                    sh '''
-                    ZIPS=../built
-                    NUGET=../built/nuget
-                    VSIX=../built/vscode
-                    mv $ZIPS/*.zip ./
-                    mv $VSIX/*.vsix ./
-                    
-                    TARGET="/var/www/oscript.io/download/versions/${CODENAME}/"
-                    sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
-                    '''.stripIndent()
-                }
                 
-                dir('markdownContent') {
-                    script {
-                        def version="${env.VersionPrefix}-${env.VersionSuffix}".replaceAll("\\.", "_")
-                        def targetDir='/var/www/oscript.io/markdown/versions'
-                        
-                        sh """
-                        cp ../install/release-notes.md "./${env.CODENAME}.md"
-                        cp ../install/release-notes.md "./${version}.md"
-                        
-                        sudo rsync -rv . ${targetDir}
-                        """.stripIndent()        
-                    }
-                }
+                // Положит файлы дистрибутива в целевую папку
+                publishRelease('preview', true)
+                // Положит описание для сайта
+                publishReleaseNotes('preview')
             }
         }
         
@@ -294,3 +258,44 @@ pipeline {
         }
     }
 }
+
+def publishRelease(codename, isNumbered) {
+    dir('targetContent') {
+        sh """
+        ZIPS=../built
+        NUGET=../built/nuget
+        VSIX=../built/vscode
+        mv $ZIPS/*.zip ./
+        mv $VSIX/*.vsix ./
+        
+        TARGET="/var/www/oscript.io/download/versions/${codename}/"
+        mkdir -p $TARGET
+        sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
+        """.stripIndent()
+        
+        if (isNumbered) {
+            def version="${env.VersionPrefix}-${env.VersionSuffix}".replaceAll("\\.", "_")
+            
+            sh """
+            TARGET="/var/www/oscript.io/download/versions/${version}/"
+            mkdir -p $TARGET
+            sudo rsync -rv --delete --exclude mddoc*.zip --exclude *.src.rpm . $TARGET
+            """.stripIndent()
+        }
+    }
+}
+
+def publishReleaseNotes(codename) {
+    dir('markdownContent') {
+        def version="${env.VersionPrefix}-${env.VersionSuffix}".replaceAll("\\.", "_")
+        def targetDir='/var/www/oscript.io/markdown/versions'
+        
+        sh """
+        cp ../install/release-notes.md "./${codename}.md"
+        cp ../install/release-notes.md "./${version}.md"
+        
+        sudo rsync -rv . ${targetDir}
+        """.stripIndent()        
+    }
+}
+
