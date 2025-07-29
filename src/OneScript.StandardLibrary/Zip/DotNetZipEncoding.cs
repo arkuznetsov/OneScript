@@ -32,12 +32,17 @@ namespace OneScript.StandardLibrary.Zip
                 if (_encodingIsSet)
                     return;
                 
-                SetDefaultEncoding(encoding);
+                SetDefaultEncodingViaProperty(encoding);
                 _encodingIsSet = true;
             }
         }
 
-        private static void SetDefaultEncoding(Encoding encoding)
+        private static void SetDefaultEncodingViaProperty(Encoding encoding)
+        {
+            ZipFile.DefaultEncoding = encoding;
+        }
+        
+        private static void SetDefaultEncodingViaReflection(Encoding encoding)
         {
             const string fieldName = "_defaultEncoding";
 
