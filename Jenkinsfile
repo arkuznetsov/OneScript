@@ -273,7 +273,10 @@ pipeline {
                         }
                     }
                     steps {
-                        publishDockerImage('v1')
+                        script {
+                            def codename = env.TAG_NAME ? env.TAG_NAME : 'latest'
+                            publishDockerImage('v1', codename)
+                        }
                     }
                 }
 
@@ -288,8 +291,10 @@ pipeline {
                         }
                     }
                     steps {
-                        publishDockerImage('v2')
-                    }
+                        script {
+                            def codename = env.TAG_NAME ? env.TAG_NAME : 'dev'
+                            publishDockerImage('v2', codename)
+                        }
                 }
             }
         }
@@ -336,9 +341,8 @@ def publishReleaseNotes(codename) {
     }
 }
 
-def publishDockerImage(flavour) {
-    def dockerTag = env.TAG_NAME ? env.TAG_NAME : env.BRANCH_NAME
-    def imageName = "evilbeaver/onescript:${dockerTag}"
+def publishDockerImage(flavour, codename) {
+    def imageName = "evilbeaver/onescript:${codename}"
 
     docker.build(
         imageName,
