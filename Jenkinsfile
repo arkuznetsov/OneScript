@@ -199,8 +199,9 @@ pipeline {
         }
 
         stage ('Publishing night-build') {
-            when { anyOf {
-                branch 'develop';
+            when { 
+                anyOf {
+                    branch 'develop';
                 }
             }
             agent { label 'master' }
@@ -217,8 +218,9 @@ pipeline {
         }
 
         stage ('Publishing preview') {
-            when { anyOf {
-                branch 'release/preview';
+            when { 
+                anyOf {
+                    branch 'release/preview';
                 }
             }
             agent { label 'master' }
@@ -254,6 +256,40 @@ pipeline {
                 
                 withCredentials([string(credentialsId: 'NuGetToken', variable: 'NUGET_TOKEN')]) {
                     bat "chcp $outputEnc > nul\r\n\"${tool 'MSBuild'}\" Build.csproj /t:PublishNuget /p:NugetToken=$NUGET_TOKEN"
+                }
+            }
+        }
+
+        stage ('Publishing docker-images') {
+            parallel {
+                stage('Build v1') {
+                    agent { label 'linux' }
+                    when { 
+                        anyOf {
+                            branch 'latest'
+                            expression { 
+                                return env.TAG_NAME && env.TAG_NAME.startsWith('v1.')
+                            }
+                        }
+                    }
+                    steps {
+                        publishDockerImage('v1')
+                    }
+                }
+
+                stage('Build v2') {
+                    agent { label 'linux' }
+                    when { 
+                        anyOf {
+                            branch 'develop'
+                            expression { 
+                                return env.TAG_NAME && env.TAG_NAME.startsWith('v2.')
+                            }
+                        }
+                    }
+                    steps {
+                        publishDockerImage('v2')
+                    }
                 }
             }
         }
@@ -298,5 +334,15 @@ def publishReleaseNotes(codename) {
         sudo rsync -rv . ${targetDir}
         """.stripIndent()        
     }
+}
+
+def publishDockerImage(flavour) {
+    def dockerTag = env.TAG_NAME ? env.TAG_NAME : env.BRANCH_NAME
+    def imageName = "evilbeaver/onescript:${dockerTag}"
+
+    docker.build(
+        imageName,
+        "--load -f install/builders/base-image/Dockerfile_${flavour} ."
+    ).push()
 }
 
