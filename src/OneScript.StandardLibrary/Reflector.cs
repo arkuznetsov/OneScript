@@ -187,8 +187,8 @@ namespace OneScript.StandardLibrary
                 {
                     var expandedValue = EmptyAnnotationsTable();
                     var row = expandedValue.Add();
-                    row.Set(expandedValue.Columns.Find("Имя"), ValueFactory.Create(annotationValue.Name));
-                    row.Set(expandedValue.Columns.Find("Параметры"), FillAnnotationParameters(annotationValue.Parameters));
+                    row.Set(expandedValue.Columns.FindColumnByName("Имя"), ValueFactory.Create(annotationValue.Name));
+                    row.Set(expandedValue.Columns.FindColumnByName("Параметры"), FillAnnotationParameters(annotationValue.Parameters));
                     parameterRow.Set(parameterValueColumn, row);
                 }
                 else

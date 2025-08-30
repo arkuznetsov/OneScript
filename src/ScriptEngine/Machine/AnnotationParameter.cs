@@ -25,7 +25,7 @@ namespace ScriptEngine.Machine
             {
                 return string.Format("[{0}]", ValueIndex);
             }
-            if (ValueIndex == UNDEFINED_VALUE_INDEX)
+            if (ValueIndex == UNDEFINED_VALUE_INDEX && RuntimeValue == null)
             {
                 return Name;
             }
