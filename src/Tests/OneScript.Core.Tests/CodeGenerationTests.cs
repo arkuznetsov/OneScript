@@ -59,13 +59,13 @@ namespace OneScript.Core.Tests
         [Fact]
         public void AnnotationsAsValuesInCode() {
             var code = @"
-            &Аннотация(Параметр = &ТожеАннотация(&СТожеПараметромАннотацией, П2 = &СТожеПараметромАннотацией))
-            Процедура Процедура1() Экспорт
-            КонецПроцедуры";
+            &РђРЅРЅРѕС‚Р°С†РёСЏ(РџР°СЂР°РјРµС‚СЂ = &РўРѕР¶РµРђРЅРЅРѕС‚Р°С†РёСЏ(&РЎРўРѕР¶РµРџР°СЂР°РјРµС‚СЂРѕРјРђРЅРЅРѕС‚Р°С†РёРµР№, Рџ2 = &РЎРўРѕР¶РµРџР°СЂР°РјРµС‚СЂРѕРјРђРЅРЅРѕС‚Р°С†РёРµР№))
+            РџСЂРѕС†РµРґСѓСЂР° РџСЂРѕС†РµРґСѓСЂР°1() Р­РєСЃРїРѕСЂС‚
+            РљРѕРЅРµС†РџСЂРѕС†РµРґСѓСЂС‹";
             var image = BuildModule(code, Mock.Of<IBslProcess>());
             image.Should().NotBeNull();
-            // В константах будет только значение первого уровня: &ТожеАннотация.
-            // Внутри нее уже будет сериализованное значение
+            // Р’ РєРѕРЅСЃС‚Р°РЅС‚Р°С… Р±СѓРґРµС‚ С‚РѕР»СЊРєРѕ Р·РЅР°С‡РµРЅРёРµ РїРµСЂРІРѕРіРѕ СѓСЂРѕРІРЅСЏ: &РўРѕР¶РµРђРЅРЅРѕС‚Р°С†РёСЏ.
+            // Р’РЅСѓС‚СЂРё РЅРµРµ СѓР¶Рµ Р±СѓРґРµС‚ СЃРµСЂРёР°Р»РёР·РѕРІР°РЅРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ
             image.Constants.Should().HaveCount(3);
             image.Methods.Should().HaveCount(1);
             image.Fields.Should().BeEmpty();
@@ -83,7 +83,7 @@ namespace OneScript.Core.Tests
             var parameterValue = (BslAnnotationValue)annotationParameter.Value;
             parameterValue.Parameters.Should().HaveCount(2);
             parameterValue.Parameters.ElementAt(0).Value.Should().BeOfType<BslAnnotationValue>();
-            parameterValue.Parameters.ElementAt(1).Name.Should().Be("П2");
+            parameterValue.Parameters.ElementAt(1).Name.Should().Be("Рџ2");
             parameterValue.Parameters.ElementAt(1).Value.Should().BeOfType<BslAnnotationValue>();
         }
 
