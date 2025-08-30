@@ -45,6 +45,8 @@ namespace OneScript.Values
             return other is BslStringValue sv ? _value.Equals(sv._value) : base.Equals(other);
         }
 
+        public override int GetHashCode() => _value.GetHashCode();
+
         public override int CompareTo(BslValue other)
         {
             if (ReferenceEquals(null, other))

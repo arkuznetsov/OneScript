@@ -44,6 +44,8 @@ namespace OneScript.Values
             
             return base.Equals(other);
         }
+
+        public override int GetHashCode() => _value.GetHashCode();
         
         public override TypeDescriptor SystemType => BasicTypes.Date;
         
