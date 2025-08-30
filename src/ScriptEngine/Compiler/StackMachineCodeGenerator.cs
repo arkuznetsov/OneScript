@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using OneScript.Compilation;
 using OneScript.Compilation.Binding;
 using OneScript.Contexts;
@@ -1170,23 +1171,71 @@ namespace ScriptEngine.Compiler
 
         private BslAnnotationParameter MakeAnnotationParameter(AnnotationParameterNode param)
         {
-            BslAnnotationParameter result;
+            var constValue = MakeAnnotationParameterValueConstant(param);
+            return new BslAnnotationParameter(param.Name, constValue.runtimeValue) { ConstantValueIndex = constValue.constNumber };
+        }
+
+        private (BslPrimitiveValue runtimeValue, int constNumber) MakeAnnotationParameterValueConstant(AnnotationParameterNode param)
+        {
+            if (param.AnnotationNode != null)
+            {
+                var constNumber = CreateAnnotationConstDefinition(param.AnnotationNode);
+                var runtimeValue = _module.Constants[constNumber];
+                return (runtimeValue, constNumber);
+            }
+            else
             if (param.Value.Type != LexemType.NotALexem)
             {
                 var constDef = CreateConstDefinition(param.Value);
                 var constNumber = GetConstNumber(constDef);
                 var runtimeValue = _module.Constants[constNumber];
-                result = new BslAnnotationParameter(param.Name, runtimeValue)
-                {
-                    ConstantValueIndex = constNumber
-                };
+                return (runtimeValue, constNumber);
             }
             else
             {
-                result = new BslAnnotationParameter(param.Name, null);
+                return (null, -1);
+            }
+        }
+
+        private int CreateAnnotationConstDefinition(AnnotationNode annotationNode)
+        {
+            var runtimeValue = new BslAnnotationValue(annotationNode.Name);
+            var presentation = AnnotationConstPresentation(annotationNode, runtimeValue);
+            ConstDefinition cDef = new ConstDefinition() {
+                Type = DataType.Annotation,
+                Presentation = presentation
+            };
+            var result = RegisterAnnotationConst(cDef, runtimeValue);
+            return result;
+        }
+
+        private string AnnotationConstPresentation(AnnotationNode annotationNode, BslAnnotationValue annotationRuntimeValue)
+        {
+            var sb = new StringBuilder("&");
+            sb.Append(annotationNode.Name);
+            if (annotationNode.Children.Count > 0)
+            {
+                var prefix = "(";
+                foreach (var child in annotationNode.Children)
+                {
+                    sb.Append(prefix);
+                    prefix = ",";
+
+                    var parameter = (AnnotationParameterNode)child;
+                    var constValue = MakeAnnotationParameterValueConstant(parameter);
+                    sb.Append(parameter.Name);
+                    sb.Append("=");
+                    sb.Append(constValue.constNumber);
+
+                    var parameterValue = constValue.constNumber != -1
+                        ? new BslAnnotationParameter(parameter.Name, _module.Constants[constValue.constNumber]) { ConstantValueIndex = constValue.constNumber }
+                        : new BslAnnotationParameter(parameter.Name);
+                    annotationRuntimeValue.Parameters.Add(parameterValue);
+                }
+                sb.Append(")");
             }
 
-            return result;
+            return sb.ToString();
         }
 
         private IEnumerable<BslAnnotationAttribute> GetAnnotations(AnnotatableNode parent)
@@ -1235,7 +1284,7 @@ namespace ScriptEngine.Compiler
             };
             return cDef;
         }
-        
+
         private int GetConstNumber(in ConstDefinition cDef)
         {
             var idx = _constMap.IndexOf(cDef);
@@ -1245,6 +1294,14 @@ namespace ScriptEngine.Compiler
                 _constMap.Add(cDef);
                 _module.Constants.Add((BslPrimitiveValue)ValueFactory.Parse(cDef.Presentation, cDef.Type));
             }
+            return idx;
+        }
+
+        private int RegisterAnnotationConst(in ConstDefinition cDef, BslAnnotationValue value)
+        {
+            var idx = _constMap.Count;
+            _constMap.Add(cDef);
+            _module.Constants.Add(value);
             return idx;
         }
 

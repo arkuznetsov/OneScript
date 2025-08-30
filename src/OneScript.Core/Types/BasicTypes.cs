@@ -18,6 +18,7 @@ namespace OneScript.Types
         public static TypeDescriptor Undefined { get; }
         public static TypeDescriptor Type { get; }
         public static TypeDescriptor Null { get; }
+        public static TypeDescriptor Annotation { get; }
         
         /// <summary>
         /// Тип, устанавливаемый объектам, которые не задали свой тип
@@ -34,6 +35,7 @@ namespace OneScript.Types
             Undefined = new TypeDescriptor(typeof(BslUndefinedValue), "Неопределено", "Undefined");
             Type = new TypeDescriptor(typeof(BslTypeValue), "Тип", "Type");
             Null = new TypeDescriptor(typeof(BslNullValue), "Null", "Null");
+            Annotation = new TypeDescriptor(typeof(BslAnnotationValue), "Аннотация", "Annotation");
             UnknownType = new TypeDescriptor(typeof(BslValue), "$UnknownType$", "$UnknownType$");
         }
     }

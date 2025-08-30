@@ -37,7 +37,7 @@ namespace OneScript.Contexts
 
     public class BslAnnotationParameter
     {
-        public BslAnnotationParameter(string name, BslPrimitiveValue value)
+        public BslAnnotationParameter(string name, BslPrimitiveValue value = null)
         {
             Name = name;
             Value = value;
