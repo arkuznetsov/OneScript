@@ -25,8 +25,7 @@ namespace OneScript.Values
 
         public List<BslAnnotationParameter> Parameters { get; } = new List<BslAnnotationParameter>();
 
-        public override TypeDescriptor SystemType => BasicTypes.Annotation;
-
+        
         public override int CompareTo(BslValue other) {
             var msg = new BilingualString("Сравнение на больше/меньше для данного типа не поддерживается",
                 "Comparison for less/greater is not supported for this type");
