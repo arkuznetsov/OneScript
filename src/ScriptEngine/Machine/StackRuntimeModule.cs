@@ -31,6 +31,8 @@ namespace ScriptEngine.Machine
         internal IList<SymbolBinding> VariableRefs { get; } = new List<SymbolBinding>();
         
         internal IList<SymbolBinding> MethodRefs { get; } = new List<SymbolBinding>();
+
+        internal IList<BslAnnotationValue> AnnotationValues { get; } = new List<BslAnnotationValue>();
         
         #region IExecutableModule members
 

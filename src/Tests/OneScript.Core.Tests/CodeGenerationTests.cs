@@ -64,9 +64,7 @@ namespace OneScript.Core.Tests
             КонецПроцедуры";
             var image = BuildModule(code, Mock.Of<IBslProcess>());
             image.Should().NotBeNull();
-            // В константах будет только значение первого уровня: &ТожеАннотация.
-            // Внутри нее уже будет сериализованное значение
-            image.Constants.Should().HaveCount(3);
+            image.Constants.Should().HaveCount(0);
             image.Methods.Should().HaveCount(1);
             image.Fields.Should().BeEmpty();
 

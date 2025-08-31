@@ -47,10 +47,8 @@ namespace OneScript.Values
                 foreach (var parameter in Parameters)
                 {
                     sb.Append(prefix);
+                    sb.Append(parameter);
                     prefix = ",";
-                    sb.Append(parameter.Name);
-                    sb.Append("=");
-                    sb.Append(parameter.ConstantValueIndex);
                 }
                 sb.Append(")");
             }

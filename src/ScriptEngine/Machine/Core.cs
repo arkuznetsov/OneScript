@@ -161,8 +161,7 @@ namespace ScriptEngine.Machine
         Number,
         Date,
         Boolean,
-        Null,
-        Annotation
+        Null
     }
 
     [Serializable]

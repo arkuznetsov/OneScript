@@ -47,6 +47,5 @@ namespace OneScript.Contexts
         
         public BslPrimitiveValue Value { get; }
 
-        public int ConstantValueIndex { get; set; } = -1;
     }
 }

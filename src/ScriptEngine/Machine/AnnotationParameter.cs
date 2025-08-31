@@ -5,6 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
+using System.Collections.Generic;
 
 namespace ScriptEngine.Machine
 {
@@ -12,24 +13,25 @@ namespace ScriptEngine.Machine
     public struct AnnotationParameter
     {
         public string Name;
-        public int ValueIndex;
 
         [NonSerialized]
         public IValue RuntimeValue;
         
         public const int UNDEFINED_VALUE_INDEX = -1;
 
+        
         public override string ToString()
         {
-            if (string.IsNullOrEmpty(Name))
+            var list = new List<string>();
+            if (!string.IsNullOrEmpty(Name))
             {
-                return string.Format("[{0}]", ValueIndex);
+                list.Add(Name);
             }
-            if (ValueIndex == UNDEFINED_VALUE_INDEX && RuntimeValue == null)
+            if (RuntimeValue != null)
             {
-                return Name;
+                list.Add(RuntimeValue.ToString());
             }
-            return string.Format("{0}=[{1}]", Name, RuntimeValue.ToString());
+            return string.Join("=", list);
         }
     }
 }
