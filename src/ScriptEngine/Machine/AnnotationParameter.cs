@@ -4,31 +4,20 @@ Mozilla Public License, v.2.0. If a copy of the MPL
 was not distributed with this file, You can obtain one 
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
-using System;
-using System.Collections.Generic;
+using OneScript.Commons;
 
 namespace ScriptEngine.Machine
 {
-    [Serializable]
     public struct AnnotationParameter
     {
         public string Name;
 
-        [NonSerialized]
         public IValue RuntimeValue;
 
         public override readonly string ToString()
         {
-            var list = new List<string>();
-            if (!string.IsNullOrEmpty(Name))
-            {
-                list.Add(Name);
-            }
-            if (RuntimeValue != null)
-            {
-                list.Add(RuntimeValue.ToString());
-            }
-            return string.Join("=", list);
+            return Utils.NameAndValuePresentation(Name, RuntimeValue);
         }
+
     }
 }

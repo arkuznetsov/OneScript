@@ -8,7 +8,6 @@ using System;
 
 namespace ScriptEngine.Machine
 {
-    [Serializable]
     public struct AnnotationDefinition
     {
         public string Name;
