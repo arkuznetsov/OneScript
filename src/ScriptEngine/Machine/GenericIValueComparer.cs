@@ -39,7 +39,7 @@ namespace ScriptEngine.Machine
 
         public int Compare(IValue x, IValue y)
         {
-            if (ReferenceEquals(x, default) && ReferenceEquals(y, default))
+           if (ReferenceEquals(x, y))
                 return 0;
             
             if (x.SystemType == y.SystemType)
