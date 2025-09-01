@@ -16,11 +16,8 @@ namespace ScriptEngine.Machine
 
         [NonSerialized]
         public IValue RuntimeValue;
-        
-        public const int UNDEFINED_VALUE_INDEX = -1;
 
-        
-        public override string ToString()
+        public override readonly string ToString()
         {
             var list = new List<string>();
             if (!string.IsNullOrEmpty(Name))

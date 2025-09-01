@@ -1186,7 +1186,6 @@ namespace ScriptEngine.Compiler
                     var parameterValue = MakeAnnotationParameterValueConstant(parameter);
                     runtimeValue.Parameters.Add(new BslAnnotationParameter(parameter.Name, parameterValue));
                 }
-                var constNumber = CreateAnnotationConstDefinition(runtimeValue);
                 return runtimeValue;
             }
             else
@@ -1201,12 +1200,6 @@ namespace ScriptEngine.Compiler
             {
                 return null;
             }
-        }
-
-        private int CreateAnnotationConstDefinition(BslAnnotationValue runtimeValue)
-        {
-            var result = RegisterAnnotationConst(runtimeValue);
-            return result;
         }
 
         private IEnumerable<BslAnnotationAttribute> GetAnnotations(AnnotatableNode parent)
@@ -1265,13 +1258,6 @@ namespace ScriptEngine.Compiler
                 _constMap.Add(cDef);
                 _module.Constants.Add((BslPrimitiveValue)ValueFactory.Parse(cDef.Presentation, cDef.Type));
             }
-            return idx;
-        }
-
-        private int RegisterAnnotationConst(BslAnnotationValue value)
-        {
-            var idx = _module.AnnotationValues.Count;
-            _module.AnnotationValues.Add(value);
             return idx;
         }
 
