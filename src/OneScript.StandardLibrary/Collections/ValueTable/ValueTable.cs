@@ -636,14 +636,15 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             readonly List<ValueTableSortRule> Rules;
 
-            readonly GenericIValueComparer _comparer = new GenericIValueComparer();
+            readonly GenericIValueComparer _comparer;
 
-            public RowComparator(List<ValueTableSortRule> Rules)
+            public RowComparator(IBslProcess process, List<ValueTableSortRule> Rules)
             {
-                if (Rules.Count() == 0)
+                if (Rules.Count == 0)
                     throw RuntimeException.InvalidArgumentValue();
 
                 this.Rules = Rules;
+                 _comparer = new GenericIValueComparer(process);
             }
 
             private int OneCompare(ValueTableRow x, ValueTableRow y, ValueTableSortRule Rule)
@@ -661,7 +662,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 int i = 0, r;
                 while ((r = OneCompare(x, y, Rules[i])) == 0)
                 {
-                    if (++i >= Rules.Count())
+                    if (++i >= Rules.Count)
                         return 0;
                 }
 
@@ -678,9 +679,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// </param>
         /// <param name="comparator">СравнениеЗначений - правила сравнения значений при наличии различных типов данных в колонке.</param>
         [ContextMethod("Сортировать", "Sort")]
-        public void Sort(string columns, IValue comparator = null)
+        public void Sort(IBslProcess process, string columns, IValue comparator = null)
         {
-            _rows.Sort(new RowComparator(GetSortRules(columns)));
+            _rows.Sort(new RowComparator(process, GetSortRules(columns)));
         }
 
         /// <summary>

@@ -9,11 +9,25 @@ using System;
 using System.Collections.Generic;
 using OneScript.Values;
 using ScriptEngine.Machine.Contexts;
+using OneScript.Execution;
 
 namespace ScriptEngine.Machine
 {
     public class GenericIValueComparer : IEqualityComparer<IValue>, IComparer<IValue>
     {
+        private readonly IBslProcess _process;
+        private readonly Func<IValue, IValue, int> _comparer;
+
+        public GenericIValueComparer()
+        {
+            _comparer = CompareAsStrings;
+        }
+
+        public GenericIValueComparer(IBslProcess proc)
+        {
+            _process = proc;
+            _comparer = CompareByPresentations;
+        }
 
         public bool Equals(IValue x, IValue y)
         {
@@ -38,6 +52,16 @@ namespace ScriptEngine.Machine
             return CLR_obj.GetHashCode();
         }
 
+        private int CompareAsStrings(IValue x, IValue y)
+        {
+            return x.ToString().CompareTo(y.ToString());
+        }
+
+        private int CompareByPresentations(IValue x, IValue y)
+        {
+            return ((BslValue)x).ToString(_process).CompareTo(((BslValue)y).ToString(_process));
+        }
+
         public int Compare(IValue x, IValue y)
         {
            if (ReferenceEquals(x, y))
@@ -46,7 +70,7 @@ namespace ScriptEngine.Machine
             if (x is IComparable && x.SystemType == y.SystemType )
                 return x.CompareTo(y);
             else
-                return x.ToString().CompareTo(y.ToString());
+                return _comparer(x,y);
         }
     }
 }
