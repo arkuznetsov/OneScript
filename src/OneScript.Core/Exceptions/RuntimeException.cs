@@ -33,6 +33,13 @@ namespace OneScript.Exceptions
                 $"Вызов безнадёжно устаревшего метода {name}",
                 $"Call to deprecated method {name}");
         }
+        
+        public static RuntimeException DeprecatedPropertyAccess(string name)
+        {
+            return new RuntimeException(
+                $"Обращение к безнадёжно устаревшему свойству {name}",
+                $"Access to deprecated property {name}");
+        }
 
         public static RuntimeException MethodNotFoundException(string methodName)
         {

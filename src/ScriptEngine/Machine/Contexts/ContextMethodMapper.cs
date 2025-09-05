@@ -98,7 +98,11 @@ namespace ScriptEngine.Machine.Contexts
                 var mainMapping = new InternalMethInfo(methodInfo, mainMarkup);
                 mappedMethods.Add(mainMapping);
                 mappedMethods.AddRange(methodInfo.GetCustomAttributes<DeprecatedNameAttribute>()
-                    .Select(deprecation => new InternalMethInfo(methodInfo, deprecation))
+                    .Select(deprecation => new InternalMethInfo(methodInfo, new ContextMethodAttribute(deprecation.Name, default)
+                    {
+                        IsDeprecated = true,
+                        ThrowOnUse = deprecation.ThrowOnUse
+                    }))
                 );
             }
 
@@ -117,19 +121,6 @@ namespace ScriptEngine.Machine.Contexts
             {
                 _clrMethod = new ContextMethodInfo(target, binding);
                 MethodSignature = CreateMetadata(target, binding, _clrMethod.InjectsProcess);
-                
-                _method = new Lazy<ContextCallableDelegate<TInstance>>(() =>
-                {
-                    var isFunc = target.ReturnType != typeof(void);
-                    return isFunc ? CreateFunction(_clrMethod) : CreateProcedure(_clrMethod);
-                });
-            }
-            
-            public InternalMethInfo(MethodInfo target, DeprecatedNameAttribute deprecation)
-            {
-                _clrMethod = new ContextMethodInfo(target, deprecation);
-                MethodSignature = CreateMetadata(target, deprecation.Name, null, true, deprecation.ThrowOnUse,
-                    _clrMethod.InjectsProcess);
                 
                 _method = new Lazy<ContextCallableDelegate<TInstance>>(() =>
                 {

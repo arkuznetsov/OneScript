@@ -37,16 +37,6 @@ namespace OneScript.Contexts
             Name = binding.Name;
             Alias = binding.Alias;
         }
-        
-        public ContextMethodInfo(MethodInfo realMethod, DeprecatedNameAttribute deprecationInfo)
-        {
-            _realMethod = realMethod;
-            InjectsProcess = _realMethod.GetParameters().FirstOrDefault()?.ParameterType == typeof(IBslProcess);
-            Name = deprecationInfo.Name;
-            Alias = null;
-            IsDeprecated = true;
-            IsForbiddenToUse = deprecationInfo.ThrowOnUse;
-        }
 
         public override Type ReturnType => _realMethod.ReturnType;
 

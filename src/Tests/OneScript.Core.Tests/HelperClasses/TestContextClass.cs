@@ -41,8 +41,12 @@ namespace OneScript.Core.Tests
 			// Do nothing
 		}
 		
+		[DeprecatedName("OldBslProp")]
 		[ContextProperty("СвойствоBsl","BslProp")]
 		public string BslProp { get; set; }
+		
+		[ContextProperty("УстаревшееСвойство","ObsoleteProperty", IsDeprecated = true)]
+		public string ObsoleteProp { get; set; }
 
 		public override bool IsIndexed => true;
 

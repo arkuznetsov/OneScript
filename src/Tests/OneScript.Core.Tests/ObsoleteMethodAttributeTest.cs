@@ -32,6 +32,30 @@ namespace OneScript.Core.Tests
         private ISystemLogWriter LogWriter { get; set; }
 
         [Fact]
+        public void TestLoggingOfObsoletePropAccess()
+        {
+            dynamic instance = new TestContextClass();
+            var value = instance.ObsoleteProperty ?? "";
+            instance.УстаревшееСвойство = value;
+
+            _messages.Should().HaveCount(1, "must be only one warning");
+            _messages.Should().Contain(item =>
+                item.IndexOf("ObsoleteProperty", StringComparison.InvariantCultureIgnoreCase) >= 0
+                || item.IndexOf("УстаревшееСвойство", StringComparison.InvariantCultureIgnoreCase) >= 0);
+        }
+        
+        [Fact]
+        public void TestLoggingOfObsoleteName()
+        {
+            dynamic instance = new TestContextClass();
+            var value = instance.СвойствоBsl ?? ""; // обычное имя
+            instance.OldBslProp = value;
+
+            _messages.Should().HaveCount(1, "must be only one warning");
+            _messages.Should().Contain(item => item.IndexOf("OldBslProp", StringComparison.InvariantCultureIgnoreCase) >= 0);
+        }
+        
+        [Fact]
         public void TestLoggingOfObsoleteCall()
         {
             dynamic instance = new TestContextClass();
