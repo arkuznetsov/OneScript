@@ -153,6 +153,16 @@ namespace ScriptEngine.Machine.Contexts
 			{
 				Globals.RegisterInstance(enumType, instance);
 				environment.InjectGlobalProperty(instance, enumTypeAttribute.Name, enumTypeAttribute.Alias, true);
+                
+                // Deprecations
+                foreach (var deprecation in enumType.GetCustomAttributes<DeprecatedNameAttribute>())
+                {
+                    if (deprecation.ThrowOnUse)
+                        throw new NotSupportedException(
+                            $"{nameof(deprecation.ThrowOnUse)} is not supported for enums yet. ({enumType})");
+                    
+                    environment.InjectGlobalProperty(instance, deprecation.Name, true);
+                }
             }
         }
 

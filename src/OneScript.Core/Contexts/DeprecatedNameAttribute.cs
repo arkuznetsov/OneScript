@@ -12,7 +12,7 @@ namespace OneScript.Contexts
     /// <summary>
     /// Позволяет объявить терм (имя или алиас), как устаревший.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field,
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Enum,
         AllowMultiple = true)]
     public class DeprecatedNameAttribute : Attribute
     {
