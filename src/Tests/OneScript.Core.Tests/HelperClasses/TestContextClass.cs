@@ -33,9 +33,9 @@ namespace OneScript.Core.Tests
 			// Do nothing
 		}
 
+		[DeprecatedName("ObsoleteAlias", throwOnUse: false)]
+		[DeprecatedName("VeryObsoleteAlias", throwOnUse: true)]
 		[ContextMethod("ХорошийМетод", "GoodMethod")]
-		[ContextMethod("ObsoleteAlias", IsDeprecated = true, ThrowOnUse = false)]
-		[ContextMethod("VeryObsoleteAlias", IsDeprecated = true, ThrowOnUse = true)]
 		public void GoodMethod()
 		{
 			// Do nothing
