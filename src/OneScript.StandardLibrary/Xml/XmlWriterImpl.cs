@@ -183,7 +183,39 @@ namespace OneScript.StandardLibrary.Xml
         [ContextMethod("ЗаписатьТекущий","WriteCurrent")]
         public void WriteCurrent(XmlReaderImpl reader)
         {
-            _writer.WriteNode(reader.GetNativeReader(), false);
+            var nodeType = reader.NodeType.UnderlyingValue;
+            switch (nodeType)
+            {
+                case XmlNodeType.Element:
+                    CopyElementAndAttributes(reader, this);
+                    break;
+                case XmlNodeType.Attribute:
+                    WriteAttribute(reader.Name, reader.Value);
+                    break;
+                case XmlNodeType.EndElement:
+                    WriteEndElement();
+                    break;
+                case XmlNodeType.Text:
+                    WriteText(reader.Value);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private static void CopyElementAndAttributes(XmlReaderImpl reader, XmlWriterImpl writer)
+        {
+            writer.WriteStartElement(reader.Name);
+            var attributeCount = reader.AttributeCount();
+            if (attributeCount != 0)
+            {
+                for (var attributeIndex = 0; attributeIndex < attributeCount;  attributeIndex++)
+                {
+                    var attributeName = reader.AttributeName(attributeIndex);
+                    var attributeValue = reader.GetAttribute(ValueFactory.Create(attributeIndex));
+                    writer.WriteAttribute(attributeName, attributeValue.ExplicitString());
+                }
+            }
         }
 
         [ContextMethod("ЗаписатьТипДокумента","WriteDocumentType")]
