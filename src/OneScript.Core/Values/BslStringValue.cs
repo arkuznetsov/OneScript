@@ -10,7 +10,7 @@ using OneScript.Types;
 
 namespace OneScript.Values
 {
-    public sealed class BslStringValue : BslPrimitiveValue
+    public sealed class BslStringValue : BslPrimitiveValue, IBslComparable
     {
         private readonly string _value;
         

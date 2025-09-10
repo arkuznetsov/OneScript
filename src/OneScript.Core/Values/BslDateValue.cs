@@ -12,7 +12,7 @@ using OneScript.Types;
 
 namespace OneScript.Values
 {
-    public sealed class BslDateValue : BslPrimitiveValue
+    public sealed class BslDateValue : BslPrimitiveValue, IBslComparable
     {
         private readonly DateTime _value;
 

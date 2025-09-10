@@ -66,8 +66,8 @@ namespace ScriptEngine.Machine
         {
            if (ReferenceEquals(x, y))
                 return 0;
-            
-            if (x is IComparable && x.SystemType == y.SystemType )
+
+            if (x is IBslComparable && x.SystemType == y.SystemType )
                 return x.CompareTo(y);
             else
                 return _comparer(x,y);
