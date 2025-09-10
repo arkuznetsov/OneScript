@@ -189,6 +189,12 @@ namespace OneScript.StandardLibrary.Xml
                 case XmlNodeType.Element:
                     CopyElementAndAttributes(reader, this);
                     break;
+                case XmlNodeType.XmlDeclaration:
+                    WriteXMLDeclaration();
+                    break;
+                case XmlNodeType.DocumentType:
+                    CopyDocumentType(reader, this);
+                    break;
                 case XmlNodeType.Attribute:
                     WriteAttribute(reader.Name, reader.Value);
                     break;
@@ -201,6 +207,11 @@ namespace OneScript.StandardLibrary.Xml
                 default:
                     break;
             }
+        }
+
+        private static void CopyDocumentType(XmlReaderImpl reader, XmlWriterImpl writer)
+        {
+            writer.WriteDocumentType(reader.Name, reader.Value);
         }
 
         private static void CopyElementAndAttributes(XmlReaderImpl reader, XmlWriterImpl writer)
