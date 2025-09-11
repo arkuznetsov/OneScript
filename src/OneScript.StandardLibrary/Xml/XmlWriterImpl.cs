@@ -201,6 +201,9 @@ namespace OneScript.StandardLibrary.Xml
                 case XmlNodeType.EndElement:
                     WriteEndElement();
                     break;
+                case XmlNodeType.CDATA:
+                    WriteCDATASection(reader.Value);
+                    break;
                 case XmlNodeType.Text:
                     WriteText(reader.Value);
                     break;
