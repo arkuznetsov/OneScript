@@ -7,6 +7,10 @@ at http://mozilla.org/MPL/2.0/.
 
 namespace OneScript.Values
 {
+    /// <summary>
+    /// »нтерфейс-маркер дл€ примитивных типов, допускающих сравнение на больше/меньше.
+    /// »спользуетс€ GenericIValueComparer дл€ определени€ возможности сравнени€.
+    /// </summary>
     public interface IBslComparable
     {
     }
