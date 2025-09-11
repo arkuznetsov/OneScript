@@ -196,7 +196,7 @@ namespace OneScript.StandardLibrary.Xml
                     CopyDocumentType(reader, this);
                     break;
                 case XmlNodeType.Attribute:
-                    WriteAttribute(reader.Name, reader.Value);
+                    CopyAttribute(reader.Name, reader.Value, reader, this);
                     break;
                 case XmlNodeType.EndElement:
                     WriteEndElement();
@@ -223,10 +223,48 @@ namespace OneScript.StandardLibrary.Xml
                 for (var attributeIndex = 0; attributeIndex < attributeCount;  attributeIndex++)
                 {
                     var attributeName = reader.AttributeName(attributeIndex);
-                    var attributeValue = reader.GetAttribute(ValueFactory.Create(attributeIndex));
-                    writer.WriteAttribute(attributeName, attributeValue.ExplicitString());
+                    var attributeValue = reader.GetAttribute(ValueFactory.Create(attributeIndex)).ExplicitString();
+                    CopyAttribute(attributeName, attributeValue, reader, writer);
                 }
             }
+        }
+
+        private static void CopyAttribute(string attributeNameIn, string attributeValue, XmlReaderImpl reader, XmlWriterImpl writer)
+        {
+            var splittedName = splitName(attributeNameIn);
+            if (!string.IsNullOrEmpty(splittedName.prefix))
+            {
+                var readerNsContext = (XmlNamespaceContext)reader.NamespaceContext;
+                var writerNsContext = (XmlNamespaceContext)writer.NamespaceContext;
+                if (splittedName.prefix.Equals("xmlns", StringComparison.Ordinal))
+                {
+                    writer.WriteNamespaceMapping(splittedName.localName, attributeValue);
+                    return;
+                }
+                else
+                {
+                    var uri = readerNsContext.LookupNamespaceUri(splittedName.prefix);
+                    if (uri is BslStringValue)
+                    {
+                        var value = uri.ExplicitString();
+                        var curentPrefix = writerNsContext.LookupPrefix(value);
+                        if (!(curentPrefix is BslStringValue && curentPrefix.ExplicitString().Equals(splittedName.prefix, StringComparison.Ordinal)))
+                        {
+                            writer.WriteNamespaceMapping(splittedName.prefix, value);
+                        }
+                        splittedName.prefix = value;
+                    }
+                }
+            }
+            writer.WriteAttribute(splittedName.localName, splittedName.prefix, attributeValue);
+        }
+
+        private static (string prefix, string localName) splitName(string nameOrLocalName)
+        {
+            var parts = nameOrLocalName.Split(':');
+            if (parts.Length > 1) return (parts[0], parts[1]);
+            if (parts[0].Equals("xmlns", StringComparison.Ordinal)) return (parts[0], "");
+            return ("", parts[0]);
         }
 
         [ContextMethod("ЗаписатьТипДокумента","WriteDocumentType")]
