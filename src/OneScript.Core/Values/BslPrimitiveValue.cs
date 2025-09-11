@@ -27,8 +27,8 @@ namespace OneScript.Values
             }
             catch (InvalidOperationException) // если тип не зарегистрирован
             {
-                typeOfThis ??= GetType().ToString();
-                typeOfOther ??= GetType().ToString();
+                typeOfThis ??= this.GetType().ToString();
+                typeOfOther ??= other.GetType().ToString();
             }
             
             if (typeOfThis == typeOfOther)
