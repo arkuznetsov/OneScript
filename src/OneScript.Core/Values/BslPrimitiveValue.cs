@@ -31,7 +31,10 @@ namespace OneScript.Values
                 typeOfOther ??= GetType().ToString();
             }
             
-            throw ComparisonException.NotSupported(typeOfThis, typeOfOther);
+            if (typeOfThis == typeOfOther)
+                throw ComparisonException.NotSupported(typeOfThis);
+            else
+                throw ComparisonException.NotSupported(typeOfThis, typeOfOther);
         }
 
         public override bool Equals(BslValue other) => false;
