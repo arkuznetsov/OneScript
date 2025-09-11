@@ -265,8 +265,8 @@ namespace OneScript.StandardLibrary.Xml
                     if (uri is BslStringValue)
                     {
                         var value = uri.ExplicitString();
-                        var curentPrefix = writerNsContext.LookupPrefix(value);
-                        if (!(curentPrefix is BslStringValue && curentPrefix.ExplicitString().Equals(splittedName.prefix, StringComparison.Ordinal)))
+                        var currentPrefix = writerNsContext.LookupPrefix(value);
+                        if (!(currentPrefix is BslStringValue && currentPrefix.ExplicitString().Equals(splittedName.prefix, StringComparison.Ordinal)))
                         {
                             writer.WriteNamespaceMapping(splittedName.prefix, value);
                         }
