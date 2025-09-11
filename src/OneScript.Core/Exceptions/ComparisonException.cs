@@ -33,7 +33,7 @@ namespace OneScript.Exceptions
         public static ComparisonException NotSupported(string type1, string type2)
         {
             return new ComparisonException(new BilingualString(
-                $"Сравнение на больше/меньше типов '{type1}' и '{type2}' не поддерживается ",
+                $"Сравнение на больше/меньше типов '{type1}' и '{type2}' не поддерживается",
                 $"Greater-than/Less-than comparison operations are not supported for '{type1}' and '{type2}'"));
         }
     }

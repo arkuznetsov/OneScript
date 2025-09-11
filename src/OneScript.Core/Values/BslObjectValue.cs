@@ -12,11 +12,6 @@ namespace OneScript.Values
 {
     public abstract class BslObjectValue : BslValue
     {
-        public override int CompareTo(BslValue other)
-        {
-            throw ComparisonException.NotSupported();
-        }
-
         public override bool Equals(BslValue other)
         {
             return ReferenceEquals(this, other);

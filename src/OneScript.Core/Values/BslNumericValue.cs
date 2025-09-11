@@ -84,7 +84,6 @@ namespace OneScript.Values
 
         public override bool Equals(BslValue other)
         {
-            if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
 
             return other switch

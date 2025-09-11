@@ -25,9 +25,6 @@ namespace OneScript.Values
         
         public override int CompareTo(BslValue other)
         {
-            if (ReferenceEquals(null, other))
-                return -1;
-            
             if(other is BslDateValue d)
                 return _value.CompareTo(d._value);
 
