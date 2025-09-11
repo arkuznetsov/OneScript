@@ -62,7 +62,7 @@ namespace ScriptEngine.Machine.Contexts
 
         public override int CompareTo(BslValue other)
         {
-            throw RuntimeException.ComparisonNotSupportedException();
+            throw ComparisonException.NotSupported();
         }
 
         #endregion

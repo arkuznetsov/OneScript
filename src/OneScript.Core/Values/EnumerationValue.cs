@@ -48,7 +48,7 @@ namespace OneScript.Values
 
         public override int CompareTo(BslValue other)
         {
-            throw RuntimeException.ComparisonNotSupportedException();
+            throw ComparisonException.NotSupported();
         }
 
         public override bool Equals(BslValue other)
