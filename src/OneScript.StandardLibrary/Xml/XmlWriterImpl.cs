@@ -207,6 +207,21 @@ namespace OneScript.StandardLibrary.Xml
                 case XmlNodeType.Text:
                     WriteText(reader.Value);
                     break;
+                case XmlNodeType.Whitespace:
+                case XmlNodeType.SignificantWhitespace:
+                    WriteText(reader.Value);
+                    break;
+                case XmlNodeType.Comment:
+                    WriteComment(reader.Value);
+                    break;
+                case XmlNodeType.Entity:
+                case XmlNodeType.EntityReference:
+                case XmlNodeType.EndEntity:
+                case XmlNodeType.ProcessingInstruction:
+                case XmlNodeType.Document:
+                case XmlNodeType.DocumentFragment:
+                case XmlNodeType.Notation:
+                    throw new RuntimeException(new Localization.BilingualString($"Копирование узла {nodeType} не поддерживается"));
                 default:
                     break;
             }
