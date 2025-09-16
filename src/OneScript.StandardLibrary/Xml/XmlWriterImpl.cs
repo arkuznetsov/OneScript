@@ -214,8 +214,10 @@ namespace OneScript.StandardLibrary.Xml
                 case XmlNodeType.Comment:
                     WriteComment(reader.Value);
                     break;
-                case XmlNodeType.Entity:
                 case XmlNodeType.EntityReference:
+                    WriteEntityReference(reader.Name);
+                    break;
+                case XmlNodeType.Entity:
                 case XmlNodeType.EndEntity:
                 case XmlNodeType.ProcessingInstruction:
                 case XmlNodeType.Document:
