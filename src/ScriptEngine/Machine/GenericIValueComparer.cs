@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using OneScript.Values;
 using ScriptEngine.Machine.Contexts;
 using OneScript.Execution;
+using OneScript.Types;
 
 namespace ScriptEngine.Machine
 {
@@ -17,6 +18,10 @@ namespace ScriptEngine.Machine
     {
         private readonly IBslProcess _process;
         private readonly Func<IValue, IValue, int> _comparer;
+
+        static private readonly List<TypeDescriptor>orderedTypes = new List<TypeDescriptor>
+                { BasicTypes.Undefined, BasicTypes.Null, BasicTypes.Boolean,
+                BasicTypes.Number, BasicTypes.String, BasicTypes.Date, BasicTypes.Type };
 
         public GenericIValueComparer()
         {
@@ -62,12 +67,28 @@ namespace ScriptEngine.Machine
             return ((BslValue)x).ToString(_process).CompareTo(((BslValue)y).ToString(_process));
         }
 
+        private int CompareByTypes(IValue x, IValue y)
+        {
+            var ix = orderedTypes.IndexOf(x.SystemType);
+            var iy = orderedTypes.IndexOf(y.SystemType);
+
+            if (ix >= 0)
+                return (iy >= 0) ? ix-iy : -1;
+            else if (iy >= 0)
+                return 1;
+
+            return _comparer(x,y);
+        }
+
         public int Compare(IValue x, IValue y)
         {
            if (ReferenceEquals(x, y))
                 return 0;
 
-            if (x is IBslComparable && x.SystemType == y.SystemType )
+            if (x.SystemType != y.SystemType )
+                return CompareByTypes(x,y);
+
+            if (x is IBslComparable)
                 return x.CompareTo(y);
             else
                 return _comparer(x,y);
