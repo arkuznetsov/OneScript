@@ -216,7 +216,10 @@ namespace OneScript.DebugServices
             _breakpointManager.Clear();
             _threadManager.ReleaseAllThreads();
 
-            throw new StopServiceException();
+            if (terminate)
+            {
+                throw new StopServiceException();
+            }
         }
 
         public int[] GetThreads()

@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using System.IO;
 using System.Threading;
 using OneScript.DebugProtocol.Abstractions;
 
@@ -83,7 +84,15 @@ namespace OneScript.DebugProtocol.TcpServer
                     }
                     catch (ObjectDisposedException)
                     {
-                        _serverStopped = true;
+                        // Connection closed, but don't stop server - allow reconnection
+                        // The DelayedConnectionChannel will wait for a new connection
+                        continue;
+                    }
+                    catch (IOException)
+                    {
+                        // Connection lost, but don't stop server - allow reconnection
+                        // The DelayedConnectionChannel will wait for a new connection
+                        continue;
                     }
                     catch (ThreadInterruptedException)
                     {

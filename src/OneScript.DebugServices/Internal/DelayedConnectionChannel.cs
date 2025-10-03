@@ -17,7 +17,7 @@ namespace OneScript.DebugServices.Internal
 {
     internal class DelayedConnectionChannel : ICommunicationChannel
     {
-        private TcpListener _listener;
+        private readonly TcpListener _listener;
         private ICommunicationChannel _connectedChannel;
 
         // NB! должен быть согласован с перечислением TransportProtocols в адаптере
@@ -26,6 +26,7 @@ namespace OneScript.DebugServices.Internal
         private const short SUPPORTED_FORMAT_VERSION = 3;
         
         private bool _reconciled;
+        private readonly object _lock = new object();
 
         public DelayedConnectionChannel(TcpListener listener)
         {
@@ -34,50 +35,127 @@ namespace OneScript.DebugServices.Internal
 
         public void Dispose()
         {
-            _listener?.Stop();
-            _listener = null;
-            _connectedChannel?.Dispose();
+            lock (_lock)
+            {
+                _listener?.Stop();
+                _connectedChannel?.Dispose();
+            }
         }
 
         public void Write(object data)
         {
-            if(_connectedChannel == null)
-                throw new InvalidOperationException("No client connected");
-            
-            _connectedChannel.Write(data);
+            lock (_lock)
+            {
+                if (_connectedChannel == null)
+                    throw new InvalidOperationException("No client connected");
+
+                try
+                {
+                    _connectedChannel.Write(data);
+                }
+                catch (IOException)
+                {
+                    // Connection lost, reset for reconnection
+                    ResetConnection();
+                    throw;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Connection lost, reset for reconnection
+                    ResetConnection();
+                    throw;
+                }
+            }
         }
 
         public T Read<T>()
         {
             ReconcileFormat();
-            return _connectedChannel.Read<T>();
+            try
+            {
+                return _connectedChannel.Read<T>();
+            }
+            catch (IOException)
+            {
+                // Connection lost, reset for reconnection
+                lock (_lock)
+                {
+                    ResetConnection();
+                }
+                throw;
+            }
+            catch (ObjectDisposedException)
+            {
+                // Connection lost, reset for reconnection
+                lock (_lock)
+                {
+                    ResetConnection();
+                }
+                throw;
+            }
         }
 
         public object Read()
         {
             ReconcileFormat();
-            return _connectedChannel.Read();
+            try
+            {
+                return _connectedChannel.Read();
+            }
+            catch (IOException)
+            {
+                // Connection lost, reset for reconnection
+                lock (_lock)
+                {
+                    ResetConnection();
+                }
+                throw;
+            }
+            catch (ObjectDisposedException)
+            {
+                // Connection lost, reset for reconnection
+                lock (_lock)
+                {
+                    ResetConnection();
+                }
+                throw;
+            }
         }
 
         private void ReconcileFormat()
         {
-            if (_reconciled) 
-                return;
-            
-            _listener.Start();
-            var tcpClient = _listener.AcceptTcpClient();
-            _listener.Stop();
-            _listener = null;
-            
-            var tcpStream = tcpClient.GetStream();
-
-            if (FormatReconcileUtils.CheckReconcileRequest(tcpStream))
+            lock (_lock)
             {
-                // Да, это наш фейковый заголовок
-                FormatReconcileUtils.WriteReconcileResponse(tcpStream, JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
+                if (_reconciled && _connectedChannel?.Connected == true)
+                    return;
+
+                // Reset state if previous connection was lost
+                if (_reconciled && _connectedChannel?.Connected == false)
+                {
+                    ResetConnection();
+                }
+
+                _listener.Start();
+                var tcpClient = _listener.AcceptTcpClient();
+                _listener.Stop();
+
+                var tcpStream = tcpClient.GetStream();
+
+                if (FormatReconcileUtils.CheckReconcileRequest(tcpStream))
+                {
+                    // Да, это наш фейковый заголовок
+                    FormatReconcileUtils.WriteReconcileResponse(tcpStream, JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
+                }
+                _reconciled = true;
+                _connectedChannel = new JsonDtoChannel(tcpClient);
             }
-            _reconciled = true;
-            _connectedChannel = new JsonDtoChannel(tcpClient);
+        }
+
+        private void ResetConnection()
+        {
+            _connectedChannel?.Dispose();
+            _connectedChannel = null;
+            _reconciled = false;
         }
 
         public bool Connected => _connectedChannel?.Connected ?? false;
