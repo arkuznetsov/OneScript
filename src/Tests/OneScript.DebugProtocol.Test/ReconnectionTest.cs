@@ -85,5 +85,46 @@ namespace OneScript.DebugProtocol.Test
             breakpointManager.FindBreakpoint("/path/to/file2.os", 10).Should().BeFalse();
             breakpointManager.FindBreakpoint("/path/to/file2.os", 20).Should().BeFalse();
         }
+
+        [Fact]
+        public void DefaultDebugService_ShouldRaiseDisconnectedEvent()
+        {
+            // Arrange
+            var breakpointManager = new DefaultBreakpointManager();
+            var threadManager = new ThreadManager();
+            var visualizer = new DefaultVariableVisualizer();
+            var service = new DefaultDebugService(breakpointManager, threadManager, visualizer);
+            
+            DisconnectEventArgs receivedArgs = null;
+            service.Disconnected += (sender, args) => receivedArgs = args;
+
+            // Act - Disconnect without terminate
+            service.Disconnect(terminate: false);
+
+            // Assert - Event should be raised with correct parameters
+            receivedArgs.Should().NotBeNull("event should be raised");
+            receivedArgs.Terminate.Should().BeFalse("terminate flag should be false");
+        }
+
+        [Fact]
+        public void DefaultDebugService_ShouldRaiseDisconnectedEventWithTerminate()
+        {
+            // Arrange
+            var breakpointManager = new DefaultBreakpointManager();
+            var threadManager = new ThreadManager();
+            var visualizer = new DefaultVariableVisualizer();
+            var service = new DefaultDebugService(breakpointManager, threadManager, visualizer);
+            
+            DisconnectEventArgs receivedArgs = null;
+            service.Disconnected += (sender, args) => receivedArgs = args;
+
+            // Act & Assert - Disconnect with terminate
+            Action act = () => service.Disconnect(terminate: true);
+            act.Should().Throw<StopServiceException>();
+
+            // Event should still be raised before throwing
+            receivedArgs.Should().NotBeNull("event should be raised");
+            receivedArgs.Terminate.Should().BeTrue("terminate flag should be true");
+        }
     }
 }

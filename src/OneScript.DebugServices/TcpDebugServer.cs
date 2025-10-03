@@ -37,5 +37,10 @@ namespace OneScript.DebugServices
 
             return controller;
         }
+
+        public IDebugController CreateReconnectableDebugController()
+        {
+            return new ReconnectableDebugController(_port);
+        }
     }
 }
