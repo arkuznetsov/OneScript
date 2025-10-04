@@ -23,7 +23,7 @@ namespace oscript
         {
             var tcpDebugServer = new TcpDebugServer(_port);
                     
-            DebugController = tcpDebugServer.CreateReconnectableDebugController();
+            DebugController = tcpDebugServer.CreateDebugController();
             
             return base.Execute();
         }

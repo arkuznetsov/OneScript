@@ -17,7 +17,7 @@ namespace OneScript.DebugServices.Internal
 {
     internal class DelayedConnectionChannel : ICommunicationChannel
     {
-        private readonly TcpListener _listener;
+        private TcpListener _listener;
         private ICommunicationChannel _connectedChannel;
 
         // NB! должен быть согласован с перечислением TransportProtocols в адаптере
@@ -26,7 +26,6 @@ namespace OneScript.DebugServices.Internal
         private const short SUPPORTED_FORMAT_VERSION = 3;
         
         private bool _reconciled;
-        private readonly object _lock = new object();
 
         public DelayedConnectionChannel(TcpListener listener)
         {
@@ -35,127 +34,50 @@ namespace OneScript.DebugServices.Internal
 
         public void Dispose()
         {
-            lock (_lock)
-            {
-                _listener?.Stop();
-                _connectedChannel?.Dispose();
-            }
+            _listener?.Stop();
+            _listener = null;
+            _connectedChannel?.Dispose();
         }
 
         public void Write(object data)
         {
-            lock (_lock)
-            {
-                if (_connectedChannel == null)
-                    throw new InvalidOperationException("No client connected");
-
-                try
-                {
-                    _connectedChannel.Write(data);
-                }
-                catch (IOException)
-                {
-                    // Connection lost, reset for reconnection
-                    ResetConnection();
-                    throw;
-                }
-                catch (ObjectDisposedException)
-                {
-                    // Connection lost, reset for reconnection
-                    ResetConnection();
-                    throw;
-                }
-            }
+            if(_connectedChannel == null)
+                throw new InvalidOperationException("No client connected");
+            
+            _connectedChannel.Write(data);
         }
 
         public T Read<T>()
         {
             ReconcileFormat();
-            try
-            {
-                return _connectedChannel.Read<T>();
-            }
-            catch (IOException)
-            {
-                // Connection lost, reset for reconnection
-                lock (_lock)
-                {
-                    ResetConnection();
-                }
-                throw;
-            }
-            catch (ObjectDisposedException)
-            {
-                // Connection lost, reset for reconnection
-                lock (_lock)
-                {
-                    ResetConnection();
-                }
-                throw;
-            }
+            return _connectedChannel.Read<T>();
         }
 
         public object Read()
         {
             ReconcileFormat();
-            try
-            {
-                return _connectedChannel.Read();
-            }
-            catch (IOException)
-            {
-                // Connection lost, reset for reconnection
-                lock (_lock)
-                {
-                    ResetConnection();
-                }
-                throw;
-            }
-            catch (ObjectDisposedException)
-            {
-                // Connection lost, reset for reconnection
-                lock (_lock)
-                {
-                    ResetConnection();
-                }
-                throw;
-            }
+            return _connectedChannel.Read();
         }
 
         private void ReconcileFormat()
         {
-            lock (_lock)
+            if (_reconciled) 
+                return;
+            
+            _listener.Start();
+            var tcpClient = _listener.AcceptTcpClient();
+            _listener.Stop();
+            _listener = null;
+            
+            var tcpStream = tcpClient.GetStream();
+
+            if (FormatReconcileUtils.CheckReconcileRequest(tcpStream))
             {
-                if (_reconciled && _connectedChannel?.Connected == true)
-                    return;
-
-                // Reset state if previous connection was lost
-                if (_reconciled && _connectedChannel?.Connected == false)
-                {
-                    ResetConnection();
-                }
-
-                _listener.Start();
-                var tcpClient = _listener.AcceptTcpClient();
-                _listener.Stop();
-
-                var tcpStream = tcpClient.GetStream();
-
-                if (FormatReconcileUtils.CheckReconcileRequest(tcpStream))
-                {
-                    // Да, это наш фейковый заголовок
-                    FormatReconcileUtils.WriteReconcileResponse(tcpStream, JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
-                }
-                _reconciled = true;
-                _connectedChannel = new JsonDtoChannel(tcpClient);
+                // Да, это наш фейковый заголовок
+                FormatReconcileUtils.WriteReconcileResponse(tcpStream, JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
             }
-        }
-
-        private void ResetConnection()
-        {
-            _connectedChannel?.Dispose();
-            _connectedChannel = null;
-            _reconciled = false;
+            _reconciled = true;
+            _connectedChannel = new JsonDtoChannel(tcpClient);
         }
 
         public bool Connected => _connectedChannel?.Connected ?? false;

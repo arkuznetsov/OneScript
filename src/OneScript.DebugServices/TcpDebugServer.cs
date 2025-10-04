@@ -23,23 +23,7 @@ namespace OneScript.DebugServices
 
         public IDebugController CreateDebugController()
         {
-            var listener = TcpListener.Create(_port);
-            var channel = new DelayedConnectionChannel(listener);
-            var ipcServer = new DefaultMessageServer<RpcCall>(channel)
-            {
-                ServerThreadName = "debug-server"
-            };
-            var callback = new TcpEventCallbackChannel(channel);
-            var threadManager = new ThreadManager();
-            var breakpoints = new DefaultBreakpointManager();
-            var debuggerService = new DefaultDebugService(breakpoints, threadManager, new DefaultVariableVisualizer());
-            var controller = new DefaultDebugController(ipcServer, debuggerService, callback, threadManager, breakpoints);
-
-            return controller;
-        }
-
-        public IDebugController CreateReconnectableDebugController()
-        {
+            // Use reconnectable controller to support multiple attach/detach cycles
             return new ReconnectableDebugController(_port);
         }
     }
