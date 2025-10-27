@@ -79,15 +79,24 @@ namespace ScriptEngine.Machine.Contexts
         {
             return _values[propNum].ToString();
         }
-
-
-        protected IList<EnumerationValue> ValuesInternal
+        
+        public override BslPropertyInfo GetPropertyInfo(int propNum)
         {
-            get
-            {
-                return _values;
-            }
+            var enumValue = _values[propNum];
+
+            var propertyBuilder = BslPropertyBuilder.Create()
+                .SetNames(enumValue.Name, enumValue.Alias)
+                .CanRead(true)
+                .CanWrite(false)
+                .SetDispatchingIndex(propNum);
+                
+            if (_valuesType != null)
+                propertyBuilder.ReturnType(_valuesType.ImplementingClass);
+                
+            return propertyBuilder.Build();
         }
+
+        protected IList<EnumerationValue> ValuesInternal => _values;
 
         #region ICollectionContext Members
 
