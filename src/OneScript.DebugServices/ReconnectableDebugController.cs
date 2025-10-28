@@ -122,8 +122,8 @@ namespace OneScript.DebugServices
             _dispatcher?.Stop();
             _server?.Stop();
             _threadManager?.Dispose();
+            _channel?.Dispose();
             
-            // Don't dispose the channel or callback service, let them be garbage collected
             _channel = null;
             _callbackService = null;
             _server = null;
