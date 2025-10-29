@@ -18,8 +18,7 @@ namespace ScriptEngine.Machine
     class PropertyBag : DynamicPropertiesAccessor, IAttachableContext
     {
         private readonly List<IValue> _values = new List<IValue>();
-        private readonly List<BslPropertyInfo> _definitions = new List<BslPropertyInfo>();
-
+        
         public void Insert(IValue value, string identifier)
         {
             Insert(value, identifier, true, true);
@@ -27,19 +26,26 @@ namespace ScriptEngine.Machine
 
         public int Insert(IValue value, string identifier, bool canRead, bool canWrite)
         {
-            var num = RegisterProperty(identifier);
+            var num = RegisterProperty(identifier, canRead, canWrite);
 
             if (num == _values.Count)
             {
                 _values.Add(null);
-                _definitions.Add(BslPropertyBuilder.Create()
-                    .Name(identifier)
-                    .CanRead(canRead)
-                    .CanWrite(canWrite)
-                    .SetDispatchingIndex(num)
-                    .ReturnType(typeof(BslValue))
-                    .Build()
-                );
+            }
+
+            value ??= ValueFactory.Create();
+
+            SetPropValue(num, value);
+
+            return num;
+        }
+
+        public int Insert(IValue value, BslPropertyInfo definition)
+        {
+            var num = RegisterProperty(definition);
+            if (num == _values.Count)
+            {
+                _values.Add(null);
             }
 
             value ??= ValueFactory.Create();
@@ -51,12 +57,12 @@ namespace ScriptEngine.Machine
 
         public override bool IsPropReadable(int propNum)
         {
-            return _definitions[propNum].CanRead;
+            return GetPropertyInfo(propNum).CanRead;
         }
 
         public override bool IsPropWritable(int propNum)
         {
-            return _definitions[propNum].CanWrite;
+            return GetPropertyInfo(propNum).CanWrite;
         }
 
         public override IValue GetPropValue(int propNum)
@@ -67,11 +73,6 @@ namespace ScriptEngine.Machine
         public override void SetPropValue(int propNum, IValue newVal)
         {
             _values[propNum] = newVal;
-        }
-
-        public override BslPropertyInfo GetPropertyInfo(int propertyNumber)
-        {
-            return _definitions[propertyNumber];
         }
 
         public int Count => _values.Count;

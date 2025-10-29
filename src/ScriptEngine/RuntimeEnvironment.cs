@@ -79,6 +79,20 @@ namespace ScriptEngine
             InjectGlobalProperty(value, identifier, default, readOnly);
         }
 
+        public void InjectGlobalProperty(IValue value, BslPropertyInfo definition)
+        {
+            CreateGlobalScopeIfNeeded();
+            _injectedProperties.Insert(value, definition);
+
+            var symbol = new WrappedPropertySymbol(definition)
+            {
+                Name = definition.Name,
+                Alias = definition.Alias
+            };
+
+            _scopeOfGlobalProperties.DefineVariable(symbol);
+        }
+
         private void RegisterObject(IAttachableContext context)
         {
             _symbols.PushContext(context);
