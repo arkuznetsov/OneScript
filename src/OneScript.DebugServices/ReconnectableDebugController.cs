@@ -123,6 +123,7 @@ namespace OneScript.DebugServices
             _server?.Stop();
             _threadManager?.Dispose();
             _channel?.Dispose();
+            (_callbackService as IDisposable)?.Dispose();
             
             _channel = null;
             _callbackService = null;
