@@ -37,14 +37,7 @@ namespace ScriptEngine.Machine.Contexts
 
         public TypeDescriptor ValuesType => _valuesType;
 
-        public EnumerationValue this[string name]
-        {
-            get
-            {
-                int id = GetPropertyNumber(name);
-                return _values[id];
-            }
-        }
+        public EnumerationValue this[string name] => GetPropValueInternal(GetPropertyNumber(name));
 
         public int IndexOf(EnumerationValue enumVal)
         {
@@ -71,6 +64,11 @@ namespace ScriptEngine.Machine.Contexts
         }
 
         public override IValue GetPropValue(int propNum)
+        {
+            return GetPropValueInternal(propNum);
+        }
+        
+        private EnumerationValue GetPropValueInternal(int propNum)
         {
             return _values[propNum];
         }
