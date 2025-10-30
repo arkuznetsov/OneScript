@@ -13,7 +13,7 @@ using OneScript.DebugProtocol.TcpServer;
 
 namespace OneScript.DebugServices
 {
-    public class TcpEventCallbackChannel : IDebugEventListener, IDisposable
+    public class TcpEventCallbackChannel : IDebugEventListener
     {
         private readonly ICommunicationChannel _channel;
 

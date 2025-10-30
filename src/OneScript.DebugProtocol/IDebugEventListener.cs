@@ -5,12 +5,14 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System;
+
 namespace OneScript.DebugProtocol
 {
     /// <summary>
     /// Интерфейс слушателя событий отладки (сообщений, инициируемых со стороны BSL)       
     /// </summary>
-    public interface IDebugEventListener
+    public interface IDebugEventListener : IDisposable
     {
         void ThreadStopped(int threadId, ThreadStopReason reason);
         
