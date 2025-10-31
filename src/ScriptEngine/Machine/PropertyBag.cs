@@ -17,7 +17,7 @@ namespace ScriptEngine.Machine
     internal class PropertyBag : DynamicPropertiesAccessor, IAttachableContext
     {
         private readonly List<IValue> _values = new List<IValue>();
-        private static readonly HashSet<int> _checkedDeprecatedProps = new HashSet<int>();
+        private readonly HashSet<int> _checkedDeprecatedProps = new HashSet<int>();
         
         public void Insert(IValue value, string identifier)
         {
@@ -82,7 +82,7 @@ namespace ScriptEngine.Machine
             if (_checkedDeprecatedProps.Contains(propNum)) 
                 return;
             
-            if (GetPropertyInfo(propNum) is InjectedGlobalPropertyInfo { IsDeprecated: true })
+            if (GetPropertyInfo(propNum) is SystemPropertyInfo { IsDeprecated: true })
             {
                 SystemLogger.Write($"Обращение к устаревшему свойству {GetPropertyInfo(propNum).Name}.");
             }

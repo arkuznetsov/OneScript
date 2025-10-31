@@ -13,7 +13,7 @@ using OneScript.Values;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    public class InjectedGlobalPropertyInfo : BslPropertyInfo
+    public class SystemPropertyInfo : BslPropertyInfo
     {
         private string _name;
         private string _alias;
@@ -22,11 +22,11 @@ namespace ScriptEngine.Machine.Contexts
         
         internal class Builder
         {
-            private readonly InjectedGlobalPropertyInfo _info;
+            private readonly SystemPropertyInfo _info;
             
             public Builder(string name, string alias = null)
             {
-                _info = new InjectedGlobalPropertyInfo();
+                _info = new SystemPropertyInfo();
                 
                 _info._name = name;
                 _info._alias = alias;
@@ -52,13 +52,13 @@ namespace ScriptEngine.Machine.Contexts
                 return this;
             }
             
-            public InjectedGlobalPropertyInfo Build()
+            public SystemPropertyInfo Build()
             {
                 return _info;
             }
         }
 
-        private InjectedGlobalPropertyInfo()
+        private SystemPropertyInfo()
         {
             
         }
@@ -75,7 +75,7 @@ namespace ScriptEngine.Machine.Contexts
         
         public override bool Equals(BslPropertyInfo other)
         {
-            if (! (other is InjectedGlobalPropertyInfo gcProp))
+            if (! (other is SystemPropertyInfo gcProp))
                 return false;
             
             return gcProp._name == _name &&

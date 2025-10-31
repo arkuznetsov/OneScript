@@ -162,7 +162,7 @@ namespace ScriptEngine.Machine.Contexts
         {
             Globals.RegisterInstance(enumType, instance);
             
-            var mainProperty = new InjectedGlobalPropertyInfo.Builder(enumTypeAttribute.Name, enumTypeAttribute.Alias)
+            var mainProperty = new SystemPropertyInfo.Builder(enumTypeAttribute.Name, enumTypeAttribute.Alias)
                 .SetPropertyType(enumType)
                 .Build();
             
@@ -175,7 +175,7 @@ namespace ScriptEngine.Machine.Contexts
                     throw new NotSupportedException(
                         $"{nameof(deprecation.ThrowOnUse)} is not supported for enums yet. ({enumType})");
                     
-                var deprecatedProperty = new InjectedGlobalPropertyInfo.Builder(deprecation.Name)
+                var deprecatedProperty = new SystemPropertyInfo.Builder(deprecation.Name)
                     .SetPropertyType(enumType)
                     .SetDeprecated(true)
                     .Build();
