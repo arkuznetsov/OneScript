@@ -41,6 +41,13 @@ namespace OneScript.Contexts
         void InjectGlobalProperty(IValue value, string identifier, bool readOnly);
         
         /// <summary>
+        /// Инжект глобального свойства с помощью описания свойства.
+        /// </summary>
+        /// <param name="value">Значение свойства</param>
+        /// <param name="definition">Определение свойства</param>
+        void InjectGlobalProperty(IValue value, BslPropertyInfo definition);
+        
+        /// <summary>
         /// Установить новое значение глобального свойства
         /// </summary>
         /// <param name="propertyName">Имя свойства</param>

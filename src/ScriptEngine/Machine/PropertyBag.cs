@@ -10,16 +10,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using OneScript.Contexts;
-using OneScript.Values;
 using ScriptEngine.Machine.Contexts;
 
 namespace ScriptEngine.Machine
 {
-    class PropertyBag : DynamicPropertiesAccessor, IAttachableContext
+    internal class PropertyBag : DynamicPropertiesAccessor, IAttachableContext
     {
         private readonly List<IValue> _values = new List<IValue>();
-        private readonly List<BslPropertyInfo> _definitions = new List<BslPropertyInfo>();
-
+        private readonly HashSet<int> _checkedDeprecatedProps = new HashSet<int>();
+        
         public void Insert(IValue value, string identifier)
         {
             Insert(value, identifier, true, true);
@@ -27,19 +26,11 @@ namespace ScriptEngine.Machine
 
         public int Insert(IValue value, string identifier, bool canRead, bool canWrite)
         {
-            var num = RegisterProperty(identifier);
+            var num = RegisterProperty(identifier, canRead, canWrite);
 
             if (num == _values.Count)
             {
                 _values.Add(null);
-                _definitions.Add(BslPropertyBuilder.Create()
-                    .Name(identifier)
-                    .CanRead(canRead)
-                    .CanWrite(canWrite)
-                    .SetDispatchingIndex(num)
-                    .ReturnType(typeof(BslValue))
-                    .Build()
-                );
             }
 
             value ??= ValueFactory.Create();
@@ -49,29 +40,54 @@ namespace ScriptEngine.Machine
             return num;
         }
 
+        public int Insert(IValue value, BslPropertyInfo definition)
+        {
+            var num = RegisterProperty(definition);
+            if (num == _values.Count)
+            {
+                _values.Add(null);
+            }
+
+            value ??= ValueFactory.Create();
+
+            _values[num] = value;
+
+            return num;
+        }
+
         public override bool IsPropReadable(int propNum)
         {
-            return _definitions[propNum].CanRead;
+            return GetPropertyInfo(propNum).CanRead;
         }
 
         public override bool IsPropWritable(int propNum)
         {
-            return _definitions[propNum].CanWrite;
+            return GetPropertyInfo(propNum).CanWrite;
         }
 
         public override IValue GetPropValue(int propNum)
         {
+            WarnDeprecation(propNum);
             return _values[propNum];
         }
 
         public override void SetPropValue(int propNum, IValue newVal)
         {
+            WarnDeprecation(propNum);
             _values[propNum] = newVal;
         }
-
-        public override BslPropertyInfo GetPropertyInfo(int propertyNumber)
+        
+        private void WarnDeprecation(int propNum)
         {
-            return _definitions[propertyNumber];
+            if (_checkedDeprecatedProps.Contains(propNum)) 
+                return;
+            
+            if (GetPropertyInfo(propNum) is SystemPropertyInfo { IsDeprecated: true })
+            {
+                SystemLogger.Write($"Обращение к устаревшему свойству {GetPropertyInfo(propNum).Name}.");
+            }
+            
+            _checkedDeprecatedProps.Add(propNum);
         }
 
         public int Count => _values.Count;

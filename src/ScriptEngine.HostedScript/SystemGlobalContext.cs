@@ -160,7 +160,7 @@ namespace ScriptEngine.HostedScript
         /// Каталог исполняемых файлов OneScript
         /// </summary>
         /// <returns></returns>
-        [ContextMethod("ProgramDirectory", IsDeprecated = true)]
+        [DeprecatedName("ProgramDirectory")]
         [ContextMethod("КаталогПрограммы","BinDir")]
         public string ProgramDirectory()
         {
