@@ -23,6 +23,8 @@ namespace ScriptEngine.Machine
                 { BasicTypes.Undefined, BasicTypes.Null, BasicTypes.Boolean,
                 BasicTypes.Number, BasicTypes.String, BasicTypes.Date, BasicTypes.Type };
 
+        private const int INDEX_OF_TYPE = 6;
+
         public GenericIValueComparer()
         {
             _comparer = CompareAsStrings;
@@ -73,9 +75,12 @@ namespace ScriptEngine.Machine
             var iy = orderedTypes.IndexOf(y.SystemType);
 
             if (ix >= 0)
-                return (iy >= 0) ? ix-iy : -1;
+                if (iy >= 0)
+                    return ix - iy;
+                else
+                    return ix == INDEX_OF_TYPE ? 1 : -1;
             else if (iy >= 0)
-                return 1;
+                return iy == INDEX_OF_TYPE ? -1 : 1;
 
             return _comparer(x,y);
         }
