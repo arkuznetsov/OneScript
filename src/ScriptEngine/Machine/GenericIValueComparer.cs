@@ -69,6 +69,13 @@ namespace ScriptEngine.Machine
             return ((BslValue)x).ToString(_process).CompareTo(((BslValue)y).ToString(_process));
         }
 
+        /// <summary>
+        /// Сравнение переменных разных типов. Правила сравнения соответствуют 1С v8.3.27:
+        /// Переменные типа "Тип" следуют за всеми прочими;
+        /// Другие примитивные типы предшествуют объектным типам;
+        /// Между собой примитивные типы упорядочиваются в последовательности, указанной в orderedTypes;
+        /// Объектные типы упорядочиваются по строковому представлению.
+        /// </summary>
         private int CompareByTypes(IValue x, IValue y)
         {
             var ix = orderedTypes.IndexOf(x.SystemType);
