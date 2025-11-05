@@ -374,7 +374,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 }
             }
 
-            _rows.RemoveRange(new_idx, _rows.Count()-new_idx);
+            _rows.RemoveRange(new_idx, _rows.Count - new_idx);
 
             int i = 0;
             while (i < Columns.Count())
@@ -467,7 +467,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                     throw RuntimeException.InvalidArgumentType();
                 }
 
-                if (index < 0 || index >= _rows.Count())
+                if (index < 0 || index >= _rows.Count)
                     throw new RuntimeException("Значение индекса выходит за пределы диапазона");
             }
 
@@ -489,7 +489,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
             int index_dest = index_source + offset;
 
-            if (index_dest < 0 || index_dest >= _rows.Count())
+            if (index_dest < 0 || index_dest >= _rows.Count)
                 throw RuntimeException.InvalidNthArgumentValue(2);
 
             ValueTableRow tmp = _rows[index_source];
@@ -610,13 +610,13 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             foreach (string column in a_columns)
             {
                 string[] description = column.Trim().Split(' ');
-                if (description.Count() == 0)
+                if (description.Length == 0)
                     throw WrongColumnNameException();
 
                 ValueTableSortRule Desc = new ValueTableSortRule();
                 Desc.Column = this.Columns.FindColumnByName(description[0]);
 
-                if (description.Count() > 1)
+                if (description.Length > 1)
                 {
                     if (String.Compare(description[1], "DESC", true) == 0 || String.Compare(description[1], "УБЫВ", true) == 0)
                         Desc.direction = -1;

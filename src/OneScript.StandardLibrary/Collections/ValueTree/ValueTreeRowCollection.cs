@@ -7,7 +7,6 @@ at http://mozilla.org/MPL/2.0/.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
@@ -72,7 +71,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         [ContextMethod("Количество", "Count")]
         public override int Count()
         {
-            return _rows.Count();
+            return _rows.Count;
         }
 
         /// <summary>
@@ -323,12 +322,12 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
             else
                 throw RuntimeException.InvalidArgumentType();
 
-            if (indexSource < 0 || indexSource >= _rows.Count())
+            if (indexSource < 0 || indexSource >= _rows.Count)
                 throw RuntimeException.InvalidArgumentValue();
 
-            int indexDestination = (indexSource + offset) % _rows.Count();
+            int indexDestination = (indexSource + offset) % _rows.Count;
             while (indexDestination < 0)
-                indexDestination += _rows.Count();
+                indexDestination += _rows.Count;
 
             ValueTreeRow tmp = _rows[indexSource];
 
@@ -361,7 +360,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
             foreach (string column in aColumns)
             {
                 string[] description = column.Trim().Split(' ');
-                if (description.Count() == 0)
+                if (description.Length == 0)
                     throw WrongColumnNameException(); 
 
                 ValueTreeSortRule desc = new ValueTreeSortRule();
@@ -369,7 +368,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
                 if (desc.Column == null)
                     throw WrongColumnNameException(description[0]);
 
-                if (description.Count() > 1)
+                if (description.Length > 1)
                 {
                     if (String.Compare(description[1], "DESC", true) == 0 || String.Compare(description[1], "УБЫВ", true) == 0)
                         desc.direction = -1;
@@ -393,7 +392,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
 
             public RowComparator(IBslProcess process, List<ValueTreeSortRule> rules)
             {
-                if (rules.Count() == 0)
+                if (rules.Count == 0)
                     throw RuntimeException.InvalidArgumentValue();
 
                 this._rules = rules;
@@ -415,7 +414,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
                 int i = 0, r;
                 while ((r = OneCompare(x, y, _rules[i])) == 0)
                 {
-                    if (++i >= _rules.Count())
+                    if (++i >= _rules.Count)
                         return 0;
                 }
 
