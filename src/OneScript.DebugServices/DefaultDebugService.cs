@@ -28,8 +28,6 @@ namespace OneScript.DebugServices
 
         private ManualResetEventSlim _awaiter = new ManualResetEventSlim();
         
-        public event EventHandler<DisconnectEventArgs> Disconnected;
-        
         public DefaultDebugService(IBreakpointManager breakpointManager, ThreadManager threads, IVariableVisualizer visualizer)
         {
             _breakpointManager = breakpointManager;
@@ -218,13 +216,7 @@ namespace OneScript.DebugServices
             _breakpointManager.Clear();
             _threadManager.ReleaseAllThreads();
 
-            // Raise disconnected event for listeners (e.g., ReconnectableDebugController)
-            Disconnected?.Invoke(this, new DisconnectEventArgs { Terminate = terminate });
-
-            if (terminate)
-            {
-                throw new StopServiceException();
-            }
+            throw new StopServiceException();
         }
 
         public int[] GetThreads()

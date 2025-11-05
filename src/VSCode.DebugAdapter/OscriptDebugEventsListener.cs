@@ -47,11 +47,6 @@ namespace VSCode.DebugAdapter
             _session.SendEvent(new ExitedEvent(exitCode));
         }
         
-        public void Dispose()
-        {
-            // No resources to dispose
-        }
-        
         private void SendOutput(string category, string data)
         {
             if (!string.IsNullOrEmpty(data))
