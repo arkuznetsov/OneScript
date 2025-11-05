@@ -10,11 +10,11 @@ using System.Collections.Generic;
 using System.Linq;
 using OneScript.Contexts;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
-using ScriptEngine.Types;
 
 namespace OneScript.StandardLibrary.Collections.ValueTree
 {
@@ -362,12 +362,12 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
             {
                 string[] description = column.Trim().Split(' ');
                 if (description.Count() == 0)
-                    throw PropertyAccessException.PropNotFoundException(""); // TODO: WrongColumnNameException
+                    throw WrongColumnNameException(); 
 
                 ValueTreeSortRule desc = new ValueTreeSortRule();
                 desc.Column = this.Columns.FindColumnByName(description[0]);
                 if (desc.Column == null)
-                    throw PropertyAccessException.PropNotFoundException(description[0]);
+                    throw WrongColumnNameException(description[0]);
 
                 if (description.Count() > 1)
                 {
@@ -389,14 +389,15 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             readonly List<ValueTreeSortRule> _rules;
 
-            readonly GenericIValueComparer _comparer = new GenericIValueComparer();
+            readonly GenericIValueComparer _comparer;
 
-            public RowComparator(List<ValueTreeSortRule> rules)
+            public RowComparator(IBslProcess process, List<ValueTreeSortRule> rules)
             {
                 if (rules.Count() == 0)
                     throw RuntimeException.InvalidArgumentValue();
 
                 this._rules = rules;
+                _comparer = new GenericIValueComparer(process);
             }
 
             private int OneCompare(ValueTreeRow x, ValueTreeRow y, ValueTreeSortRule rule)
@@ -430,12 +431,12 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         /// <param name="sortChildren">Булево. Если Истина, сортировка будет применена также к вложенным строкам.</param>
         /// <param name="comparator">СравнениеЗначений. Не используется.</param>
         [ContextMethod("Сортировать", "Sort")]
-        public void Sort(string columns, bool sortChildren = false, IValue comparator = null)
+        public void Sort(IBslProcess process, string columns, bool sortChildren = false, IValue comparator = null)
         {
-            Sort(new RowComparator(GetSortRules(columns)), sortChildren);
+            Sort(process, new RowComparator(process, GetSortRules(columns)), sortChildren);
         }
 
-        private void Sort(RowComparator comparator, bool sortChildren)
+        private void Sort(IBslProcess process, RowComparator comparator, bool sortChildren)
         {
             _rows.Sort(comparator);
 
@@ -443,7 +444,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
             {
                 foreach (var row in _rows)
                 {
-                    row.Rows.Sort(comparator, sortChildren);
+                    row.Rows.Sort(process, comparator, sortChildren);
                 }
             }
         }
@@ -487,5 +488,16 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             return Get((int)index.AsNumber());
         }
+
+        private static RuntimeException WrongColumnNameException()
+        {
+            return new RuntimeException("Неверное имя колонки");
+        }
+
+        private static RuntimeException WrongColumnNameException(string columnName)
+        {
+            return new RuntimeException(string.Format("Неверное имя колонки '{0}'", columnName));
+        }
+
     }
 }
