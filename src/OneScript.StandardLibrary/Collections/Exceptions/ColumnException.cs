@@ -39,7 +39,7 @@ namespace OneScript.StandardLibrary.Collections.Exceptions
         {
             return new ColumnException(new BilingualString(
                 $"Колонка '{columnName}' уже есть",
-                $"Column  '{columnName}' already exists"));
+                $"Column '{columnName}' already exists"));
         }
 
 
