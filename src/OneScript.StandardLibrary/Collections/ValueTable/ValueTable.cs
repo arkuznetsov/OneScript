@@ -16,6 +16,7 @@ using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
+using OneScript.StandardLibrary.Collections.Exceptions;
 
 namespace OneScript.StandardLibrary.Collections.ValueTable
 {
@@ -166,7 +167,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                     var Column = Columns.FindColumnByName(name);
 
                     if (Column == null)
-                        throw WrongColumnNameException(name);
+                        throw ColumnException.WrongColumnName(name);
 
                     if (processing_list.Find( x=> x.Name==name ) == null)
                         processing_list.Add(Column);
@@ -271,7 +272,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             {
                 var Column = Columns.FindColumnByName(kv.Key.ToString());
                 if (Column == null)
-                    throw WrongColumnNameException(kv.Key.ToString());
+                    throw ColumnException.WrongColumnName(kv.Key.ToString());
 
                 IValue current = Row.Get(Column);
                 if (!current.StrictEquals(kv.Value))
@@ -391,7 +392,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             foreach (var groupColumn in groupColumns )
                 if ( aggregateColumns.Find(x => x.Name==groupColumn.Name)!=null )
-                    throw ColumnsMixedException(groupColumn.Name);
+                    throw ColumnException.ColumnsMixed(groupColumn.Name);
         }
 
         private static void CopyRowData(ValueTableRow source, ValueTableRow dest, IEnumerable<ValueTableColumn> columns)
@@ -611,7 +612,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             {
                 string[] description = column.Trim().Split(' ');
                 if (description.Length == 0)
-                    throw WrongColumnNameException();
+                    throw ColumnException.WrongColumnName();
 
                 ValueTableSortRule Desc = new ValueTableSortRule();
                 Desc.Column = this.Columns.FindColumnByName(description[0]);
@@ -717,22 +718,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         public static ValueTable Constructor()
         {
             return new ValueTable();
-        }
-
-
-        private static RuntimeException WrongColumnNameException()
-        {
-            return new RuntimeException("Неверное имя колонки");
-        }
-
-        private static RuntimeException WrongColumnNameException(string columnName)
-        {
-            return new RuntimeException(string.Format("Неверное имя колонки '{0}'", columnName));
-        }
-
-        private static RuntimeException ColumnsMixedException(string columnName)
-        {
-            return new RuntimeException(string.Format("Колонка '{0}' не может одновременно быть колонкой группировки и колонкой суммирования", columnName));
         }
 
         public string GetName(IValue field)

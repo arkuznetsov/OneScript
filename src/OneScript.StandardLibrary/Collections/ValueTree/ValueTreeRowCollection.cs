@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using OneScript.Contexts;
 using OneScript.Exceptions;
 using OneScript.Execution;
+using OneScript.StandardLibrary.Collections.Exceptions;
 using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
@@ -361,12 +362,12 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
             {
                 string[] description = column.Trim().Split(' ');
                 if (description.Length == 0)
-                    throw WrongColumnNameException(); 
+                    throw ColumnException.WrongColumnName(); 
 
                 ValueTreeSortRule desc = new ValueTreeSortRule();
                 desc.Column = this.Columns.FindColumnByName(description[0]);
                 if (desc.Column == null)
-                    throw WrongColumnNameException(description[0]);
+                    throw ColumnException.WrongColumnName(description[0]);
 
                 if (description.Length > 1)
                 {
@@ -487,16 +488,5 @@ namespace OneScript.StandardLibrary.Collections.ValueTree
         {
             return Get((int)index.AsNumber());
         }
-
-        private static RuntimeException WrongColumnNameException()
-        {
-            return new RuntimeException("Неверное имя колонки");
-        }
-
-        private static RuntimeException WrongColumnNameException(string columnName)
-        {
-            return new RuntimeException(string.Format("Неверное имя колонки '{0}'", columnName));
-        }
-
     }
 }
