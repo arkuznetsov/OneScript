@@ -96,8 +96,8 @@ namespace ScriptEngine.HostedScript
             SetGlobalEnvironment(host, src);
             if (_engine.DebugController != null)
             {
-                _engine.DebugController.Init();
-                _engine.DebugController.Wait();
+                _engine.DebugController.ListenConnections();
+                _engine.DebugController.WaitForSession();
             }
 
             var compilerSvc = GetCompilerService();

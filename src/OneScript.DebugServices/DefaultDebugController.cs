@@ -44,7 +44,7 @@ namespace OneScript.DebugServices
             _threadManager.Dispose();
         }
 
-        public void Init()
+        public void ListenConnections()
         {
             _threadManager.ThreadStopped += ThreadManagerOnThreadStopped;
             var dispatcher = new DispatchingService<IDebuggerService>(_server, _debugger);
@@ -69,7 +69,7 @@ namespace OneScript.DebugServices
             token.Wait();
         }
 
-        public void Wait() => _debugger.WaitForExecution();
+        public void WaitForSession() => _debugger.WaitForExecution();
 
         public void NotifyProcessExit(int exitCode)
         {

@@ -9,10 +9,25 @@ using System;
 
 namespace ScriptEngine.Machine
 {
+    /// <summary>
+    /// Управляет возможностью отладки на уровне всего хост-процесса.
+    /// </summary>
     public interface IDebugController : IDisposable
     {
-        void Init();
-        void Wait();
+        /// <summary>
+        /// Начинает слушать входящие подключения со стороны IDE.
+        /// </summary>
+        void ListenConnections();
+        
+        /// <summary>
+        /// Блокирует поток до момента подключения от IDE.
+        /// </summary>
+        void WaitForSession();
+        
+        /// <summary>
+        /// Уведомляет IDE о завершении отлаживаемого процесса.
+        /// </summary>
+        /// <param name="exitCode">код выхода приложения</param>
         void NotifyProcessExit(int exitCode);
         
         IBreakpointManager BreakpointManager { get; }
