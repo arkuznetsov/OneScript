@@ -9,6 +9,7 @@ using System;
 using OneScript.Contexts;
 using OneScript.Execution;
 using OneScript.Values;
+using ScriptEngine.Machine.Debugger;
 
 namespace ScriptEngine.Machine
 {
@@ -28,11 +29,12 @@ namespace ScriptEngine.Machine
             _machine = new MachineInstance();
             _machine.Setup(process);
             
-            var debugger = process.Services.TryResolve<IDebugController>();
-            if (debugger != default)
+            var debugger = process.Services.Resolve<IDebugger>();
+            if (debugger.IsEnabled)
             {
-                _machine.SetDebugMode(debugger.ThreadManager, debugger.BreakpointManager);
-                debugger.ThreadManager.ThreadStarted(process.VirtualThreadId, _machine);
+                var session = debugger.GetSession();
+                _machine.SetDebugMode(session.ThreadManager, session.BreakpointManager);
+                session.ThreadManager.ThreadStarted(process.VirtualThreadId, _machine);
             }
 
             process.Services.Resolve<StackMachineProvider>().Machine = _machine;
@@ -40,8 +42,8 @@ namespace ScriptEngine.Machine
 
         public void AfterProcessExit(IBslProcess process)
         {
-            var debugger = process.Services.TryResolve<IDebugController>();
-            debugger?.ThreadManager.ThreadExited(process.VirtualThreadId);
+            var debugger = process.Services.Resolve<IDebugger>();
+            debugger.GetSession().ThreadManager.ThreadExited(process.VirtualThreadId);
         }
 
         private BslValue Executor(IBslProcess process, BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments)

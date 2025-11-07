@@ -14,7 +14,7 @@ using OneScript.DebugProtocol.Abstractions;
 
 namespace OneScript.DebugProtocol.TcpServer
 {
-    public class JsonDtoChannel : ICommunicationChannel
+    public class JsonDtoChannel : IMessageChannel
     {
         private readonly TcpClient _tcpClient;
         private readonly Stream _dataStream;

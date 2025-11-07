@@ -23,8 +23,11 @@ namespace oscript
         public override int Execute()
         {
             var tcpDebugServer = new TcpDebugServer(Port);
-                    
-            DebugController = tcpDebugServer.CreateDebugController();
+            
+            DebugController = new DefaultDebugger(tcpDebugServer)
+            {
+                WaitForSession = WaitOnStart
+            };
             
             return base.Execute();
         }

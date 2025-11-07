@@ -15,10 +15,10 @@ using OneScript.DebugProtocol.TcpServer;
 
 namespace OneScript.DebugServices.Internal
 {
-    internal class DelayedConnectionChannel : ICommunicationChannel
+    internal class DelayedConnectionChannel : IMessageChannel
     {
         private TcpListener _listener;
-        private ICommunicationChannel _connectedChannel;
+        private IMessageChannel _connectedChannel;
 
         // NB! должен быть согласован с перечислением TransportProtocols в адаптере
         private const short JSON_FORMAT_MARKER = 2;
@@ -79,7 +79,5 @@ namespace OneScript.DebugServices.Internal
             _reconciled = true;
             _connectedChannel = new JsonDtoChannel(tcpClient);
         }
-
-        public bool Connected => _connectedChannel?.Connected ?? false;
     }
 }

@@ -50,7 +50,7 @@ namespace OneScript.DebugProtocol.TcpServer
             }
         }
 
-        private void ProcessSuccess(RpcCall message, ICommunicationChannel responseChannel)
+        private void ProcessSuccess(RpcCall message, IMessageChannel responseChannel)
         {
             RpcCallResult callResult = null;
             try

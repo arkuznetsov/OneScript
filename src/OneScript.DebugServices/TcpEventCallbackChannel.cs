@@ -15,9 +15,9 @@ namespace OneScript.DebugServices
 {
     public class TcpEventCallbackChannel : IDebugEventListener, IDisposable
     {
-        private readonly ICommunicationChannel _channel;
+        private readonly IMessageChannel _channel;
 
-        public TcpEventCallbackChannel(ICommunicationChannel channel)
+        public TcpEventCallbackChannel(IMessageChannel channel)
         {
             _channel = channel;
         }

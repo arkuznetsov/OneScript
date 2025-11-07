@@ -12,7 +12,7 @@ namespace ScriptEngine.Machine
     /// <summary>
     /// Менеджер состояния и количества потоков для отладчика
     /// </summary>
-    public interface IThreadManager : IDisposable
+    public interface IThreadManager
     {
         void ThreadStarted(int threadId, MachineInstance machine);
         void ThreadStopped(int threadId, MachineStopReason reason, string errorMessage);

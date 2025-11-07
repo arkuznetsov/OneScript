@@ -13,11 +13,11 @@ namespace OneScript.DebugProtocol.TcpServer
 {
     public class DefaultMessageServer<TMessage> : ICommunicationServer
     {
-        private readonly ICommunicationChannel _protocolChannel;
+        private readonly IMessageChannel _protocolChannel;
         private Thread _messageThread;
         private volatile bool _serverStopped;
 
-        public DefaultMessageServer(ICommunicationChannel protocolChannel)
+        public DefaultMessageServer(IMessageChannel protocolChannel)
         {
             _protocolChannel = protocolChannel;
         }

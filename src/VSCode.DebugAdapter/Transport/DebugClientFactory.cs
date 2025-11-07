@@ -37,7 +37,7 @@ namespace VSCode.DebugAdapter.Transport
         {
             ReconcileDataFormat(_tcpClient);
 
-            ICommunicationChannel commandsChannel;
+            IMessageChannel commandsChannel;
             
             switch (_transport)
             {

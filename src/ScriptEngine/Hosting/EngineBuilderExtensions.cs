@@ -17,6 +17,7 @@ using OneScript.Language.SyntaxAnalysis;
 using OneScript.Types;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
+using ScriptEngine.Machine.Debugger;
 using ScriptEngine.Machine.Interfaces;
 
 namespace ScriptEngine.Hosting
@@ -89,7 +90,7 @@ namespace ScriptEngine.Hosting
             return b;
         }
 
-        public static IEngineBuilder WithDebugger(this IEngineBuilder b, IDebugController debugger)
+        public static IEngineBuilder WithDebugger(this IEngineBuilder b, IDebugger debugger)
         {
             b.Services.RegisterSingleton(debugger);
             return b;

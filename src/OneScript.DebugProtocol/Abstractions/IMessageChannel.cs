@@ -9,13 +9,15 @@ using System;
 
 namespace OneScript.DebugProtocol.Abstractions
 {
-    public class CommunicationEventArgs : EventArgs
+    public interface IMessageChannel : IDisposable
     {
-        public IMessageChannel Channel { get; set; }
-        
-        public object Data { get; set; }
+        void Write(object data);
 
-        public ChannelException Exception { get; set; }
+        T Read<T>();
+        
+        object Read();
+        
+        bool Connected { get; }
         
     }
 }
