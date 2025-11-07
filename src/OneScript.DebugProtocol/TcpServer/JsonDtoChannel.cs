@@ -16,27 +16,27 @@ namespace OneScript.DebugProtocol.TcpServer
 {
     public class JsonDtoChannel : IMessageChannel
     {
-        private readonly TcpClient _tcpClient;
+        private readonly IDebuggerClient _client;
         private readonly Stream _dataStream;
         
         private bool _enabled = true;
 
-        public JsonDtoChannel(TcpClient tcpClient)
+        public JsonDtoChannel(IDebuggerClient client)
         {
-            _tcpClient = tcpClient;
-            _dataStream = tcpClient.GetStream();
+            _client = client;
+            _dataStream = client.GetDataStream();
         }
         
         public JsonDtoChannel(Stream dataStream)
         {
-            _tcpClient = null;
+            _client = null;
             _dataStream = dataStream;
         }
 
         public void Dispose()
         {
             _dataStream.Dispose();
-            _tcpClient?.Close();
+            _client?.Dispose();
             _enabled = false;
         }
 
@@ -100,6 +100,6 @@ namespace OneScript.DebugProtocol.TcpServer
             }
         }
         
-        public bool Connected => _enabled && (_tcpClient?.Connected ?? true);
+        public bool Connected => _enabled && (_client?.Connected ?? true);
     }
 }

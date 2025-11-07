@@ -10,9 +10,6 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using OneScript.DebugProtocol.Abstractions;
-using OneScript.DebugProtocol.TcpServer;
-using OneScript.DebugServices.Internal;
-using ScriptEngine.Machine;
 
 namespace OneScript.DebugServices
 {
@@ -37,23 +34,6 @@ namespace OneScript.DebugServices
         public delegate void LogHandler(LogLevel level, string message);
         
         public event LogHandler OnLogEvent;
-
-        // public IDebugController CreateDebugController()
-        // {
-        //     var listener = TcpListener.Create(_port);
-        //     var channel = new DelayedConnectionChannel(listener);
-        //     var ipcServer = new DefaultMessageServer<RpcCall>(channel)
-        //     {
-        //         ServerThreadName = "debug-server"
-        //     };
-        //     var callback = new TcpEventCallbackChannel(channel);
-        //     var threadManager = new ThreadManager();
-        //     var breakpoints = new DefaultBreakpointManager();
-        //     var debuggerService = new DefaultDebugService(breakpoints, threadManager, new DefaultVariableVisualizer());
-        //     var controller = new DefaultDebugController(ipcServer, debuggerService, callback, threadManager, breakpoints);
-        //
-        //     return controller;
-        // }
         
         public void Listen()
         {

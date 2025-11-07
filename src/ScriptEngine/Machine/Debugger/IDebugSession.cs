@@ -5,9 +5,11 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System;
+
 namespace ScriptEngine.Machine.Debugger
 {
-    public interface IDebugSession
+    public interface IDebugSession : IDisposable
     {
         /// <summary>
         /// Поставщик точек останова для машины.
@@ -17,7 +19,7 @@ namespace ScriptEngine.Machine.Debugger
         /// <summary>
         /// Уведомляет о создании или завершении потоков.
         /// </summary>
-        IThreadManager ThreadManager { get; }
+        IThreadEventsListener ThreadManager { get; }
 
         /// <summary>
         /// Ожидает явной команды Execute от IDE.

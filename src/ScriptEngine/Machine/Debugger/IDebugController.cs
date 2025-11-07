@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using ScriptEngine.Machine.Debugger;
 
 namespace ScriptEngine.Machine
 {
@@ -32,6 +33,6 @@ namespace ScriptEngine.Machine
         
         IBreakpointManager BreakpointManager { get; }
         
-        IThreadManager ThreadManager { get; }
+        IThreadEventsListener ThreadManager { get; }
     }
 }

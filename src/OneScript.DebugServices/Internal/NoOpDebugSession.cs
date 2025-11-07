@@ -13,8 +13,11 @@ namespace OneScript.DebugServices.Internal
     internal class NoOpDebugSession : IDebugSession
     {
         public IBreakpointManager BreakpointManager { get; } = new NoOpBreakpointManager();
-        public IThreadManager ThreadManager { get; } = new NoOpThreadManager();
+        public IThreadEventsListener ThreadManager { get; } = new NoOpThreadEventsListener();
         public void WaitForStart()
+        {
+        }
+        public void Dispose()
         {
         }
 
@@ -41,7 +44,7 @@ namespace OneScript.DebugServices.Internal
             }
         }
 
-        private class NoOpThreadManager : IThreadManager
+        private class NoOpThreadEventsListener : IThreadEventsListener
         {
             public void ThreadStarted(int threadId, MachineInstance machine)
             {

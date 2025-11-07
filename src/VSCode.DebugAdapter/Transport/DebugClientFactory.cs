@@ -5,7 +5,6 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
@@ -42,7 +41,7 @@ namespace VSCode.DebugAdapter.Transport
             switch (_transport)
             {
                 case TransportProtocols.Json:
-                    commandsChannel = new JsonDtoChannel(_tcpClient);
+                    commandsChannel = new JsonDtoChannel(new TcpDebuggerClient(_tcpClient));
                     break;
                 case TransportProtocols.Binary:
                     commandsChannel = new BinaryChannel(_tcpClient);
@@ -180,6 +179,28 @@ namespace VSCode.DebugAdapter.Transport
         {
             _protocolVersion = ProtocolVersions.SafestVersion;
             _transport = TransportProtocols.Binary;
+        }
+        
+        private class TcpDebuggerClient : IDebuggerClient
+        {
+            private TcpClient Client { get; }
+
+            public TcpDebuggerClient(TcpClient client)
+            {
+                Client = client;
+            }
+
+            public void Dispose()
+            {
+                Client.Dispose();
+            }
+
+            public Stream GetDataStream()
+            {
+                return Client.GetStream();
+            }
+
+            public bool Connected => Client.Connected;
         }
     }
 }

@@ -6,13 +6,14 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
+using System.IO;
 
-namespace OneScript.DebugProtocol.TcpServer
+namespace OneScript.DebugProtocol.Abstractions
 {
-    /// <summary>
-    /// Прерывание сервера со стороны прикладного интерфейса. Кнопка "Выход" из диспетчера
-    /// </summary>
-    public class StopServiceException : ApplicationException
+    public interface IDebuggerClient : IDisposable
     {
+        bool Connected { get; }
+        
+        Stream GetDataStream();
     }
 }

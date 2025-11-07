@@ -11,6 +11,11 @@ using OneScript.DebugProtocol.Abstractions;
 
 namespace OneScript.DebugProtocol.TcpServer
 {
+    /// <summary>
+    /// Читает сообщения из канала и вызывает обработчики сообщений.
+    /// Не управляет жизненным циклом канала и оставляет его доступным при остановке сервера.
+    /// </summary>
+    /// <typeparam name="TMessage"></typeparam>
     public class DefaultMessageServer<TMessage> : ICommunicationServer
     {
         private readonly IMessageChannel _protocolChannel;
@@ -103,7 +108,6 @@ namespace OneScript.DebugProtocol.TcpServer
                     }
                 }
                 
-                _protocolChannel.Dispose();
             });
             
             _messageThread.IsBackground = true;
@@ -125,7 +129,6 @@ namespace OneScript.DebugProtocol.TcpServer
             if (_messageThread?.IsAlive == true)
             {
                 _messageThread.Interrupt();
-                _protocolChannel.Dispose();
             }
         }
 

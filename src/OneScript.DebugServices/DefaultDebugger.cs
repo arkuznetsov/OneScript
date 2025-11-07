@@ -5,7 +5,11 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System.Diagnostics;
+using System.Threading;
+using OneScript.DebugProtocol.Abstractions;
 using OneScript.DebugProtocol.TcpServer;
+using OneScript.DebugServices.Internal;
 using ScriptEngine.Machine.Debugger;
 
 namespace OneScript.DebugServices
@@ -22,6 +26,8 @@ namespace OneScript.DebugServices
         
         private readonly IDebugServer _transport;
         private IDebugSession _session;
+        
+        private ManualResetEventSlim _connectionEvent = new ManualResetEventSlim();
 
         public DefaultDebugger(IDebugServer transport)
         {
@@ -39,7 +45,7 @@ namespace OneScript.DebugServices
 
         private void TransportOnOnClientConnected(object sender, IDebuggerClient debuggerClient)
         {
-            if (_session != null)
+            if (_session is DebugSession)
             {
                 // Если есть активная сессия, то не начинаем новую
                 debuggerClient.Dispose();
@@ -51,6 +57,21 @@ namespace OneScript.DebugServices
                 // Да, это наш фейковый заголовок
                 FormatReconcileUtils.WriteReconcileResponse(dataStream, JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
             }
+            
+            var session = new DebugSession(debuggerClient, WaitForSession);
+            session.OnClose += OnSessionClose;
+            
+            _session = session;
+            _connectionEvent.Set();
+        }
+
+        private void OnSessionClose()
+        {
+            if (_session is DebugSession dbgSession)
+            {
+                dbgSession.OnClose -= OnSessionClose;
+                _session = null;
+            }
         }
 
         public IDebugSession GetSession()
@@ -59,7 +80,12 @@ namespace OneScript.DebugServices
             {
                 if (WaitForSession)
                 {
-                    
+                    _connectionEvent.Wait();
+                    Debug.Assert(_session != null);
+                }
+                else
+                {
+                    _session = new NoOpDebugSession();
                 }
             }
             
@@ -70,8 +96,8 @@ namespace OneScript.DebugServices
         {
             _transport.OnClientConnected-=TransportOnOnClientConnected;
             _transport.Stop();
-            
-            throw new System.NotImplementedException("Implement notification to client");
+
+            _session?.Dispose();
         }
     }
 }
