@@ -76,5 +76,8 @@ namespace OneScript.StandardLibrary.Collections.ValueList
                 }
             }
         }
+
+        public override string ToString()
+            => !String.IsNullOrEmpty(_presentationHolder) ? _presentationHolder : Value.ToString();
     }
 }
