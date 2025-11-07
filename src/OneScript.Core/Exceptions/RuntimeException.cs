@@ -125,20 +125,6 @@ namespace OneScript.Exceptions
                 $"Invalid value for argument number {argNum}");
         }
         
-        public static RuntimeException ComparisonNotSupportedException()
-        {
-            return new RuntimeException(
-                "Сравнение на больше/меньше для данного типа не поддерживается",
-                "Greater-than/Less-than comparison operations are not supported");
-        }
-        
-        public static RuntimeException ComparisonNotSupportedException(string type1, string type2)
-        {
-            return new RuntimeException(
-                $"Сравнение на больше/меньше для данного типа не поддерживается {type1} <-> {type2}",
-                $"Greater-than/Less-than comparison operations are not supported for {type1} <-> {type2}");
-        }
-
         public static RuntimeException IndexedAccessIsNotSupportedException()
         {
             return new RuntimeException(

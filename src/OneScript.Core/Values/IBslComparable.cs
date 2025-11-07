@@ -7,8 +7,11 @@ at http://mozilla.org/MPL/2.0/.
 
 namespace OneScript.Values
 {
-    public abstract class BslPrimitiveValue : BslValue
+    /// <summary>
+    /// Интерфейс-маркер для примитивных типов, допускающих сравнение на больше/меньше.
+    /// Используется GenericIValueComparer для определения возможности сравнения.
+    /// </summary>
+    public interface IBslComparable
     {
-        public override bool Equals(BslValue other) => false;
     }
 }

@@ -10,7 +10,7 @@ using OneScript.Types;
 
 namespace OneScript.Values
 {
-    public sealed class BslStringValue : BslPrimitiveValue
+    public sealed class BslStringValue : BslPrimitiveValue, IBslComparable
     {
         private readonly string _value;
         
@@ -49,8 +49,8 @@ namespace OneScript.Values
 
         public override int CompareTo(BslValue other)
         {
-            if (ReferenceEquals(null, other))
-                return -1;
+            if (ReferenceEquals(this, other))
+                return 0;
             
             if (other is BslStringValue s)
                 return String.Compare(_value, s._value, StringComparison.CurrentCulture);

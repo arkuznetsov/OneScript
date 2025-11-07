@@ -42,11 +42,6 @@ namespace OneScript.Values
 
         public override IValue GetRawValue() => this;
 
-        public override int CompareTo(BslValue other)
-        {
-            throw RuntimeException.ComparisonNotSupportedException();
-        }
-
         public override bool Equals(BslValue other)
         {
             return ReferenceEquals(other?.GetRawValue(), this);
