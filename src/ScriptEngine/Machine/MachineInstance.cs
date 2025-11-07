@@ -1781,7 +1781,7 @@ namespace ScriptEngine.Machine
             var searchVal = PopRawBslValue().ToString(_process);
             var sourceString = PopRawBslValue().ToString(_process);
 
-            var result = sourceString.Replace(searchVal, newVal);
+            var result = !string.IsNullOrEmpty(searchVal) ? sourceString.Replace(searchVal, newVal) : sourceString;
             _operationStack.Push(ValueFactory.Create(result));
             NextInstruction();
         }
