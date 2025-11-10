@@ -25,15 +25,17 @@ namespace OneScript.DebugServices.Internal
         private readonly ManualResetEventSlim _startEvent = new ManualResetEventSlim();
         private readonly IMessageChannel _channel;
 
-        public DebugSession(IDebuggerClient connectedClient, bool waitForStart)
+        public DebugSession(IDebuggerClient connectedClient)
         {
-            _isStarted = !waitForStart;
+            _isStarted = false;
             
             _channel = new JsonDtoChannel(connectedClient);
             var ipcServer = new DefaultMessageServer<RpcCall>(_channel)
             {
                 ServerThreadName = "debug-server"
             };
+
+            ipcServer.OnError += CommunicationError;
             
             BreakpointManager = new DefaultBreakpointManager();
             _threadManager = new ThreadManager();
@@ -46,7 +48,13 @@ namespace OneScript.DebugServices.Internal
             
             _threadManager.ThreadStopped += ThreadManagerOnThreadStopped;
         }
-        
+
+        private void CommunicationError(object sender, CommunicationEventArgs e)
+        {
+            // Unexpected error in message loop
+            Dispose();
+        }
+
         private void ThreadManagerOnThreadStopped(object sender, ThreadStoppedEventArgs e)
         {
             MachineWaitToken token;

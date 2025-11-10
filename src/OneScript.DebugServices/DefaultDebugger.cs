@@ -25,7 +25,7 @@ namespace OneScript.DebugServices
         private const short SUPPORTED_FORMAT_VERSION = 3;
         
         private readonly IDebugServer _transport;
-        private IDebugSession _session;
+        private volatile IDebugSession _session;
         
         private ManualResetEventSlim _connectionEvent = new ManualResetEventSlim();
 
@@ -58,7 +58,7 @@ namespace OneScript.DebugServices
                 FormatReconcileUtils.WriteReconcileResponse(dataStream, JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
             }
             
-            var session = new DebugSession(debuggerClient, WaitForSession);
+            var session = new DebugSession(debuggerClient);
             session.OnClose += OnSessionClose;
             
             _session = session;
@@ -70,6 +70,7 @@ namespace OneScript.DebugServices
             if (_session is DebugSession dbgSession)
             {
                 dbgSession.OnClose -= OnSessionClose;
+                _connectionEvent.Reset();
                 _session = null;
             }
         }

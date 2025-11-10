@@ -7,6 +7,7 @@ at http://mozilla.org/MPL/2.0/.
 
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using OneScript.DebugProtocol.Abstractions;
@@ -30,6 +31,8 @@ namespace OneScript.DebugServices
             Info,
             Error
         }
+
+        public int ActualPort() => (_listener.LocalEndpoint as IPEndPoint)?.Port ?? 0;
         
         public delegate void LogHandler(LogLevel level, string message);
         
@@ -69,6 +72,13 @@ namespace OneScript.DebugServices
                     }
                     catch (SocketException e)
                     {
+                        if (_isListening == false)
+                        {
+                            // Сервер находится в процессе остановки внешним потоком
+                            // и ошибка сокета не является ошибкой.
+                            break;
+                        }
+                        
                         OnLogEvent?.Invoke(LogLevel.Error, $"Socket exception: {e}");
                         if (OnListenException == null)
                         {
@@ -126,11 +136,11 @@ namespace OneScript.DebugServices
 
         public void Stop()
         {
-            OnLogEvent?.Invoke(LogLevel.Info, "Stopping listener");
+            OnLogEvent?.Invoke(LogLevel.Debug, "Stopping listener");
             _isListening = false;
             try
             {
-                _listener.Stop();
+                _listener?.Stop();
             }
             catch (Exception e)
             {

@@ -97,17 +97,22 @@ namespace OneScript.DebugProtocol.TcpServer
                     }
                     catch (Exception e)
                     {
+                        if (OnError == null)
+                        {
+                            _serverStopped = true;
+                            break;
+                        }
+                        
                         var eventData = new CommunicationEventArgs
                         {
                             Data = null,
                             Channel = _protocolChannel,
                             Exception = new ChannelException("Unhandled error in message handler", true, e)
                         };
-                        
+
                         OnError?.Invoke(this, eventData);
                     }
                 }
-                
             });
             
             _messageThread.IsBackground = true;
