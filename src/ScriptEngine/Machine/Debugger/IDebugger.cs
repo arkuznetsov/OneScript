@@ -24,8 +24,7 @@ namespace ScriptEngine.Machine.Debugger
         void Start();
         
         /// <summary>
-        /// Получает текущую сессию отладки. Если отладчик должен ожидать подключения,
-        /// то блокируется до тех пор, пока отладчик не подключится.
+        /// Получает текущую сессию отладки.
         /// </summary>
         IDebugSession GetSession();
         

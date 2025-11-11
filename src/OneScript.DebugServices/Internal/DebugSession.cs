@@ -24,10 +24,14 @@ namespace OneScript.DebugServices.Internal
         
         private readonly ManualResetEventSlim _startEvent = new ManualResetEventSlim();
         private readonly IMessageChannel _channel;
+        
+        public bool IsActive { get; private set; }
 
-        public DebugSession(IDebuggerClient connectedClient)
+        public DebugSession(IDebuggerClient connectedClient, bool attachMode)
         {
-            _isStarted = false;
+            // Если это режим Attach, то не ждем готовности к запуску
+            // т.к. IDE не пришлет команду Execute и мы сразу считаем себя готовой сессией.
+            _isStarted = attachMode;
             
             _channel = new JsonDtoChannel(connectedClient);
             var ipcServer = new DefaultMessageServer<RpcCall>(_channel)
@@ -47,6 +51,7 @@ namespace OneScript.DebugServices.Internal
             _messageServer.Start();
             
             _threadManager.ThreadStopped += ThreadManagerOnThreadStopped;
+            IsActive = true;
         }
 
         private void CommunicationError(object sender, CommunicationEventArgs e)
@@ -79,14 +84,15 @@ namespace OneScript.DebugServices.Internal
             _threadManager.Dispose();
             _messageServer.Stop();
             _channel.Dispose();
+            IsActive = false;
             
-            OnClose?.Invoke();
+            OnClose?.Invoke(this);
         }
 
         public IBreakpointManager BreakpointManager { get; }
         public IThreadEventsListener ThreadManager => _threadManager;
         
-        public void WaitForStart()
+        public void WaitReadyToRun()
         {
             if (_isStarted)
                 return;
@@ -103,7 +109,7 @@ namespace OneScript.DebugServices.Internal
             _startEvent.Set();
         }
 
-        public event Action OnClose;
+        public event Action<DebugSession> OnClose;
         
         private static ThreadStopReason ConvertStopReason(MachineStopReason reason) => reason switch
         {

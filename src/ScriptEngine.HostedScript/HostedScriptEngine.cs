@@ -98,7 +98,7 @@ namespace ScriptEngine.HostedScript
             if (_engine.Debugger.IsEnabled)
             {
                 _engine.Debugger.Start();
-                _engine.Debugger.GetSession().WaitForStart();
+                _engine.Debugger.GetSession().WaitReadyToRun();
             }
 
             var compilerSvc = GetCompilerService();

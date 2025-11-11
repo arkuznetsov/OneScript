@@ -87,7 +87,7 @@ namespace VSCode.DebugAdapter.Transport
                     var dataBuffer = new byte[requiredDataLength];
                     using (var binaryReader = new BinaryReader(stream, Encoding.ASCII, true))
                     {
-                        ReadStream(binaryReader, dataBuffer,FormatReconcileUtils.FORMAT_RECONCILE_RESPONSE_PREFIX.Length);
+                        StreamUtils.ReadStream(binaryReader.BaseStream, dataBuffer,FormatReconcileUtils.FORMAT_RECONCILE_RESPONSE_PREFIX.Length);
 
                         if (!FormatReconcileUtils.CheckReconcilePrefix(dataBuffer))
                         {
@@ -160,21 +160,6 @@ namespace VSCode.DebugAdapter.Transport
             Log.Verbose("Reading out completed");
         }
 
-        private void ReadStream(BinaryReader reader, byte[] buffer, int length)
-        {
-            int readPosition = 0;
-            int bytesReceived = 0;
-
-            while (bytesReceived < length)
-            {
-                bytesReceived = reader.Read(buffer, readPosition, length - bytesReceived);
-                if (bytesReceived == 0)
-                    throw new IOException("Unexpected end of stream");
-                
-                readPosition += bytesReceived;
-            }
-        }
-        
         private void SelectSafestFormat()
         {
             _protocolVersion = ProtocolVersions.SafestVersion;

@@ -6,7 +6,6 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System.Diagnostics;
-using System.Threading;
 using OneScript.DebugProtocol.Abstractions;
 using OneScript.DebugProtocol.TcpServer;
 using OneScript.DebugServices.Internal;
@@ -25,9 +24,9 @@ namespace OneScript.DebugServices
         private const short SUPPORTED_FORMAT_VERSION = 3;
         
         private readonly IDebugServer _transport;
-        private volatile IDebugSession _session;
+        private IDebugSession _session;
         
-        private ManualResetEventSlim _connectionEvent = new ManualResetEventSlim();
+        private readonly object _sessionRecycleLock = new object();
 
         public DefaultDebugger(IDebugServer transport)
         {
@@ -35,20 +34,30 @@ namespace OneScript.DebugServices
         }
 
         public bool IsEnabled => true;
-        public bool WaitForSession { get; set; }
+        public bool AttachMode { get; set; }
 
         public void Start()
         {
             _transport.OnClientConnected += TransportOnOnClientConnected;
+            _transport.OnListenException += ListenerException;
             _transport.Listen();
+        }
+
+        private void ListenerException(object sender, ListenerErrorEventArgs e)
+        {
+            e.StopServer = true;
         }
 
         private void TransportOnOnClientConnected(object sender, IDebuggerClient debuggerClient)
         {
-            if (_session is DebugSession)
+            lock (_sessionRecycleLock)
             {
-                // Если есть активная сессия, то не начинаем новую
-                debuggerClient.Dispose();
+                if (_session?.IsActive == true)
+                {
+                    // Если есть активная сессия, то не начинаем новую
+                    debuggerClient.Dispose();
+                    return;
+                }
             }
 
             var dataStream = debuggerClient.GetDataStream();
@@ -57,40 +66,44 @@ namespace OneScript.DebugServices
                 // Да, это наш фейковый заголовок
                 FormatReconcileUtils.WriteReconcileResponse(dataStream, JSON_FORMAT_MARKER, SUPPORTED_FORMAT_VERSION);
             }
-            
-            var session = new DebugSession(debuggerClient);
-            session.OnClose += OnSessionClose;
-            
-            _session = session;
-            _connectionEvent.Set();
+            else
+            {
+                // Не поддерживаем старый формат протокола отладки
+                debuggerClient.Dispose();
+                return;
+            }
+
+            lock (_sessionRecycleLock)
+            {
+                var session = new DebugSession(debuggerClient, AttachMode);
+                session.OnClose += OnSessionClose;
+
+                if (_session is ConnectableSessionProxy proxy)
+                {
+                    proxy.Connect(session);
+                }
+                else
+                {
+                    _session = session;
+                }
+            }
         }
 
-        private void OnSessionClose()
+        private void OnSessionClose(DebugSession session)
         {
-            if (_session is DebugSession dbgSession)
+            lock (_sessionRecycleLock)
             {
-                dbgSession.OnClose -= OnSessionClose;
-                _connectionEvent.Reset();
+                session.OnClose -= OnSessionClose;
                 _session = null;
             }
         }
 
         public IDebugSession GetSession()
         {
-            if (_session == null)
+            lock (_sessionRecycleLock)
             {
-                if (WaitForSession)
-                {
-                    _connectionEvent.Wait();
-                    Debug.Assert(_session != null);
-                }
-                else
-                {
-                    _session = new NoOpDebugSession();
-                }
+                return _session ??= new ConnectableSessionProxy(AttachMode);
             }
-            
-            return _session;
         }
 
         public void NotifyProcessExit(int exitCode)

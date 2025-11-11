@@ -14,7 +14,9 @@ namespace OneScript.DebugServices.Internal
     {
         public IBreakpointManager BreakpointManager { get; } = new NoOpBreakpointManager();
         public IThreadEventsListener ThreadManager { get; } = new NoOpThreadEventsListener();
-        public void WaitForStart()
+        public bool IsActive => false;
+        
+        public void WaitReadyToRun()
         {
         }
         public void Dispose()

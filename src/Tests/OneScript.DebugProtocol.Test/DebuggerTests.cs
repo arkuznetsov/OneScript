@@ -1,132 +1,144 @@
-using System.IO;
+using System;
 using System.Threading;
 using FluentAssertions;
-using Moq;
-using OneScript.DebugProtocol.Abstractions;
 using OneScript.DebugProtocol.TcpServer;
 using OneScript.DebugProtocol.Test.Tools;
 using OneScript.DebugServices;
-using ScriptEngine.Machine.Debugger;
 using Xunit;
 
 namespace OneScript.DebugProtocol.Test
 {
     public class DebuggerTests
     {
-        [Fact(DisplayName = "Отладчик ждет входящего клиента и блокируется на получении сессии")]
-        public void TestBlockingOnIncomingClient()
+        [Fact(DisplayName = "В режиме Launch сессия до соединения неактивна, после - активна.")]
+        public void TestActivatingOnIncomingClient()
         {
-            var transport = new TestDebuggerTransport();
+            var transport = new TcpDebugServer(0);
             var debugger = new DefaultDebugger(transport);
-            debugger.WaitForSession = true;
+            debugger.AttachMode = false;
             debugger.Start();
-
-            var syncEvent = new AutoResetEvent(false);
-
-            IDebugSession session = null;
-            var waitingThread = new Thread(() =>
-            {
-                syncEvent.Set();
-                session = debugger.GetSession();
-                syncEvent.Set();
-            })
-            {
-                IsBackground = true
-            };
             
-            waitingThread.Start();
-            syncEvent.WaitOne(500).Should().BeTrue();
-            Thread.Sleep(100);
-            waitingThread.ThreadState.Should().HaveFlag(ThreadState.WaitSleepJoin);
-
-            var testStream = new MemoryStream();
-            testStream.Write(FormatReconcileUtils.GetReconcileMagic());
-            testStream.Position = 0;
+            debugger.GetSession().IsActive.Should().BeFalse();
             
-            var clientMock = new Mock<IDebuggerClient>();
-            clientMock.Setup(s => s.GetDataStream())
-                .Returns(testStream);
-            
-            transport.RaiseConnect(clientMock.Object);
-            syncEvent.WaitOne(500).Should().BeTrue();
+            var client = new TestDebuggerClient();
+            client.Connect(transport.ActualPort());
 
-            Assert.NotNull(session);
-            waitingThread.ThreadState.Should().Be(ThreadState.Stopped);
+            WaitEvent(() => debugger.GetSession().IsActive, 2000).Should().BeTrue();
         }
         
-        [Fact(DisplayName = "Отладчик не ждет входящего клиента и не блокируется на получении сессии")]
-        public void TestNonBlockingOnIncomingClient()
+        [Theory(DisplayName = "В режиме Attach метод WaitReadyToRun не блокируется.")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestNonBlockingSessionWaitToRun(bool connectBeforeWait)
         {
-            var transport = new TestDebuggerTransport();
+            var transport = new TcpDebugServer(0);
             var debugger = new DefaultDebugger(transport);
-            debugger.WaitForSession = false;
+            debugger.AttachMode = true;
             debugger.Start();
-
-            var syncEvent = new AutoResetEvent(false);
-
-            IDebugSession session = null;
-            var waitingThread = new Thread(() =>
-            {
-                syncEvent.Set();
-                session = debugger.GetSession();
-                syncEvent.WaitOne();
-            })
-            {
-                IsBackground = true
-            };
             
-            waitingThread.Start();
-            syncEvent.WaitOne(500).Should().BeTrue();
-            waitingThread.ThreadState.Should().HaveFlag(ThreadState.WaitSleepJoin);
+            debugger.GetSession().IsActive.Should().BeFalse();
             
-            Assert.NotNull(session);
-            syncEvent.Set();
+            var client = new TestDebuggerClient();
+            if (connectBeforeWait)
+            {
+                client.Connect(transport.ActualPort());
+                Thread.Sleep(100);
+            }
+            
+            var exitEvent = new ManualResetEventSlim(false);
+            
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                debugger.GetSession().WaitReadyToRun(); // не должно зависнуть
+                exitEvent.Set();
+            });
+            
+            exitEvent.Wait(2000).Should().BeTrue();
         }
         
-        //[Fact(DisplayName = "Отладчик отладчик не ждет входящего клиента, но ждет начала сессии")]
-        public void TestNotBlockingAndWaitingForStart()
+        [Theory(DisplayName = "В режиме Launch метод WaitReadyToRun блокируется.")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestBlockingSessionWaitToRun(bool connectBeforeWait)
         {
-            var transport = new TestDebuggerTransport();
+            var transport = new TcpDebugServer(0);
             var debugger = new DefaultDebugger(transport);
-            debugger.WaitForSession = false;
+            debugger.AttachMode = false;
             debugger.Start();
-
-            var syncEvent = new AutoResetEvent(false);
-            transport.OnClientConnected += (sender, client) =>
+            
+            debugger.GetSession().IsActive.Should().BeFalse();
+            
+            var client = new TestDebuggerClient();
+            if (connectBeforeWait)
             {
-                syncEvent.Set();
-            };
+                client.Connect(transport.ActualPort());
+                Thread.Sleep(100);
+            }
             
-            var testStream = new MemoryStream();
-            testStream.Write(FormatReconcileUtils.GetReconcileMagic());
-            testStream.Position = 0;
+            var exitEvent = new ManualResetEventSlim(false);
             
-            var clientMock = new Mock<IDebuggerClient>();
-            clientMock.Setup(s => s.GetDataStream())
-                .Returns(testStream);
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                debugger.GetSession().WaitReadyToRun(); // должно зависнуть до получения команды Execute
+                exitEvent.Set();
+            });
             
-            transport.RaiseConnect(clientMock.Object);
-            syncEvent.WaitOne(500).Should().BeTrue();
+            if (!connectBeforeWait)
+            {
+                client.Connect(transport.ActualPort());
+                Thread.Sleep(100);
+            }
             
-            // Дождались соединения с сервером
+            client.Send(RpcCall.Create(nameof(IDebuggerService), nameof(IDebuggerService.Execute), 0));
+            
+            exitEvent.Wait(2000).Should().BeTrue();
+        }
+
+        [Fact]
+        public void CanCreateAnotherSessionAfterDisconnect()
+        {
+            var transport = new TcpDebugServer(0);
+            var debugger = new DefaultDebugger(transport);
+            debugger.AttachMode = true;
+            debugger.Start();
+            
+            debugger.GetSession().IsActive.Should().BeFalse();
+            
+            var client = new TestDebuggerClient();
+            client.Connect(transport.ActualPort());
+
             var session = debugger.GetSession();
-            var waitingThread = new Thread(() =>
-            {
-                syncEvent.Set();
-                session.WaitForStart();
-            })
-            {
-                IsBackground = true
-            };
-            waitingThread.Start();
-            syncEvent.WaitOne(500).Should().BeTrue();
-            waitingThread.ThreadState.Should().HaveFlag(ThreadState.WaitSleepJoin);
             
-            // Preparing start data
-            testStream.SetLength(0);
-            var rpcCall = RpcCall.Create(nameof(IDebuggerService), nameof(IDebuggerService.Execute), 0);
+            WaitEvent(() => session.IsActive, 2000).Should().BeTrue();
             
-        }
+            client.Send(RpcCall.Create(nameof(IDebuggerService), nameof(IDebuggerService.Disconnect), false));
 
+            WaitEvent(() => !session.IsActive, 2000).Should().BeTrue();
+            
+            var client2 = new TestDebuggerClient();
+            client2.Connect(transport.ActualPort());
+            var session2 = debugger.GetSession();
+
+            WaitEvent(() => session2.IsActive, 2000).Should().BeTrue();
+            
+            session2.Should().NotBe(session);
+        }
+        
+        private bool WaitEvent(Func<bool> predicate, int timeout)
+        {
+            var wait = new SpinWait();
+            int start = Environment.TickCount;
+            while (!predicate())
+            {
+                wait.SpinOnce();
+                var elapsed = Environment.TickCount - start;
+                if (elapsed > timeout)
+                {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
     }
 }

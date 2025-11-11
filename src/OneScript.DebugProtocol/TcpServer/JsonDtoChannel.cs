@@ -71,32 +71,24 @@ namespace OneScript.DebugProtocol.TcpServer
             if (!_enabled)
                 throw new ObjectDisposedException(nameof(JsonDtoChannel));
 
-            using (var socketReader = new BinaryReader(_dataStream, Encoding.UTF8, true))
+            try
             {
-                var contentLength = socketReader.ReadInt32();
-                var contentBuffer = new byte[contentLength];
-                ReadStream(socketReader, contentBuffer, contentLength);
-
-                using (var textReader = new StreamReader(new MemoryStream(contentBuffer), Encoding.UTF8, false))
+                using (var socketReader = new BinaryReader(_dataStream, Encoding.UTF8, true))
                 {
-                    using var reader = new JsonTextReader(textReader);
-                    return JsonSerializer.CreateDefault().Deserialize<TcpProtocolDtoBase>(reader);
+                    var contentLength = socketReader.ReadInt32();
+                    var contentBuffer = new byte[contentLength];
+                    StreamUtils.ReadStream(socketReader.BaseStream, contentBuffer, contentLength);
+
+                    using (var textReader = new StreamReader(new MemoryStream(contentBuffer), Encoding.UTF8, false))
+                    {
+                        using var reader = new JsonTextReader(textReader);
+                        return JsonSerializer.CreateDefault().Deserialize<TcpProtocolDtoBase>(reader);
+                    }
                 }
             }
-        }
-
-        private void ReadStream(BinaryReader reader, byte[] buffer, int length)
-        {
-            int readPosition = 0;
-            int bytesReceived = 0;
-
-            while (bytesReceived < length)
+            catch (Exception ex)
             {
-                bytesReceived = reader.Read(buffer, readPosition, length - bytesReceived);
-                if (bytesReceived == 0)
-                    throw new IOException("Unexpected end of stream");
-                
-                readPosition += bytesReceived;
+                throw new ChannelException("Channel read exception", ex);
             }
         }
         

@@ -30,6 +30,11 @@ namespace ScriptEngine.Machine.Debugger
         /// Метод не блокируется, если сессия отладки запущена в режиме attach.
         /// Метод блокируется в т.ч. если сессия отладки не начата вообще.
         /// </summary>
-        void WaitForStart();
+        void WaitReadyToRun();
+        
+        /// <summary>
+        /// Указывает, что сессия отладки активна (инициирована со стороны IDE).
+        /// </summary>
+        bool IsActive { get; }
     }
 }

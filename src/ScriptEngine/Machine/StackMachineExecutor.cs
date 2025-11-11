@@ -33,8 +33,11 @@ namespace ScriptEngine.Machine
             if (debugger.IsEnabled)
             {
                 var session = debugger.GetSession();
-                _machine.SetDebugMode(session.ThreadManager, session.BreakpointManager);
-                session.ThreadManager.ThreadStarted(process.VirtualThreadId, _machine);
+                if (session.IsActive)
+                {
+                    _machine.SetDebugMode(session.ThreadManager, session.BreakpointManager);
+                    session.ThreadManager.ThreadStarted(process.VirtualThreadId, _machine);
+                }
             }
 
             process.Services.Resolve<StackMachineProvider>().Machine = _machine;
@@ -43,7 +46,11 @@ namespace ScriptEngine.Machine
         public void AfterProcessExit(IBslProcess process)
         {
             var debugger = process.Services.Resolve<IDebugger>();
-            debugger.GetSession().ThreadManager.ThreadExited(process.VirtualThreadId);
+            var session = debugger.GetSession();
+            if (session.IsActive)
+            {
+                session.ThreadManager.ThreadExited(process.VirtualThreadId);
+            }
         }
 
         private BslValue Executor(IBslProcess process, BslObjectValue target, IExecutableModule module, BslScriptMethodInfo method, IValue[] arguments)

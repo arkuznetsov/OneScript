@@ -18,7 +18,7 @@ namespace oscript
 
         public int Port { get; set; } = 2801;
         
-        public bool WaitOnStart { get; set; } = true;
+        public bool AttachMode { get; set; } = true;
 
         public override int Execute()
         {
@@ -26,7 +26,7 @@ namespace oscript
             
             DebugController = new DefaultDebugger(tcpDebugServer)
             {
-                WaitForSession = WaitOnStart
+                AttachMode = AttachMode
             };
             
             return base.Execute();
@@ -77,7 +77,7 @@ namespace oscript
 
             return path == null ? null : new DebugBehavior(path, helper.Tail())
             {
-                Port = port, WaitOnStart = !noWait
+                Port = port, AttachMode = noWait
             };
         }
     }
