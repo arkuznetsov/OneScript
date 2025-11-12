@@ -5,10 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using OneScript.DebugServices.Internal;
-using ScriptEngine.Machine.Debugger;
-
-namespace OneScript.DebugServices
+namespace ScriptEngine.Machine.Debugger
 {
     /// <summary>
     /// Отладчик, который ничего не делает. Заглушка для выключенного отладчика.
@@ -21,7 +18,7 @@ namespace OneScript.DebugServices
         {
         }
 
-        public IDebugSession GetSession() => new NoOpDebugSession();
+        public IDebugSession GetSession() => new DisabledDebugSession();
 
         public void NotifyProcessExit(int exitCode)
         {

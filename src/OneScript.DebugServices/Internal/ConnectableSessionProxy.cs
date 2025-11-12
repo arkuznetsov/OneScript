@@ -13,7 +13,7 @@ namespace OneScript.DebugServices.Internal
 {
     internal class ConnectableSessionProxy : IDebugSession
     {
-        private IDebugSession _session = new NoOpDebugSession();
+        private IDebugSession _session = new DisabledDebugSession();
         private bool _isConnected;
         private readonly ManualResetEventSlim _connectionEvent = new ManualResetEventSlim();
 
@@ -28,7 +28,7 @@ namespace OneScript.DebugServices.Internal
             
             _connectionEvent.Reset();
             _isConnected = false;
-            _session = new NoOpDebugSession();
+            _session = new DisabledDebugSession();
             
             activeSession.Dispose();
         }

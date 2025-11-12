@@ -5,12 +5,9 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using ScriptEngine.Machine;
-using ScriptEngine.Machine.Debugger;
-
-namespace OneScript.DebugServices.Internal
+namespace ScriptEngine.Machine.Debugger
 {
-    internal class NoOpDebugSession : IDebugSession
+    public class DisabledDebugSession : IDebugSession
     {
         public IBreakpointManager BreakpointManager { get; } = new NoOpBreakpointManager();
         public IThreadEventsListener ThreadManager { get; } = new NoOpThreadEventsListener();

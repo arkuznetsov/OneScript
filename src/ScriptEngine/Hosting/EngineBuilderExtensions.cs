@@ -56,6 +56,7 @@ namespace ScriptEngine.Hosting
             services.RegisterSingleton<IErrorSink>(svc => new ThrowingErrorSink(CompilerException.FromCodeError));
             services.RegisterSingleton<IExceptionInfoFactory, ExceptionInfoFactory>();
             services.RegisterSingleton<IBslProcessFactory, BslProcessFactory>();
+            services.RegisterSingleton<IDebugger, DisabledDebugger>();
 
             services.RegisterScoped<StackMachineProvider>();
             

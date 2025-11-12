@@ -22,12 +22,6 @@ namespace ScriptEngine.Machine
 
     internal class MachineStopManager
     {
-        private struct StopPoint
-        {
-            public ExecutionFrame frame;
-            public int line;
-        }
-
         private DebugState _currentState = DebugState.Running;
         private readonly IBreakpointManager _breakpoints;
         private readonly MachineInstance _machine;

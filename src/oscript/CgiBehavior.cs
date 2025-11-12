@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using OneScript.Contexts;
+using OneScript.DebugServices;
 using OneScript.Exceptions;
 using OneScript.Execution;
 using OneScript.StandardLibrary;
