@@ -29,8 +29,8 @@ namespace ScriptEngine.Machine
             _machine = new MachineInstance();
             _machine.Setup(process);
             
-            var debugger = process.Services.Resolve<IDebugger>();
-            if (debugger.IsEnabled)
+            var debugger = process.Services.TryResolve<IDebugger>();
+            if (debugger?.IsEnabled == true)
             {
                 var session = debugger.GetSession();
                 if (session.IsActive)
@@ -45,7 +45,10 @@ namespace ScriptEngine.Machine
 
         public void AfterProcessExit(IBslProcess process)
         {
-            var debugger = process.Services.Resolve<IDebugger>();
+            var debugger = process.Services.TryResolve<IDebugger>();
+            if (debugger?.IsEnabled != true)
+                return;
+            
             var session = debugger.GetSession();
             if (session.IsActive)
             {
