@@ -11,13 +11,18 @@ using OneScript.DebugProtocol.Abstractions;
 
 namespace OneScript.DebugProtocol.TcpServer
 {
+    /// <summary>
+    /// Читает сообщения из канала и вызывает обработчики сообщений.
+    /// Не управляет жизненным циклом канала и оставляет его доступным при остановке сервера.
+    /// </summary>
+    /// <typeparam name="TMessage"></typeparam>
     public class DefaultMessageServer<TMessage> : ICommunicationServer
     {
-        private readonly ICommunicationChannel _protocolChannel;
+        private readonly IMessageChannel _protocolChannel;
         private Thread _messageThread;
         private volatile bool _serverStopped;
 
-        public DefaultMessageServer(ICommunicationChannel protocolChannel)
+        public DefaultMessageServer(IMessageChannel protocolChannel)
         {
             _protocolChannel = protocolChannel;
         }
@@ -92,18 +97,22 @@ namespace OneScript.DebugProtocol.TcpServer
                     }
                     catch (Exception e)
                     {
+                        if (OnError == null)
+                        {
+                            _serverStopped = true;
+                            break;
+                        }
+                        
                         var eventData = new CommunicationEventArgs
                         {
                             Data = null,
                             Channel = _protocolChannel,
                             Exception = new ChannelException("Unhandled error in message handler", true, e)
                         };
-                        
+
                         OnError?.Invoke(this, eventData);
                     }
                 }
-                
-                _protocolChannel.Dispose();
             });
             
             _messageThread.IsBackground = true;
@@ -125,7 +134,6 @@ namespace OneScript.DebugProtocol.TcpServer
             if (_messageThread?.IsAlive == true)
             {
                 _messageThread.Interrupt();
-                _protocolChannel.Dispose();
             }
         }
 

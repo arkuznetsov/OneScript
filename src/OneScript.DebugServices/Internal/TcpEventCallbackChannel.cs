@@ -5,19 +5,18 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using System;
 using System.IO;
 using OneScript.DebugProtocol;
 using OneScript.DebugProtocol.Abstractions;
 using OneScript.DebugProtocol.TcpServer;
 
-namespace OneScript.DebugServices
+namespace OneScript.DebugServices.Internal
 {
-    public class TcpEventCallbackChannel : IDebugEventListener, IDisposable
+    internal class TcpEventCallbackChannel : IDebugEventListener
     {
-        private readonly ICommunicationChannel _channel;
+        private readonly IMessageChannel _channel;
 
-        public TcpEventCallbackChannel(ICommunicationChannel channel)
+        public TcpEventCallbackChannel(IMessageChannel channel)
         {
             _channel = channel;
         }
@@ -53,11 +52,6 @@ namespace OneScript.DebugServices
             {
                 // Ignore
             }
-        }
-
-        public void Dispose()
-        {
-            _channel.Dispose();
         }
     }
 }

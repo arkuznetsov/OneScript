@@ -56,6 +56,8 @@ namespace VSCode.DebugAdapter
                 _activeProtocolVersion = value;
             }
         }
+        
+        public bool WaitOnStart { get; set; }
 
         public void Start()
         {

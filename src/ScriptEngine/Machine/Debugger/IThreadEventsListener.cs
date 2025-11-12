@@ -5,19 +5,15 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using System;
-using System.Collections.Generic;
-
-namespace ScriptEngine.Machine
+namespace ScriptEngine.Machine.Debugger
 {
     /// <summary>
     /// Менеджер состояния и количества потоков для отладчика
     /// </summary>
-    public interface IThreadManager : IDisposable
+    public interface IThreadEventsListener
     {
         void ThreadStarted(int threadId, MachineInstance machine);
         void ThreadStopped(int threadId, MachineStopReason reason, string errorMessage);
         void ThreadExited(int threadId);
-        IEnumerable<int> GetThreadIds();
     }
 }

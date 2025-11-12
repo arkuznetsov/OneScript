@@ -9,7 +9,7 @@ using System;
 
 namespace OneScript.DebugProtocol.Abstractions
 {
-    public interface ICommunicationChannel : IDisposable
+    public interface IMessageChannel : IDisposable
     {
         void Write(object data);
 

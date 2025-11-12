@@ -23,6 +23,7 @@ using OneScript.Sources;
 using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Compiler;
+using ScriptEngine.Machine.Debugger;
 
 namespace ScriptEngine.Machine
 {
@@ -176,7 +177,7 @@ namespace ScriptEngine.Machine
         #region Debug protocol methods
 
         [MethodImpl(MethodImplOptions.Synchronized)]
-        public void SetDebugMode(IThreadManager threadManager, IBreakpointManager breakpointManager)
+        public void SetDebugMode(IThreadEventsListener threadManager, IBreakpointManager breakpointManager)
         {
             if (!_debugEnabled)
             {

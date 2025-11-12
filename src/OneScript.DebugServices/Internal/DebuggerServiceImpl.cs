@@ -8,44 +8,34 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using OneScript.Contexts;
 using OneScript.DebugProtocol;
-using OneScript.DebugProtocol.TcpServer;
 using OneScript.Language;
 using ScriptEngine.Machine;
 using StackFrame = OneScript.DebugProtocol.StackFrame;
 using Variable = OneScript.DebugProtocol.Variable;
 using MachineVariable = OneScript.Contexts.Variable;
 
-namespace OneScript.DebugServices
+namespace OneScript.DebugServices.Internal
 {
-    public class DefaultDebugService : IDebuggerService
+    internal class DebuggerServiceImpl : IDebuggerService
     {
+        private readonly DebugSession _debugSession;
         private readonly IBreakpointManager _breakpointManager;
         private readonly IVariableVisualizer _visualizer;
         private readonly ThreadManager _threadManager;
 
-        private ManualResetEventSlim _awaiter = new ManualResetEventSlim();
-        
-        public DefaultDebugService(IBreakpointManager breakpointManager, ThreadManager threads, IVariableVisualizer visualizer)
+        public DebuggerServiceImpl(DebugSession debugSession, IVariableVisualizer visualizer)
         {
-            _breakpointManager = breakpointManager;
+            _debugSession = debugSession;
+            _breakpointManager = _debugSession.BreakpointManager;
+            _threadManager = (ThreadManager)_debugSession.ThreadManager;
             _visualizer = visualizer;
-            _threadManager = threads;
-        }
-
-        public void WaitForExecution()
-        {
-            _awaiter.Wait();
         }
         
         public void Execute(int threadId)
         {
-            if (!_awaiter.IsSet)
-            {
-                _awaiter.Set();
-            }
+            _debugSession.SetReadyToRun();
             
             if (threadId > 0)
             {
@@ -215,8 +205,7 @@ namespace OneScript.DebugServices
         {
             _breakpointManager.Clear();
             _threadManager.ReleaseAllThreads();
-
-            throw new StopServiceException();
+            _debugSession.Dispose();
         }
 
         public int[] GetThreads()

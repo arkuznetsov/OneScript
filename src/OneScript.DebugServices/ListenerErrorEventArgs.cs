@@ -7,12 +7,18 @@ at http://mozilla.org/MPL/2.0/.
 
 using System;
 
-namespace OneScript.DebugProtocol.TcpServer
+namespace OneScript.DebugServices
 {
-    /// <summary>
-    /// Прерывание сервера со стороны прикладного интерфейса. Кнопка "Выход" из диспетчера
-    /// </summary>
-    public class StopServiceException : ApplicationException
+    public class ListenerErrorEventArgs : EventArgs
     {
+        public ListenerErrorEventArgs(Exception exception)
+        {
+            this.Exception = exception;
+            StopServer = true;
+        }
+
+        public Exception Exception { get; }
+
+        public bool StopServer { get; set; }
     }
 }
