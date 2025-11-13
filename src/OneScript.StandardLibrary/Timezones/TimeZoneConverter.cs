@@ -129,27 +129,28 @@ namespace OneScript.StandardLibrary.Timezones
                 return TimeZoneInfo.CreateCustomTimeZone(id, offset, display, display);
             }
 
-            // Special handling for "EET" alias → Kyiv time zone
-            if (string.Equals(id, "EET", StringComparison.OrdinalIgnoreCase))
+            // Имена таймзон в Windows отличаются от IANA и будут не совпадать
+            // с поведением 1С, работающей с ICU 
+            // Надо заводить отдельную карту для коротких имен таймзон.
+            // Как минимум, для EET, CET, WET и может еще чего-то.
+            // Например, зона "E. Europe Standard Time" работает в .net только на Windows.
+            
+            // TODO: Переписать на нормальное решение
+            var tzFixes = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+            tzFixes.Add("EET", "GMT+02:00");
+            tzFixes.Add("СET", "GMT+01:00");
+            
+            if (tzFixes.TryGetValue(id, out var gmtString))
             {
-                var candidates = new[]
+                try
                 {
-                    "E. Europe Standard Time", // Windows
-                    "Europe/Kyiv",             // IANA (modern)
-                    "Europe/Kiev"              // IANA (legacy)
-                };
-                foreach (var cand in candidates)
+                    return ResolveTimeZone(gmtString);
+                }
+                catch (TimeZoneNotFoundException)
                 {
-                    try
-                    {
-                        return TimeZoneInfo.FindSystemTimeZoneById(cand);
-                    }
-                    catch (TimeZoneNotFoundException)
-                    {
-                    }
-                    catch (InvalidTimeZoneException)
-                    {
-                    }
+                }
+                catch (InvalidTimeZoneException)
+                {
                 }
                 throw new TimeZoneNotFoundException();
             }

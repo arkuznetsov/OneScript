@@ -15,13 +15,13 @@ namespace OneScript.StandardLibrary.Tests
     public class TimeZoneConverterTests
     {
         [Fact]
-        public void Kiev_EET_Summer_Dst_ToUtc_And_Back()
+        public void Kiev_Summer_Dst_ToUtc_And_Back()
         {
             var dtLocal = new DateTime(2025, 6, 24, 10, 0, 0);
-            var utc = TimeZoneConverter.ToUniversalTime(dtLocal, "EET");
+            var utc = TimeZoneConverter.ToUniversalTime(dtLocal, "Europe/Kiev");
             utc.Should().Be(new DateTime(2025, 6, 24, 7, 0, 0, DateTimeKind.Utc));
 
-            var backLocal = TimeZoneConverter.ToLocalTime(utc, "EET");
+            var backLocal = TimeZoneConverter.ToLocalTime(utc, "Europe/Kiev");
             backLocal.Should().Be(dtLocal);
         }
 
