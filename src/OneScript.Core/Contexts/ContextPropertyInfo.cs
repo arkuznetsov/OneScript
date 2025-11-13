@@ -16,7 +16,7 @@ namespace OneScript.Contexts
     /// <summary>
     /// Свойство, объявленое в CLR-классе через атрибут ContextProperty
     /// </summary>
-    public class ContextPropertyInfo : BslPropertyInfo, IObjectWrapper
+    public class ContextPropertyInfo : BslPropertyInfo, IObjectWrapper, ISupportsDeprecation
     {
         private readonly PropertyInfo _realProperty;
         private readonly ContextPropertyAttribute _scriptMark;

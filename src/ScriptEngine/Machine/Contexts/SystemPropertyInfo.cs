@@ -13,7 +13,7 @@ using OneScript.Values;
 
 namespace ScriptEngine.Machine.Contexts
 {
-    public class SystemPropertyInfo : BslPropertyInfo
+    public class SystemPropertyInfo : BslPropertyInfo, ISupportsDeprecation
     {
         private string _name;
         private string _alias;

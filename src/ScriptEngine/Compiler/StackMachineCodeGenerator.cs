@@ -22,6 +22,7 @@ using OneScript.Language.Extensions;
 using OneScript.Language.LexicalAnalysis;
 using OneScript.Language.SyntaxAnalysis;
 using OneScript.Language.SyntaxAnalysis.AstNodes;
+using OneScript.Localization;
 using OneScript.Sources;
 using OneScript.Values;
 using ScriptEngine.Machine;
@@ -39,7 +40,9 @@ namespace ScriptEngine.Compiler
         private readonly List<ForwardedMethodDecl> _forwardedMethods = new List<ForwardedMethodDecl>();
         private readonly Stack<NestedLoopInfo> _nestedLoops = new Stack<NestedLoopInfo>();
 
-        private IBslProcess _compilerProcess; 
+        private IBslProcess _compilerProcess;
+        
+        private HashSet<BslPropertyInfo> _reportedOldProperties = new HashSet<BslPropertyInfo>();
 
         public StackMachineCodeGenerator(IErrorSink errorSink)
         {
@@ -732,8 +735,19 @@ namespace ScriptEngine.Compiler
 
             var symbol = _ctx.GetVariable(varNum);
             
-            if (symbol is IPropertySymbol)
+            if (symbol is IPropertySymbol propSymbol)
             {
+                if (propSymbol.Property is ISupportsDeprecation { IsDeprecated: true } && 
+                    !_reportedOldProperties.Contains(propSymbol.Property))
+                {
+                    var message = BilingualString.Localize(
+                        $"Использование устаревшего свойства \"{identifier}\" в файле \"{_sourceCode.Location}\" ({node.Location})",
+                        $"Usage of deprecated property \"{identifier}\" in \"{_sourceCode.Location}\" ({node.Location})"
+                    );
+                    _reportedOldProperties.Add(propSymbol.Property);
+                    SystemLogger.Write(message);
+                }
+                
                 return PushPropertyReference(varNum);
             }
             else

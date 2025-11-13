@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using FluentAssertions;
 using Moq;
 using OneScript.Exceptions;
+using OneScript.Execution;
 using OneScript.Values;
 using ScriptEngine;
 using ScriptEngine.Hosting;
@@ -114,13 +115,14 @@ namespace OneScript.Core.Tests
         [Fact]
         public void DeprecatedEnumClassHasWarning()
         {
-            var env = new RuntimeEnvironment();
-            var discoverer = new ContextDiscoverer(new DefaultTypeManager(), Mock.Of<IGlobalsManager>(), new TinyIocImplementation());
-            discoverer.DiscoverGlobalContexts(env, GetType().Assembly, t => t == typeof(DeprecatedEnum));
+            var host = DefaultEngineBuilder.Create()
+                .SetDefaultOptions()
+                .SetupEnvironment(e => e.AddAssembly(typeof(DeprecatedEnum).Assembly))
+                .Build();
 
-            env.GetGlobalProperty("СтароеИмя").Should().BeAssignableTo<EnumerationContext>();
-            env.GetGlobalProperty("СтароеИмя");
-                
+            var source = host.Loader.FromString("А = СтароеИмя.Значение1");
+            host.GetCompilerService().Compile(source, ForbiddenBslProcess.Instance);
+            
             _messages.Should().HaveCount(1)
                 .And.Contain(x => x.Contains("СтароеИмя", StringComparison.InvariantCultureIgnoreCase));
         }
@@ -128,11 +130,14 @@ namespace OneScript.Core.Tests
         [Fact]
         public void DeprecatedEnumClassHasNoWarningOnNewName()
         {
-            var env = new RuntimeEnvironment();
-            var discoverer = new ContextDiscoverer(new DefaultTypeManager(), Mock.Of<IGlobalsManager>(), new TinyIocImplementation());
-            discoverer.DiscoverGlobalContexts(env, GetType().Assembly, t => t == typeof(DeprecatedEnum));
+            var host = DefaultEngineBuilder.Create()
+                .SetDefaultOptions()
+                .SetupEnvironment(e => e.AddAssembly(typeof(DeprecatedEnum).Assembly))
+                .Build();
 
-            env.GetGlobalProperty("НовоеПеречисление").Should().BeAssignableTo<EnumerationContext>();
+            var source = host.Loader.FromString("А = НовоеПеречисление.Значение1");
+            host.GetCompilerService().Compile(source, ForbiddenBslProcess.Instance);
+            
             _messages.Should().HaveCount(0);
         }
         

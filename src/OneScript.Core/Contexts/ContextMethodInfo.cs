@@ -18,7 +18,7 @@ namespace OneScript.Contexts
     /// <summary>
     /// Информация о методе, объявленном в классе .NET и помеченном атрибутом ContextMethod
     /// </summary>
-    public sealed class ContextMethodInfo : BslMethodInfo, IObjectWrapper
+    public sealed class ContextMethodInfo : BslMethodInfo, IObjectWrapper, ISupportsDeprecation
     {
         private readonly MethodInfo _realMethod;
 
