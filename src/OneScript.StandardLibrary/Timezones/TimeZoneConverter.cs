@@ -18,51 +18,33 @@ namespace OneScript.StandardLibrary.Timezones
 
         public static TimeSpan GetTimespan(string timezone)
         {
-            TimeSpan span;
-
-            if (string.IsNullOrEmpty(timezone))
-                span = TimeZoneInfo.Local.BaseUtcOffset;
-            else if (timezone.StartsWith("GMT", StringComparison.InvariantCultureIgnoreCase))
-                span = TimeSpanByGMTString(timezone);
-            else
-                span = TimeZoneById(timezone).BaseUtcOffset;
-
-            return span;
+            var tz = ResolveTimeZone(timezone);
+            return tz.BaseUtcOffset;
         }
 
         public static TimeZoneInfo TimeZoneById(string id)
         {
-            return TimeZoneInfo.FindSystemTimeZoneById(id);
+            return ResolveTimeZone(id);
         }
 
         public static DateTime ToUniversalTime(DateTime dt, string timeZone = null)
         {
-            var src = GetTimespan(timeZone);
-            var dest = TimeZoneInfo.Utc.BaseUtcOffset;
-            var span = dest.Subtract(src);
-            return dt.Add(span);
+            var tz = ResolveTimeZone(timeZone);
+            var unspecified = DateTime.SpecifyKind(dt, DateTimeKind.Unspecified);
+            return TimeZoneInfo.ConvertTimeToUtc(unspecified, tz);
         }
 
         public static DateTime ToLocalTime(DateTime dt, string timeZone = null)
         {
-            var dest = GetTimespan(timeZone);
-            var src = TimeZoneInfo.Utc.BaseUtcOffset;
-            var span = dest.Subtract(src);
-            return dt.Add(span);
+            var tz = ResolveTimeZone(timeZone);
+            var utc = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+            return TimeZoneInfo.ConvertTimeFromUtc(utc, tz);
         }
 
         public static int StandardTimeOffset(string timeZone = null, DateTime? dt = null)
         {
-            var dest = GetTimespan(timeZone);
-
-            if (dt == null)
-                dt = DateTime.UtcNow;
-
-            var local = dt.Value.Add(dest);
-
-            var offset = local - dt.Value;
-
-            return (int)offset.TotalSeconds;
+            var tz = ResolveTimeZone(timeZone);
+            return (int)tz.BaseUtcOffset.TotalSeconds;
         }
 
         public static IEnumerable<string> GetAvailableTimeZones()
@@ -79,15 +61,16 @@ namespace OneScript.StandardLibrary.Timezones
         public static string TimeZonePresentation(string timeZone)
         {
             TimeSpan offset;
-            
-            if(IsGmtString(timeZone))
+            if (IsGmtString(timeZone))
+            {
                 offset = TimeSpanByGMTString(timeZone);
+            }
             else
-                offset = TimeZoneById(timeZone).BaseUtcOffset;
-            
-            var oprt = offset.Hours >= 0 ? "+" : "-";
-            var result = $"GMT{oprt}{offset.ToString(@"hh\:mm")}";
-            return result;
+            {
+                var tz = ResolveTimeZone(timeZone);
+                offset = tz.BaseUtcOffset;
+            }
+            return FormatGmtOffset(offset);
         }
 
         private static TimeSpan TimeSpanByGMTString(string gmtString)
@@ -124,9 +107,55 @@ namespace OneScript.StandardLibrary.Timezones
 
         private static bool IsGmtString(string zone)
         {
-            return zone.StartsWith("GMT", StringComparison.InvariantCultureIgnoreCase);
+            return !string.IsNullOrEmpty(zone) && zone.StartsWith("GMT", StringComparison.InvariantCultureIgnoreCase);
         }
 
+        private static string FormatGmtOffset(TimeSpan offset)
+        {
+            var sign = offset >= TimeSpan.Zero ? "+" : "-";
+            var d = offset.Duration();
+            return $"GMT{sign}{d.ToString(@"hh\:mm")}";
+        }
+
+        private static TimeZoneInfo ResolveTimeZone(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return TimeZoneInfo.Local;
+
+            if (IsGmtString(id))
+            {
+                var offset = TimeSpanByGMTString(id);
+                var display = FormatGmtOffset(offset);
+                return TimeZoneInfo.CreateCustomTimeZone(id, offset, display, display);
+            }
+
+            // Special handling for "EET" alias → Kyiv time zone
+            if (string.Equals(id, "EET", StringComparison.OrdinalIgnoreCase))
+            {
+                var candidates = new[]
+                {
+                    "E. Europe Standard Time", // Windows
+                    "Europe/Kyiv",             // IANA (modern)
+                    "Europe/Kiev"              // IANA (legacy)
+                };
+                foreach (var cand in candidates)
+                {
+                    try
+                    {
+                        return TimeZoneInfo.FindSystemTimeZoneById(cand);
+                    }
+                    catch (TimeZoneNotFoundException)
+                    {
+                    }
+                    catch (InvalidTimeZoneException)
+                    {
+                    }
+                }
+                throw new TimeZoneNotFoundException();
+            }
+
+            return TimeZoneInfo.FindSystemTimeZoneById(id);
+        }
     }
 
 }
