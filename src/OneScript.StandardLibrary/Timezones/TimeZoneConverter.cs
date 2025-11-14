@@ -144,17 +144,7 @@ namespace OneScript.StandardLibrary.Timezones
             
             if (tzFixes.TryGetValue(id, out var gmtString))
             {
-                try
-                {
-                    return ResolveTimeZone(gmtString);
-                }
-                catch (TimeZoneNotFoundException)
-                {
-                }
-                catch (InvalidTimeZoneException)
-                {
-                }
-                throw new TimeZoneNotFoundException();
+                return ResolveTimeZone(gmtString);
             }
 
             return TimeZoneInfo.FindSystemTimeZoneById(id);
