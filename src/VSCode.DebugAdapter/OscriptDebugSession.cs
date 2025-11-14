@@ -285,14 +285,10 @@ namespace VSCode.DebugAdapter
 				if (!normalizedHostWorkspace.EndsWith("\\"))
 					normalizedHostWorkspace += "\\";
 					
-				if (!normalizedClientPath.EndsWith("\\"))
-					normalizedClientPath += "\\";
-
 				if (normalizedClientPath.StartsWith(normalizedHostWorkspace, StringComparison.OrdinalIgnoreCase))
 				{
 
 					string relativePath = normalizedClientPath.Substring(normalizedHostWorkspace.Length);
-					relativePath = relativePath.TrimStart('\\');
 					
 					string normalizedRemote = remoteWorkspace.Trim().Replace('\\', '/');
 					normalizedRemote = normalizedRemote.TrimEnd('/');
@@ -301,12 +297,7 @@ namespace VSCode.DebugAdapter
 						? normalizedRemote
 						: normalizedRemote + "/" + relativePath.Replace('\\', '/');
 					
-					Console.Error.WriteLine($"Path mapped: '{clientPath}' -> '{result}'");
 					return result;
-				}
-				else
-				{
-					Console.Error.WriteLine($"Path mapping skipped: '{clientPath}' doesn't start with '{hostWorkspace}'");
 				}
 			}
 		
