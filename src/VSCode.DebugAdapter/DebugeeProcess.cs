@@ -87,7 +87,16 @@ namespace VSCode.DebugAdapter
         public void InitAttached()
         {
             var pid = _debugger.GetProcessId();
-            _process = Process.GetProcessById(pid);
+            
+            try
+            {
+                _process = Process.GetProcessById(pid);
+            }
+            catch (ArgumentException ex) when (ex.Message.Contains("is not running"))
+            {
+                _process = Process.GetCurrentProcess();
+            }
+            
             _attachMode = true;
             _process.EnableRaisingEvents = true;
             _process.Exited += Process_Exited;
