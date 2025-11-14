@@ -42,7 +42,20 @@ namespace VSCode.DebugAdapter
             _strategy = pathHandling;
         }
 
-        public bool HasExited => _process?.HasExited ?? true;
+        public bool HasExited
+        {
+            get
+            {
+                if (_process != null)
+                    return _process.HasExited;
+
+                if (_attachMode && _debugger != null)
+                    return false;
+                    
+                return true;
+            }
+        }
+
         public int ExitCode => _process?.ExitCode ?? 0;
 
         public int DebugPort { get; set; }
@@ -112,16 +125,28 @@ namespace VSCode.DebugAdapter
 
         public void InitPathsMapper(JObject args)
         {
+            if (args == null)
+            {
+                PathsMapper = null;
+                return;
+            }
 
             try
             {
-                PathsMapper = args.ToObject<WorkspaceMapper>();
+                var mappingToken = args["pathsMapping"];
+                if (mappingToken == null || mappingToken.Type == JTokenType.Null)
+                {
+                    PathsMapper = null;
+                    return;
+                }
+
+                PathsMapper = mappingToken.ToObject<WorkspaceMapper>();
             }
-            catch
+            catch (Exception ex)
             {
-                PathsMapper = new WorkspaceMapper("", "");
+                Log.Warning(ex, "Failed to initialize paths mapper; path mapping will be disabled");
+                PathsMapper = null;
             }
-            
         }
 
         protected abstract Process CreateProcess();
@@ -290,7 +315,8 @@ namespace VSCode.DebugAdapter
         {
             var breakpointsArray = breakpoints.ToArray();
 
-            if (PathsMapper != null) {
+            if (PathsMapper != null)
+            {
                 for (int i = 0; i < breakpointsArray.Length; i++)
                 {
                     breakpointsArray[i].Source = PathsMapper.LocalToRemote(breakpointsArray[i].Source);
@@ -324,7 +350,8 @@ namespace VSCode.DebugAdapter
 
                 allFrames[i].ThreadId = threadId;
 
-                if (pathsMapperInit) {
+                if (pathsMapperInit)
+                {
                     allFrames[i].Source = PathsMapper.RemoteToLocal(allFrames[i].Source);
                 }
 
