@@ -92,5 +92,5 @@ namespace VSCode.DebugAdapter
         		}
         	}
         }
-    }  
+    }
 }
