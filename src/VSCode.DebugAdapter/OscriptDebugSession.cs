@@ -268,40 +268,10 @@ namespace VSCode.DebugAdapter
 
         private string NormalizeDriveLetter(string path)
         {
-            var clientPath = path;
-            
             if (Path.IsPathRooted(path))
-                clientPath = path[0].ToString().ToUpperInvariant() + path.Substring(1);
-
-			if (!string.IsNullOrWhiteSpace(_debuggee.HostWorkspace) && !string.IsNullOrWhiteSpace(_debuggee.RemoteWorkspace))
-			{
-
-                var hostWorkspace = _debuggee.HostWorkspace;
-                var remoteWorkspace = _debuggee.RemoteWorkspace;
-
-				string normalizedClientPath = clientPath.Replace('/', '\\').Trim();
-				string normalizedHostWorkspace = hostWorkspace.Replace('/', '\\').Trim();
-				
-				if (!normalizedHostWorkspace.EndsWith("\\"))
-					normalizedHostWorkspace += "\\";
-					
-				if (normalizedClientPath.StartsWith(normalizedHostWorkspace, StringComparison.OrdinalIgnoreCase))
-				{
-
-					string relativePath = normalizedClientPath.Substring(normalizedHostWorkspace.Length);
-					
-					string normalizedRemote = remoteWorkspace.Trim().Replace('\\', '/');
-					normalizedRemote = normalizedRemote.TrimEnd('/');
-					
-					string result = string.IsNullOrEmpty(relativePath) 
-						? normalizedRemote
-						: normalizedRemote + "/" + relativePath.Replace('\\', '/');
-					
-					return result;
-				}
-			}
-		
-            return clientPath;
+                return path[0].ToString().ToUpperInvariant() + path.Substring(1);
+            else
+                return path;
 
         }
 

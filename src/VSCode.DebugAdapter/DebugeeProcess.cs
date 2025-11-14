@@ -198,6 +198,41 @@ namespace VSCode.DebugAdapter
             OutputReceived?.Invoke(this, new DebugeeOutputEventArgs(category, data));
         }
 
+        private string ApplyRemoteWorkspaceString(string path)
+        {
+            var clientPath = path;
+
+			if (!string.IsNullOrWhiteSpace(HostWorkspace) && !string.IsNullOrWhiteSpace(RemoteWorkspace))
+			{
+
+                var hostWorkspace = HostWorkspace;
+                var remoteWorkspace = RemoteWorkspace;
+
+				string normalizedClientPath = clientPath.Replace('/', '\\').Trim();
+				string normalizedHostWorkspace = hostWorkspace.Replace('/', '\\').Trim();
+				
+				if (!normalizedHostWorkspace.EndsWith("\\"))
+					normalizedHostWorkspace += "\\";
+					
+				if (normalizedClientPath.StartsWith(normalizedHostWorkspace, StringComparison.OrdinalIgnoreCase))
+				{
+
+					string relativePath = normalizedClientPath.Substring(normalizedHostWorkspace.Length);
+					
+					string normalizedRemote = remoteWorkspace.Trim().Replace('\\', '/');
+					normalizedRemote = normalizedRemote.TrimEnd('/');
+					
+					clientPath = string.IsNullOrEmpty(relativePath) 
+						? normalizedRemote
+						: normalizedRemote + "/" + relativePath.Replace('\\', '/');
+					
+				}
+			}
+		
+            return clientPath;
+
+        }
+
         private void Terminate()
         {
             if (!_terminated)
@@ -273,7 +308,14 @@ namespace VSCode.DebugAdapter
 
         public Breakpoint[] SetBreakpoints(IEnumerable<Breakpoint> breakpoints)
         {
-            var confirmedBreaks = _debugger.SetMachineBreakpoints(breakpoints.ToArray());
+            var breakpointsArray = breakpoints.ToArray();
+            
+            for (int i = 0; i < breakpointsArray.Length; i++)
+            {
+                breakpointsArray[i].Source = ApplyRemoteWorkspaceString(breakpointsArray[i].Source);
+            }
+            
+            var confirmedBreaks = _debugger.SetMachineBreakpoints(breakpointsArray);
             
             return confirmedBreaks;
         }
@@ -297,6 +339,7 @@ namespace VSCode.DebugAdapter
             for (int i = firstFrameIdx; i < limit && i < allFrames.Length; i++)
             {
                 allFrames[i].ThreadId = threadId;
+                allFrames[i].Source = ApplyRemoteWorkspaceString(allFrames[i].Source);
                 result.Add(allFrames[i]);
             }
 
