@@ -221,12 +221,12 @@ namespace VSCode.DebugAdapter
             }
 
             var path = (string) arguments.source.path;
-            //path = ConvertClientPathToDebugger(path);
-            //if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            //{
+            path = ConvertClientPathToDebugger(path);
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            {
                 // vscode иногда передает путь, где диск - маленькая буква
-            //    path = NormalizeDriveLetter(path);
-            //}
+                path = NormalizeDriveLetter(path);
+            }
             
             var breaks = new List<OneScript.DebugProtocol.Breakpoint>();
 
