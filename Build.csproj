@@ -261,7 +261,7 @@
         <Delete Files="@(TempFiles)"/>
     </Target>
     
-	<Target Name="PrepareDistributionFiles" DependsOnTargets="CleanAll;BuildAll;GatherLibrary;ComposeDistributionFolders"/>
+	<Target Name="PrepareDistributionFiles" DependsOnTargets="CleanAll;BuildAll;GatherLibrary;BuildDocumentation;ComposeDistributionFolders"/>
     
     <Target Name="Test">
         <CallTarget Targets="UnitTests;ScriptedTests" />
