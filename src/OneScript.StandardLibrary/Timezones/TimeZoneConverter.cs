@@ -134,11 +134,13 @@ namespace OneScript.StandardLibrary.Timezones
             // Надо заводить отдельную карту для коротких имен таймзон.
             // Как минимум, для EET, CET, WET и может еще чего-то.
             // Например, зона "E. Europe Standard Time" работает в .net только на Windows.
+            // База данных IANA (https://www.iana.org/time-zones) в принципе не содержит этих таймзон, но вероятно
+            // имеет смысл их поддержать, т.к. в 1С они используются, и GetAvailableTimeZones() их возвращает.
             
             // TODO: Переписать на нормальное решение
             var tzFixes = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
             tzFixes.Add("EET", "GMT+02:00");
-            tzFixes.Add("СET", "GMT+01:00");
+            tzFixes.Add("CET", "GMT+01:00");
             
             if (tzFixes.TryGetValue(id, out var gmtString))
             {
