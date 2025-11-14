@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 using System;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 
 namespace VSCode.DebugAdapter
 {
@@ -15,6 +16,20 @@ namespace VSCode.DebugAdapter
         private Workspace _localWorkspace;
         private Workspace _remoteWorkspace;
 
+        [JsonProperty("localPath")]
+        private string LocalPathForDeserialization
+        {
+            set { _localWorkspace = new Workspace(value ?? ""); }
+        }
+
+        [JsonProperty("remotePath")]
+        private string RemotePathForDeserialization
+        {
+            set { _remoteWorkspace = new Workspace(value ?? ""); }
+        }
+
+        public WorkspaceMapper(){}
+        
         public WorkspaceMapper(string localPath, string remotePath) {
             
 			this._localWorkspace = new Workspace(localPath);

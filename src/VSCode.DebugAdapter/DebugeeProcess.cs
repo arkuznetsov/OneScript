@@ -110,6 +110,20 @@ namespace VSCode.DebugAdapter
             InitInternal(args);
         }
 
+        public void InitPathsMapper(JObject args)
+        {
+
+            try
+            {
+                PathsMapper = args.ToObject<WorkspaceMapper>();
+            }
+            catch
+            {
+                PathsMapper = new WorkspaceMapper("", "");
+            }
+            
+        }
+
         protected abstract Process CreateProcess();
 
         protected abstract void InitInternal(JObject args);

@@ -36,20 +36,7 @@ namespace VSCode.DebugAdapter
             AdapterID = (string) args.adapterID;
 
             _debuggee = DebugeeFactory.CreateProcess(AdapterID, PathStrategy);
-
-            dynamic pathsMappingObj = GetFromContainer<dynamic>(args, "pathsMapping", null);
-
-            if (pathsMappingObj != null)
-            {
-                string localPath = GetFromContainer(pathsMappingObj, "localPath", "");
-                string remotePath = GetFromContainer(pathsMappingObj, "remotePath", "");
-
-                _debuggee.PathsMapper = new WorkspaceMapper(localPath, remotePath);
-            }
-            else
-            {
-                _debuggee.PathsMapper = new WorkspaceMapper("", "");
-            }          
+            _debuggee.InitPathsMapper(args);        
 
             SendResponse(response, new Capabilities
             {
