@@ -133,19 +133,17 @@
                 "description": "Кодировка вывода отлаживаемого приложения. Отладчик будет интерпретировать вывод приложения в указанной кодировке",
                 "default": ""
               },
-              "env": {
-                "type": "object",
-                "description": "Переменные окружения для debug adapter",
-                "patternProperties": {
-                  "[a-zA-Z_][0-9a-zA-Z_]+": {
-                    "type": "string"
-                  }
-                },
-                "default": {
-                  "OSCRIPT_DEBUGWORKSPACE_HOST": "",
-                  "OSCRIPT_DEBUGWORKSPACE_REMOTE": ""
-                }
+              "hostWorkspace": {
+                "type": "string",
+                "description": "Путь к каталогу проекта на локальной машине (при отладке удаленного процесса)",
+                "default": ""
+              },
+              "remoteWorkspace": {
+                "type": "string",
+                "description": "Путь к каталогу проекта на удаленной машине (при отладке удаленного процесса)",
+                "default": ""
               }
+
             }
           }
         }

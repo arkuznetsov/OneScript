@@ -69,52 +69,6 @@ namespace VSCode.DebugAdapter
 				return null;
 			}
 
-			string hostWorkspace = Environment.GetEnvironmentVariable("OSCRIPT_DEBUGWORKSPACE_HOST");
-			string remoteWorkspace = Environment.GetEnvironmentVariable("OSCRIPT_DEBUGWORKSPACE_REMOTE");
-
-			if (!string.IsNullOrWhiteSpace(hostWorkspace) && !string.IsNullOrWhiteSpace(remoteWorkspace))
-			{
-
-				string normalizedClientPath = clientPath.Replace('/', '\\').Trim();
-				string normalizedHostWorkspace = hostWorkspace.Replace('/', '\\').Trim();
-				
-				if (!normalizedHostWorkspace.EndsWith("\\"))
-					normalizedHostWorkspace += "\\";
-					
-				if (!normalizedClientPath.EndsWith("\\"))
-					normalizedClientPath += "\\";
-
-				if (normalizedClientPath.StartsWith(normalizedHostWorkspace, StringComparison.OrdinalIgnoreCase))
-				{
-
-					string relativePath = normalizedClientPath.Substring(normalizedHostWorkspace.Length);
-					relativePath = relativePath.TrimStart('\\');
-					
-					string normalizedRemote = remoteWorkspace.Trim().Replace('\\', '/');
-					normalizedRemote = normalizedRemote.TrimEnd('/');
-					
-					string result = string.IsNullOrEmpty(relativePath) 
-						? normalizedRemote
-						: normalizedRemote + "/" + relativePath.Replace('\\', '/');
-					
-					Console.Error.WriteLine($"Path mapped: '{clientPath}' -> '{result}'");
-					return result;
-				}
-				else
-				{
-					Console.Error.WriteLine($"Path mapping skipped: '{clientPath}' doesn't start with '{hostWorkspace}'");
-				}
-			}
-			else
-			{
-				if (string.IsNullOrWhiteSpace(hostWorkspace) && string.IsNullOrWhiteSpace(remoteWorkspace))
-					Console.Error.WriteLine("Path mapping: both OSCRIPT_DEBUGWORKSPACE_HOST and OSCRIPT_DEBUGWORKSPACE_REMOTE are not set");
-				else if (string.IsNullOrWhiteSpace(hostWorkspace))
-					Console.Error.WriteLine("Path mapping: OSCRIPT_DEBUGWORKSPACE_HOST is not set or empty");
-				else if (string.IsNullOrWhiteSpace(remoteWorkspace))
-					Console.Error.WriteLine("Path mapping: OSCRIPT_DEBUGWORKSPACE_REMOTE is not set or empty");
-			}
-
 			if (DebuggerPathsAreUri) {
 				if (ClientPathsAreUri) {
 					return clientPath;

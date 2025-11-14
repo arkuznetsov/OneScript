@@ -59,6 +59,10 @@ namespace VSCode.DebugAdapter
         
         public bool WaitOnStart { get; set; }
 
+        public string HostWorkspace { get; set; }
+
+        public string RemoteWorkspace { get; set; }
+
         public void Start()
         {
             _process = CreateProcess();
@@ -100,6 +104,7 @@ namespace VSCode.DebugAdapter
             _attachMode = true;
             _process.EnableRaisingEvents = true;
             _process.Exited += Process_Exited;
+
         }
         
         public void Init(JObject args)
