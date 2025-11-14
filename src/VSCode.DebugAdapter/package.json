@@ -86,10 +86,7 @@
                     "type": "string"
                   }
                 },
-                "default": {
-                  "OSCRIPT_DEBUGWORKSPACE_HOST": "",
-                  "OSCRIPT_DEBUGWORKSPACE_REMOTE": ""
-                }
+                "default": null
               },
               "runtimeExecutable": {
                 "type": [
@@ -135,6 +132,19 @@
                 "type": "string",
                 "description": "Кодировка вывода отлаживаемого приложения. Отладчик будет интерпретировать вывод приложения в указанной кодировке",
                 "default": ""
+              },
+              "env": {
+                "type": "object",
+                "description": "Переменные окружения для debug adapter",
+                "patternProperties": {
+                  "[a-zA-Z_][0-9a-zA-Z_]+": {
+                    "type": "string"
+                  }
+                },
+                "default": {
+                  "OSCRIPT_DEBUGWORKSPACE_HOST": "",
+                  "OSCRIPT_DEBUGWORKSPACE_REMOTE": ""
+                }
               }
             }
           }
