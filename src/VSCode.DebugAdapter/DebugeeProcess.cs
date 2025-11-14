@@ -290,9 +290,11 @@ namespace VSCode.DebugAdapter
         {
             var breakpointsArray = breakpoints.ToArray();
 
-            for (int i = 0; i < breakpointsArray.Length; i++)
-            {
-                breakpointsArray[i].Source = PathsMapper.LocalToRemote(breakpointsArray[i].Source);
+            if (PathsMapper != null) {
+                for (int i = 0; i < breakpointsArray.Length; i++)
+                {
+                    breakpointsArray[i].Source = PathsMapper.LocalToRemote(breakpointsArray[i].Source);
+                }
             }
 
             var confirmedBreaks = _debugger.SetMachineBreakpoints(breakpointsArray);
@@ -308,6 +310,7 @@ namespace VSCode.DebugAdapter
         public StackFrame[] GetStackTrace(int threadId, int firstFrameIdx, int limit)
         {
             var allFrames = _debugger.GetStackFrames(threadId);
+            var pathsMapperInit = PathsMapper != null;
 
             if (limit == 0)
                 limit = allFrames.Length;
@@ -318,8 +321,13 @@ namespace VSCode.DebugAdapter
             var result = new List<StackFrame>();
             for (int i = firstFrameIdx; i < limit && i < allFrames.Length; i++)
             {
+
                 allFrames[i].ThreadId = threadId;
-                allFrames[i].Source = PathsMapper.RemoteToLocal(allFrames[i].Source);
+
+                if (pathsMapperInit) {
+                    allFrames[i].Source = PathsMapper.RemoteToLocal(allFrames[i].Source);
+                }
+
                 result.Add(allFrames[i]);
             }
 
