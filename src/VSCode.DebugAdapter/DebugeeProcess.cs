@@ -26,7 +26,7 @@ namespace VSCode.DebugAdapter
         private bool _stdoutEOF;
         private bool _stderrEOF;
         private bool _attachMode;
-        
+
         private Encoding _dapEncoding;
 
         private OneScriptDebuggerClient _debugger;
@@ -41,7 +41,7 @@ namespace VSCode.DebugAdapter
         {
             _strategy = pathHandling;
         }
-        
+
         public bool HasExited => _process?.HasExited ?? true;
         public int ExitCode => _process.ExitCode;
 
@@ -56,7 +56,7 @@ namespace VSCode.DebugAdapter
                 _activeProtocolVersion = value;
             }
         }
-        
+
         public bool WaitOnStart { get; set; }
 
         public string HostWorkspace { get; set; }
@@ -67,7 +67,7 @@ namespace VSCode.DebugAdapter
         {
             _process = CreateProcess();
             var psi = _process.StartInfo;
-            
+
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
 
@@ -87,31 +87,31 @@ namespace VSCode.DebugAdapter
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
         }
-        
+
         public void InitAttached()
         {
             var pid = _debugger.GetProcessId();
-            
+
             try
             {
                 _process = Process.GetProcessById(pid);
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("is not running"))
+            catch
             {
                 _process = Process.GetCurrentProcess();
             }
-            
+
             _attachMode = true;
             _process.EnableRaisingEvents = true;
             _process.Exited += Process_Exited;
 
         }
-        
+
         public void Init(JObject args)
         {
             InitInternal(args);
         }
-        
+
         protected abstract Process CreateProcess();
 
         protected abstract void InitInternal(JObject args);
@@ -120,12 +120,12 @@ namespace VSCode.DebugAdapter
         {
             return _strategy.ConvertClientPathToDebugger(clientPath);
         }
-        
+
         protected void LoadEnvironment(ProcessStartInfo psi, IDictionary<string, string> variables)
         {
             if (variables == null || variables.Count <= 0)
                 return;
-            
+
             foreach (var pair in variables)
             {
                 psi.EnvironmentVariables[pair.Key] = pair.Value;
@@ -142,7 +142,7 @@ namespace VSCode.DebugAdapter
             {
                 _dapEncoding = Utilities.GetEncodingFromOptions(encodingFromOptions);
             }
-            
+
             Log.Information("Encoding for debuggee output is {Encoding}", _dapEncoding);
         }
 
@@ -156,10 +156,10 @@ namespace VSCode.DebugAdapter
             _debugger = service;
             ProtocolVersion = service.ProtocolVersion;
         }
-        
+
         public event EventHandler<DebugeeOutputEventArgs> OutputReceived;
         public event EventHandler ProcessExited;
-        
+
         private void Process_Exited(object sender, EventArgs e)
         {
             _debugger?.Stop();
@@ -198,39 +198,29 @@ namespace VSCode.DebugAdapter
             OutputReceived?.Invoke(this, new DebugeeOutputEventArgs(category, data));
         }
 
-        private string ApplyRemoteWorkspaceString(string path)
+        private string ConvertRemotePath(string path, string fromPrefix, string toPrefix)
         {
-            var clientPath = path;
+            if (string.IsNullOrWhiteSpace(path) || 
+                string.IsNullOrWhiteSpace(fromPrefix) || 
+                string.IsNullOrWhiteSpace(toPrefix))
+                return path;
 
-			if (!string.IsNullOrWhiteSpace(HostWorkspace) && !string.IsNullOrWhiteSpace(RemoteWorkspace))
-			{
+            var normalizedPath = path.Replace('\\', '/');
+            var normalizedFrom = fromPrefix.Replace('\\', '/').TrimEnd('/');
+            
+            var comparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
 
-                var hostWorkspace = HostWorkspace;
-                var remoteWorkspace = RemoteWorkspace;
+            if (normalizedPath.StartsWith(toPrefix.Replace('\\', '/'), comparison) ||
+                !normalizedPath.StartsWith(normalizedFrom, comparison))
+                return path;
 
-				string normalizedClientPath = clientPath.Replace('/', '\\').Trim();
-				string normalizedHostWorkspace = hostWorkspace.Replace('/', '\\').Trim();
-				
-				if (!normalizedHostWorkspace.EndsWith("\\"))
-					normalizedHostWorkspace += "\\";
-					
-				if (normalizedClientPath.StartsWith(normalizedHostWorkspace, StringComparison.OrdinalIgnoreCase))
-				{
-
-					string relativePath = normalizedClientPath.Substring(normalizedHostWorkspace.Length);
-					
-					string normalizedRemote = remoteWorkspace.Trim().Replace('\\', '/');
-					normalizedRemote = normalizedRemote.TrimEnd('/');
-					
-					clientPath = string.IsNullOrEmpty(relativePath) 
-						? normalizedRemote
-						: normalizedRemote + "/" + relativePath.Replace('\\', '/');
-					
-				}
-			}
-		
-            return clientPath;
-
+            var relativePath = normalizedPath.Substring(normalizedFrom.Length).TrimStart('/');
+            
+            var result = toPrefix.TrimEnd('/', '\\') + "/" + relativePath;
+            
+            return result;
         }
 
         private void Terminate()
@@ -243,7 +233,7 @@ namespace VSCode.DebugAdapter
                 {
                     System.Threading.Thread.Sleep(100);
                 }
-                
+
                 _terminated = true;
                 _process = null;
                 _debugger = null;
@@ -260,7 +250,7 @@ namespace VSCode.DebugAdapter
             _debugger.Disconnect(terminate);
 
             var mustKill = terminate && !_attachMode;
-            
+
             if (mustKill && _process != null && !_process.HasExited)
             {
                 Log.Debug("Stopping child process...");
@@ -274,7 +264,7 @@ namespace VSCode.DebugAdapter
                     Log.Debug("Process killed");
                 }
             }
-            
+
             Log.Debug("Debuggee disconnected");
         }
 
@@ -309,14 +299,14 @@ namespace VSCode.DebugAdapter
         public Breakpoint[] SetBreakpoints(IEnumerable<Breakpoint> breakpoints)
         {
             var breakpointsArray = breakpoints.ToArray();
-            
+
             for (int i = 0; i < breakpointsArray.Length; i++)
             {
-                breakpointsArray[i].Source = ApplyRemoteWorkspaceString(breakpointsArray[i].Source);
+                breakpointsArray[i].Source = ConvertRemotePath(breakpointsArray[i].Source, HostWorkspace, RemoteWorkspace);
             }
-            
+
             var confirmedBreaks = _debugger.SetMachineBreakpoints(breakpointsArray);
-            
+
             return confirmedBreaks;
         }
 
@@ -324,22 +314,22 @@ namespace VSCode.DebugAdapter
         {
             _debugger.Execute(threadId);
         }
-        
+
         public StackFrame[] GetStackTrace(int threadId, int firstFrameIdx, int limit)
         {
             var allFrames = _debugger.GetStackFrames(threadId);
-            
+
             if (limit == 0)
                 limit = allFrames.Length;
 
-            if(allFrames.Length < firstFrameIdx)
+            if (allFrames.Length < firstFrameIdx)
                 return new StackFrame[0];
 
             var result = new List<StackFrame>();
             for (int i = firstFrameIdx; i < limit && i < allFrames.Length; i++)
             {
                 allFrames[i].ThreadId = threadId;
-                allFrames[i].Source = ApplyRemoteWorkspaceString(allFrames[i].Source);
+                allFrames[i].Source = ConvertRemotePath(allFrames[i].Source, RemoteWorkspace, HostWorkspace);
                 result.Add(allFrames[i]);
             }
 
