@@ -37,6 +37,20 @@ namespace VSCode.DebugAdapter
 
             _debuggee = DebugeeFactory.CreateProcess(AdapterID, PathStrategy);
 
+            dynamic pathsMappingObj = GetFromContainer<dynamic>(args, "pathsMapping", null);
+
+            if (pathsMappingObj != null)
+            {
+                string localPath = GetFromContainer(pathsMappingObj, "localPath", "");
+                string remotePath = GetFromContainer(pathsMappingObj, "remotePath", "");
+
+                _debuggee.PathsMapper = new WorkspaceMapper(localPath, remotePath);
+            }
+            else
+            {
+                _debuggee.PathsMapper = new WorkspaceMapper("", "");
+            }          
+
             SendResponse(response, new Capabilities
             {
                 supportsConditionalBreakpoints = true,
@@ -139,8 +153,6 @@ namespace VSCode.DebugAdapter
             SubscribeForDebuggeeProcessEvents();
 
             _debuggee.DebugPort = GetFromContainer(arguments, "debugPort", 2801);
-            _debuggee.HostWorkspace = GetFromContainer(arguments, "hostWorkspace", "");
-            _debuggee.RemoteWorkspace = GetFromContainer(arguments, "remoteWorkspace", "");
             
             DebugClientFactory debugClientFactory;
             try

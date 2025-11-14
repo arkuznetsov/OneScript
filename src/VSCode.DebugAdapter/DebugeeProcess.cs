@@ -43,7 +43,7 @@ namespace VSCode.DebugAdapter
         }
 
         public bool HasExited => _process?.HasExited ?? true;
-        public int ExitCode => _process.ExitCode;
+        public int ExitCode => _process?.ExitCode ?? 0;
 
         public int DebugPort { get; set; }
 
@@ -59,9 +59,7 @@ namespace VSCode.DebugAdapter
 
         public bool WaitOnStart { get; set; }
 
-        public string HostWorkspace { get; set; }
-
-        public string RemoteWorkspace { get; set; }
+        public WorkspaceMapper PathsMapper { get; set; }
 
         public void Start()
         {
@@ -95,15 +93,15 @@ namespace VSCode.DebugAdapter
             try
             {
                 _process = Process.GetProcessById(pid);
+                _process.EnableRaisingEvents = true;
+                _process.Exited += Process_Exited;
             }
             catch
             {
-                _process = Process.GetCurrentProcess();
+                _process = null;
             }
 
             _attachMode = true;
-            _process.EnableRaisingEvents = true;
-            _process.Exited += Process_Exited;
 
         }
 
@@ -198,31 +196,6 @@ namespace VSCode.DebugAdapter
             OutputReceived?.Invoke(this, new DebugeeOutputEventArgs(category, data));
         }
 
-        private string ConvertRemotePath(string path, string fromPrefix, string toPrefix)
-        {
-            if (string.IsNullOrWhiteSpace(path) || 
-                string.IsNullOrWhiteSpace(fromPrefix) || 
-                string.IsNullOrWhiteSpace(toPrefix))
-                return path;
-
-            var normalizedPath = path.Replace('\\', '/');
-            var normalizedFrom = fromPrefix.Replace('\\', '/').TrimEnd('/');
-            
-            var comparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal;
-
-            if (normalizedPath.StartsWith(toPrefix.Replace('\\', '/'), comparison) ||
-                !normalizedPath.StartsWith(normalizedFrom, comparison))
-                return path;
-
-            var relativePath = normalizedPath.Substring(normalizedFrom.Length).TrimStart('/');
-            
-            var result = toPrefix.TrimEnd('/', '\\') + "/" + relativePath;
-            
-            return result;
-        }
-
         private void Terminate()
         {
             if (!_terminated)
@@ -270,6 +243,9 @@ namespace VSCode.DebugAdapter
 
         public void Kill()
         {
+            if (_process == null)
+                return;
+
             _process.Kill();
             _process.WaitForExit(1500);
         }
@@ -302,7 +278,7 @@ namespace VSCode.DebugAdapter
 
             for (int i = 0; i < breakpointsArray.Length; i++)
             {
-                breakpointsArray[i].Source = ConvertRemotePath(breakpointsArray[i].Source, HostWorkspace, RemoteWorkspace);
+                breakpointsArray[i].Source = PathsMapper.LocalToRemote(breakpointsArray[i].Source);
             }
 
             var confirmedBreaks = _debugger.SetMachineBreakpoints(breakpointsArray);
@@ -329,7 +305,7 @@ namespace VSCode.DebugAdapter
             for (int i = firstFrameIdx; i < limit && i < allFrames.Length; i++)
             {
                 allFrames[i].ThreadId = threadId;
-                allFrames[i].Source = ConvertRemotePath(allFrames[i].Source, RemoteWorkspace, HostWorkspace);
+                allFrames[i].Source = PathsMapper.RemoteToLocal(allFrames[i].Source);
                 result.Add(allFrames[i]);
             }
 

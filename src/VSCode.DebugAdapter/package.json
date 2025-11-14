@@ -133,15 +133,22 @@
                 "description": "Кодировка вывода отлаживаемого приложения. Отладчик будет интерпретировать вывод приложения в указанной кодировке",
                 "default": ""
               },
-              "hostWorkspace": {
-                "type": "string",
-                "description": "Путь к каталогу проекта на локальной машине (при отладке удаленного процесса)",
-                "default": ""
-              },
-              "remoteWorkspace": {
-                "type": "string",
-                "description": "Путь к каталогу проекта на удаленной машине (при отладке удаленного процесса)",
-                "default": ""
+              "pathsMapper": {
+                "type": "object",
+                "description": "Сопоставление путей между локальной и удаленной машиной (для удаленной отладки)",
+                "properties": {
+                  "localPath": {
+                    "type": "string",
+                    "description": "Путь к каталогу проекта на локальной машине.",
+                    "default": ""
+                  },
+                  "remotePath": {
+                    "type": "string",
+                    "description": "Путь к каталогу проекта на удаленной машине.",
+                    "default": ""
+                  }
+                },
+                "required": ["localPath", "remotePath"]
               }
 
             }
