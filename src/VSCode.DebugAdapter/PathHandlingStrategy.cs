@@ -63,34 +63,55 @@ namespace VSCode.DebugAdapter
         	}
         }
 
-        public string ConvertClientPathToDebugger(string clientPath)
-        {
-        	if (clientPath == null) {
-        		return null;
-        	}
+		public string ConvertClientPathToDebugger(string clientPath)
+		{
+			if (clientPath == null) {
+				return null;
+			}
 
-        	if (DebuggerPathsAreUri) {
-        		if (ClientPathsAreUri) {
-        			return clientPath;
-        		}
-        		else {
-        			var uri = new System.Uri(clientPath);
-        			return uri.AbsoluteUri;
-        		}
-        	}
-        	else {
-        		if (ClientPathsAreUri) {
-        			if (Uri.IsWellFormedUriString(clientPath, UriKind.Absolute)) {
-        				Uri uri = new Uri(clientPath);
-        				return uri.LocalPath;
-        			}
-        			Console.Error.WriteLine("path not well formed: '{0}'", clientPath);
-        			return null;
-        		}
-        		else {
-        			return clientPath;
-        		}
-        	}
-        }
+			string hostWorkspace = Environment.GetEnvironmentVariable("OSCRIPT_DEBUGWORKSPACE_HOST");
+			string remoteWorkspace = Environment.GetEnvironmentVariable("OSCRIPT_DEBUGWORKSPACE_REMOTE");
+
+			if (!string.IsNullOrEmpty(hostWorkspace) && !string.IsNullOrEmpty(remoteWorkspace))
+			{
+				string normalizedClientPath = clientPath.Replace('/', '\\');
+				string normalizedHostWorkspace = hostWorkspace.Replace('/', '\\');
+				
+				if (normalizedClientPath.StartsWith(normalizedHostWorkspace, StringComparison.OrdinalIgnoreCase))
+				{
+					string relativePath = normalizedClientPath.Substring(normalizedHostWorkspace.Length);
+					
+					string normalizedRemote = remoteWorkspace.Replace('\\', '/');
+					string normalizedRelative = relativePath.Replace('\\', '/');
+					
+					string result = normalizedRemote.TrimEnd('/') + "/" + normalizedRelative.TrimStart('/');
+
+					return result;
+				}
+			}
+
+			if (DebuggerPathsAreUri) {
+				if (ClientPathsAreUri) {
+					return clientPath;
+				}
+				else {
+					var uri = new System.Uri(clientPath);
+					return uri.AbsoluteUri;
+				}
+			}
+			else {
+				if (ClientPathsAreUri) {
+					if (Uri.IsWellFormedUriString(clientPath, UriKind.Absolute)) {
+						Uri uri = new Uri(clientPath);
+						return uri.LocalPath;
+					}
+					Console.Error.WriteLine("path not well formed: '{0}'", clientPath);
+					return null;
+				}
+				else {
+					return clientPath;
+				}
+			}
+		}
     }
 }

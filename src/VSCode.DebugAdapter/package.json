@@ -86,7 +86,10 @@
                     "type": "string"
                   }
                 },
-                "default": null
+                "default": {
+                  "OSCRIPT_DEBUGWORKSPACE_HOST": "",
+                  "OSCRIPT_DEBUGWORKSPACE_REMOTE": ""
+                }
               },
               "runtimeExecutable": {
                 "type": [
