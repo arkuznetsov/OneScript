@@ -54,7 +54,7 @@ namespace VSCode.DebugAdapter
                 return path;
 
             var normalizedPath = path.Replace('\\', '/');
-            var normalizedFrom = fromPrefix.Normalized.TrimEnd('/');
+            var normalizedFrom = fromPrefix.Normalized;
             
             var comparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                 ? StringComparison.OrdinalIgnoreCase
@@ -64,9 +64,8 @@ namespace VSCode.DebugAdapter
                 !normalizedPath.StartsWith(normalizedFrom, comparison))
                 return path;
 
-            var relativePath = normalizedPath.Substring(normalizedFrom.Length).TrimStart('/');
-            
-            var result = toPrefix.Original.TrimEnd('/', '\\') + "/" + relativePath;
+            var relativePath = normalizedPath.Substring(normalizedFrom.Length).TrimStart('/');          
+            var result = toPrefix.Normalized + "/" + relativePath;
             
             return result;
         }
@@ -81,7 +80,7 @@ namespace VSCode.DebugAdapter
         internal Workspace(string path)
         {
             this.Original = path;
-            this.Normalized = path.Replace('\\', '/');
+            this.Normalized = path.Replace('\\', '/').TrimEnd('/');
         }
 
     }
