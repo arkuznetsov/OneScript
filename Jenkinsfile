@@ -295,6 +295,7 @@ pipeline {
                             def codename = env.TAG_NAME ? env.TAG_NAME : 'dev'
                             publishDockerImage('v2', codename)
                         }
+                    }
                 }
             }
         }
