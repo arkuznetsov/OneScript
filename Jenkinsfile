@@ -266,7 +266,7 @@ pipeline {
                     agent { label 'linux' }
                     when { 
                         anyOf {
-                            branch 'latest'
+                            branch 'release/latest'
                             expression { 
                                 return env.TAG_NAME && env.TAG_NAME.startsWith('v1.')
                             }
