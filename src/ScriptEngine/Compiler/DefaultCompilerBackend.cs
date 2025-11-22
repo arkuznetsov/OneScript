@@ -35,13 +35,7 @@ namespace ScriptEngine.Compiler
         {
             _codeGen.ProduceExtraCode = GetCodeFlags();
             _codeGen.DependencyResolver = DependencyResolver;
-            var module = _codeGen.CreateModule(parsedModule, parsedModule.Source, Symbols, process);
-            return LoadModuleImage(module);
-        }
-
-        public IExecutableModule LoadModuleImage(StackModuleImage module)
-        {
-            throw new NotImplementedException();
+            return _codeGen.CreateModule(parsedModule, parsedModule.Source, Symbols, process);
         }
 
         private CodeGenerationFlags GetCodeFlags()

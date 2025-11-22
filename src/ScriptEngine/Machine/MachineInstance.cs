@@ -44,7 +44,7 @@ namespace ScriptEngine.Machine
         
         private IBslProcess _process;
         private ITypeManager _typeManager;
-        private AttachedContext[] _globalContexts;
+        private IRuntimeEnvironment _runtimeEnvironment;
 
         // для отладчика.
         // актуален в момент останова машины
@@ -70,30 +70,39 @@ namespace ScriptEngine.Machine
             _process = process;
             _codeStatCollector = process.Services.TryResolve<ICodeStatCollector>();
             _typeManager = process.Services.Resolve<ITypeManager>();
-            _globalContexts = process.Services.Resolve<IRuntimeEnvironment>().AttachedContexts.Select(x => new AttachedContext(x))
-                .ToArray();
+            _runtimeEnvironment = process.Services.Resolve<IRuntimeEnvironment>();
         }
 
         internal IBslProcess Process => _process;
 
-        public void UpdateGlobals() 
-        {
-            _globalContexts.ForEach(x => x.Attach());
-        }
-        
         public bool IsRunning => _callStack.Count != 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static IReadOnlyList<AttachedContext> CreateFrameScopes(IReadOnlyList<AttachedContext> outerScopes, AttachedContext thisScope)
-            => new RuntimeScopes(outerScopes, thisScope);
+        private IReadOnlyList<IAttachableContext> CreateRootFrameScopes(IAttachableContext thisScope)
+        {
+            if (_runtimeEnvironment == null)
+                throw new InvalidOperationException("Runtime environment is not initialized");
+
+            var globals = _runtimeEnvironment.AttachedContexts;
+            return new JoinedScopes(globals, thisScope);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static IReadOnlyList<IAttachableContext> CreateFrameScopes(IReadOnlyList<IAttachableContext> outerScopes, IAttachableContext thisScope)
+        {
+            if (outerScopes == null)
+                throw new ArgumentNullException(nameof(outerScopes));
+
+            return new JoinedScopes(outerScopes, thisScope);
+        }
 
         internal IValue ExecuteMethod(IRunnable sdo, MachineMethodInfo methodInfo, IValue[] arguments)
         {
             var module = sdo.Module as StackRuntimeModule;
             Debug.Assert(module != null);
 
-            var thisScope = new AttachedContext(sdo);
-            var scopes = CreateFrameScopes(_globalContexts, thisScope);
+            var thisScope = sdo;
+            var scopes = CreateRootFrameScopes(thisScope);
             
             var frame = new ExecutionFrame
             {
@@ -220,7 +229,7 @@ namespace ScriptEngine.Machine
         {
             var code = CompileCached(expression, CompileExpressionModule);
 
-            var localScope = new AttachedContext(new EvalExecLocalScope(code), _currentFrame.Locals);
+            IAttachableContext localScope = new EvalExecLocalContext(_currentFrame.Locals);
             
             var frame = new ExecutionFrame
             {
@@ -250,7 +259,7 @@ namespace ScriptEngine.Machine
             MachineInstance runner = new MachineInstance
             {
                 _process = this._process,
-                _globalContexts = this._globalContexts,
+                _runtimeEnvironment = this._runtimeEnvironment,
                 _typeManager = this._typeManager,
                 _debugInfo = CurrentScript
             };
@@ -261,7 +270,7 @@ namespace ScriptEngine.Machine
 
             var code = runner.CompileExpressionModule(expression);
 
-            var localScope = new AttachedContext(new EvalExecLocalScope(code), selectedFrame.Locals);
+            IAttachableContext localScope = new EvalExecLocalContext(selectedFrame.Locals);
 
             frame = new ExecutionFrame
             {
@@ -344,7 +353,7 @@ namespace ScriptEngine.Machine
             _currentFrame = null;
             _process = null;
             _typeManager = null;
-            _globalContexts = null;
+            _runtimeEnvironment = null;
         }
 
         private void PrepareCodeStatisticsData(StackRuntimeModule _module)
@@ -661,8 +670,9 @@ namespace ScriptEngine.Machine
         private void PushVar(int arg)
         {
             var binding = _module.VariableRefs[arg];
-            var scope = _currentFrame.Scopes[binding.ScopeNumber];
-            _operationStack.Push(scope.Variables[binding.MemberNumber]);
+            var target = binding.Target ?? _currentFrame.ThisScope;
+            _operationStack.Push(target.GetVariable(binding.MemberNumber));
+            
             NextInstruction();
         }
 
@@ -705,8 +715,10 @@ namespace ScriptEngine.Machine
         private void PushRef(int arg)
         {
             var binding = _module.VariableRefs[arg];
-            var scope = _currentFrame.Scopes[binding.ScopeNumber];
-            var reference = Variable.CreateContextPropertyReference(scope.Instance, binding.MemberNumber, "$stackvar");
+
+            var target = binding.Target ?? _currentFrame.ThisScope;
+            var reference = Variable.CreateContextPropertyReference(target, binding.MemberNumber, "$stackvar");
+            
             _operationStack.Push(reference);
             NextInstruction();
         }
@@ -714,8 +726,9 @@ namespace ScriptEngine.Machine
         private void LoadVar(int arg)
         {
             var binding = _module.VariableRefs[arg];
-            var scope = _currentFrame.Scopes[binding.ScopeNumber];
-            scope.Variables[binding.MemberNumber].Value = PopRawValue();
+            var target = binding.Target ?? _currentFrame.ThisScope;
+            target.GetVariable(binding.MemberNumber).Value = PopRawValue();
+            
             NextInstruction();
         }
 
@@ -899,17 +912,18 @@ namespace ScriptEngine.Machine
         private bool MethodCallImpl(int arg, bool asFunc)
         {
             var methodRef = _module.MethodRefs[arg];
-            var scope = _currentFrame.Scopes[methodRef.ScopeNumber];
-            var methodSignature = scope.Methods[methodRef.MemberNumber];
+
+            var boundInstance = methodRef.Target ?? _currentFrame.ThisScope;
+            var methodSignature = boundInstance.GetMethod(methodRef.MemberNumber);
 
             IValue[] argValues = PopArguments();
 
             var definedParameters = methodSignature.GetBslParameters();
             bool needsDiscarding;
 
-            if (scope == _currentFrame.ThisScope) // local call
+            if (ReferenceEquals(boundInstance, _currentFrame.ThisScope)) // local call
             {
-                var sdo = scope.Instance as ScriptDrivenObject;
+                var sdo = boundInstance as ScriptDrivenObject;
                 System.Diagnostics.Debug.Assert(sdo != null);
 
                 if (sdo.MethodDefinedInScript(methodRef.MemberNumber))
@@ -921,7 +935,7 @@ namespace ScriptEngine.Machine
                     var frame = new ExecutionFrame
                     {
                         Module = _module,
-                        ThisScope = scope,
+                        ThisScope = _currentFrame.ThisScope,
                         Scopes = _currentFrame.Scopes
                     };
                     SetExecutionFrame(frame, methodInfo, argValues);
@@ -931,7 +945,7 @@ namespace ScriptEngine.Machine
                 else
                 {
                     needsDiscarding = _currentFrame.DiscardReturnValue;
-                    CallContext(scope.Instance, methodRef.MemberNumber, definedParameters, argValues, asFunc);
+                    CallContext(boundInstance, methodRef.MemberNumber, definedParameters, argValues, asFunc);
                 }
             }
             else
@@ -940,7 +954,7 @@ namespace ScriptEngine.Machine
                 // статус вызова текущего frames не должен изменяться.
                 //
                 needsDiscarding = _currentFrame.DiscardReturnValue;
-                CallContext(scope.Instance, methodRef.MemberNumber, definedParameters, argValues, asFunc);
+                CallContext(boundInstance, methodRef.MemberNumber, definedParameters, argValues, asFunc);
             }
 
             return needsDiscarding;
@@ -1377,7 +1391,7 @@ namespace ScriptEngine.Machine
                 return;
             }
             
-            var localScope = new AttachedContext(new EvalExecLocalScope(module), _currentFrame.Locals);
+            IAttachableContext localScope = new EvalExecLocalContext(_currentFrame.Locals);
             var scopes = CreateFrameScopes(_currentFrame.Scopes, localScope);
             
             var mi = (MachineMethodInfo)module.Methods[0];
@@ -1459,7 +1473,7 @@ namespace ScriptEngine.Machine
             else
             {
                 handlerMethod = PopRawBslValue().ToString(_process);
-                handlerTarget = _currentFrame.ThisScope.Instance;
+                handlerTarget = _currentFrame.ThisScope;
                 eventName = PopRawBslValue().ToString(_process);
                 eventSource = _operationStack.Pop().AsObject();
             }
@@ -2441,37 +2455,62 @@ namespace ScriptEngine.Machine
         private SymbolTable ExtractCompilerContext()
         {
             var ctx = new SymbolTable();
-            
-            var scopes = _currentFrame.Scopes;
+            var scopes = _currentFrame.Scopes ?? Array.Empty<IAttachableContext>();
+
+            // Добавляем все контексты из scopes (глобальные + локальные из предыдущих кадров)
             foreach (var scope in scopes)
             {
                 var symbolScope = new SymbolScope();
-                foreach (var methodInfo in scope.Methods)
+                
+                // Добавляем методы
+                for (int i = 0; i < scope.MethodsCount; i++)
                 {
+                    var methodInfo = scope.GetMethod(i);
                     symbolScope.DefineMethod(methodInfo.ToSymbol());
                 }
-                foreach (var variable in scope.Variables)
+                
+                // Добавляем переменные
+                // Используем VariablesCount для получения количества переменных
+                for (int i = 0; i < scope.VariablesCount; i++)
                 {
-                    if (variable.SystemType.Alias != null)
+                    var variable = scope.GetVariable(i);
+                    
+                    // Получаем информацию о свойстве, если scope поддерживает это
+                    string alias = null;
+                    if (scope is IRuntimeContextInstance runtimeContext)
                     {
-                        symbolScope.DefineVariable(new AliasedVariableSymbol(variable.Name, variable.SystemType.Alias));
+                        try
+                        {
+                            var propInfo = runtimeContext.GetPropertyInfo(i);
+                            alias = propInfo.Alias;
+                        }
+                        catch
+                        {
+                            // Если GetPropertyInfo не поддерживается, используем только имя переменной
+                        }
+                    }
+                    
+                    if (alias != null)
+                    {
+                        symbolScope.DefineVariable(new AliasedVariableSymbol(variable.Name, alias));
                     }
                     else
                     {
                         symbolScope.DefineVariable(new LocalVariableSymbol(variable.Name));
                     }
                 }
-
-                ctx.PushScope(symbolScope, scope.Instance);
+                
+                ctx.PushScope(symbolScope, scope);
             }
 
+            // Локальные переменные текущего фрейма
             var locals = new SymbolScope();
             foreach (var variable in _currentFrame.Locals)
             {
                 locals.DefineVariable(new LocalVariableSymbol(variable.Name));
             }
 
-            ctx.PushScope(locals, _currentFrame.ThisScope.Instance);
+            ctx.PushScope(locals, new EvalExecLocalContext(_currentFrame.Locals));
             return ctx;
         }
 

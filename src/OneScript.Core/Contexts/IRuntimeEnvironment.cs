@@ -69,6 +69,6 @@ namespace OneScript.Contexts
         /// <summary>
         /// Список подключенных внешних контекстов (слоев), доступных всегда в рамках данного окружения
         /// </summary>
-        IReadOnlyCollection<IAttachableContext> AttachedContexts { get; }
+        IReadOnlyList<IAttachableContext> AttachedContexts { get; }
     }
 }

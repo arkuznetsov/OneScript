@@ -47,6 +47,10 @@ namespace ScriptEngine.HostedScript
                 _state[i] = Variable.CreateContextPropertyReference(this, i, _properties.GetProperty(i).Name);
             }
         }
+        
+        IVariable IAttachableContext.GetVariable(int index) => _state[index];
+        
+        BslMethodInfo IAttachableContext.GetMethod(int index) => _methods.GetRuntimeMethod(index);
 
         public IHostApplication ApplicationHost { get; set; }
         public SourceCode CodeSource { get; set; }
@@ -172,7 +176,7 @@ namespace ScriptEngine.HostedScript
 
 #region IAttachableContext Members
 
-        public void OnAttach(out IVariable[] variables, 
+        void IAttachableContext.OnAttach(out IVariable[] variables, 
             out BslMethodInfo[] methods)
         {
             if (_state == null)
@@ -185,6 +189,10 @@ namespace ScriptEngine.HostedScript
                 methods[i] = _methods.GetRuntimeMethod(i);
             }
         }
+
+        int IAttachableContext.VariablesCount => _properties.Count;
+        
+        int IAttachableContext.MethodsCount => _methods.Count;
 
 #endregion
 

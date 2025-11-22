@@ -1,14 +1,13 @@
 /*----------------------------------------------------------
-This Source Code Form is subject to the terms of the
-Mozilla Public License, v.2.0. If a copy of the MPL
-was not distributed with this file, You can obtain one
+This Source Code Form is subject to the terms of the 
+Mozilla Public License, v.2.0. If a copy of the MPL 
+was not distributed with this file, You can obtain one 
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using OneScript.Contexts;
 
 namespace ScriptEngine.Machine
@@ -16,22 +15,18 @@ namespace ScriptEngine.Machine
     /// <summary>
     /// Оборачивающий контейнер. Хранит внешние области видимости и одну локальную, как единый плоский список.
     /// </summary>
-    public class RuntimeScopes : IReadOnlyList<AttachedContext>
+    public class JoinedScopes : IReadOnlyList<IAttachableContext>
     {
-        private readonly IReadOnlyList<AttachedContext> _outerScopes;
-        private readonly AttachedContext _innerScope;
+        private readonly IReadOnlyList<IAttachableContext> _outerScopes;
+        private readonly IAttachableContext _innerScope;
 
-        private readonly int _outerScopeLast;
-
-        public RuntimeScopes(IReadOnlyList<AttachedContext> outerScopes, AttachedContext innerScope)
+        public JoinedScopes(IReadOnlyList<IAttachableContext> outerScopes, IAttachableContext innerScope)
         {
-            _outerScopes = outerScopes;
-            _innerScope = innerScope;
-
-            _outerScopeLast = _outerScopes.Count - 1;
+            _outerScopes = outerScopes ?? throw new ArgumentNullException(nameof(outerScopes));
+            _innerScope = innerScope ?? throw new ArgumentNullException(nameof(innerScope));
         }
 
-        public IEnumerator<AttachedContext> GetEnumerator()
+        public IEnumerator<IAttachableContext> GetEnumerator()
         {
             foreach (var scope in _outerScopes)
             {
@@ -48,14 +43,14 @@ namespace ScriptEngine.Machine
 
         public int Count => _outerScopes.Count + 1;
 
-        public AttachedContext this[int index]
+        public IAttachableContext this[int index]
         {
             get
             {
                 if (index < 0 || index >= Count)
                     throw new IndexOutOfRangeException();
 
-                if (index > _outerScopeLast)
+                if (index == _outerScopes.Count)
                     return _innerScope;
 
                 return _outerScopes[index];
@@ -63,3 +58,4 @@ namespace ScriptEngine.Machine
         }
     }
 }
+

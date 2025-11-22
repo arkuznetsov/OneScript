@@ -32,7 +32,7 @@ namespace ScriptEngine.Compiler
     public partial class StackMachineCodeGenerator : BslSyntaxWalker
     {
         private readonly IErrorSink _errorSink;
-        private readonly StackModuleImage _module;
+        private readonly StackRuntimeModule _module;
         private SourceCode _sourceCode;
         private SymbolTable _ctx;
         private List<ConstDefinition> _constMap = new List<ConstDefinition>();
@@ -47,14 +47,14 @@ namespace ScriptEngine.Compiler
         public StackMachineCodeGenerator(IErrorSink errorSink)
         {
             _errorSink = errorSink;
-            _module = new StackModuleImage(typeof(IRuntimeContextInstance));
+            _module = new StackRuntimeModule(typeof(IRuntimeContextInstance));
         }
         
         public CodeGenerationFlags ProduceExtraCode { get; set; }
 
         public IDependencyResolver DependencyResolver { get; set; }
         
-        public StackModuleImage CreateModule(ModuleNode moduleNode, SourceCode source, SymbolTable context,
+        public StackRuntimeModule CreateModule(ModuleNode moduleNode, SourceCode source, SymbolTable context,
             IBslProcess process)
         {
             if (moduleNode.Kind != NodeKind.Module)
@@ -69,7 +69,7 @@ namespace ScriptEngine.Compiler
             return CreateImageInternal(moduleNode);
         }
 
-        private StackModuleImage CreateImageInternal(ModuleNode moduleNode)
+        private StackRuntimeModule CreateImageInternal(ModuleNode moduleNode)
         {
             VisitModule(moduleNode);
             CheckForwardedDeclarations();
@@ -178,7 +178,7 @@ namespace ScriptEngine.Compiler
             _module.Fields.Add(field);
             var binding = _ctx.DefineVariable(field.ToSymbol());
             var target = _ctx.GetBinding(binding.ScopeNumber);
-            var imageBinding = new ModuleImageBinding
+            var imageBinding = new ModuleSymbolBinding
             {
                 Target = target,
                 MemberNumber = binding.MemberNumber
@@ -221,7 +221,7 @@ namespace ScriptEngine.Compiler
                 
                 var entryRefNumber = _module.MethodRefs.Count;
                 var target = _ctx.GetBinding(topIdx);
-                var bodyBinding = new ModuleImageBinding
+                var bodyBinding = new ModuleSymbolBinding
                 {
                     Target = target,
                     MemberNumber = _module.Methods.Count
@@ -311,7 +311,7 @@ namespace ScriptEngine.Compiler
                 binding = default;
             }
             var target = _ctx.GetBinding(binding.ScopeNumber);
-            var imageBinding = new ModuleImageBinding
+            var imageBinding = new ModuleSymbolBinding
             {
                 Target = target,
                 MemberNumber = binding.MemberNumber
@@ -1278,7 +1278,7 @@ namespace ScriptEngine.Compiler
         private int GetMethodRefNumber(in SymbolBinding methodBinding)
         {
             var target = _ctx.GetBinding(methodBinding.ScopeNumber);
-            var imageBinding = new ModuleImageBinding
+            var imageBinding = new ModuleSymbolBinding
             {
                 Target = target,
                 MemberNumber = methodBinding.MemberNumber
@@ -1296,7 +1296,7 @@ namespace ScriptEngine.Compiler
         private int GetVariableRefNumber(in SymbolBinding binding)
         {
             var target = _ctx.GetBinding(binding.ScopeNumber);
-            var imageBinding = new ModuleImageBinding
+            var imageBinding = new ModuleSymbolBinding
             {
                 Target = target,
                 MemberNumber = binding.MemberNumber

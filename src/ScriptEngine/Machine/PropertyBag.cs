@@ -83,7 +83,7 @@ namespace ScriptEngine.Machine
 
         #region IAttachableContext Members
 
-        public void OnAttach(out IVariable[] variables, out BslMethodInfo[] methods)
+        void IAttachableContext.OnAttach(out IVariable[] variables, out BslMethodInfo[] methods)
         {
             variables = new IVariable[this.Count];
             var props = GetDynamicProperties().OrderBy(x => x.Value).Select(x=>x.Key).ToArray();
@@ -96,6 +96,15 @@ namespace ScriptEngine.Machine
 
             methods = Array.Empty<BslMethodInfo>();
         }
+        
+        IVariable IAttachableContext.GetVariable(int index) => 
+            Variable.CreateContextPropertyReference(this, index, GetPropertyName(index));
+        
+        BslMethodInfo IAttachableContext.GetMethod(int index) => throw new ArgumentOutOfRangeException();
+
+        int IAttachableContext.VariablesCount => this.Count;
+        
+        int IAttachableContext.MethodsCount => 0;
 
         #endregion
     }

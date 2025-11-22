@@ -5,12 +5,13 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System.Collections;
 using System.Collections.Generic;
 using OneScript.Contexts;
 
 namespace OneScript.Compilation.Binding
 {
-    public class SymbolTable
+    public class SymbolTable : IEnumerable<SymbolScope>
     {
         private class BindingRecord
         {
@@ -125,6 +126,17 @@ namespace OneScript.Compilation.Binding
         public IMethodSymbol GetMethod(SymbolBinding binding)
         {
             return GetScope(binding.ScopeNumber).Methods[binding.MemberNumber];
+        }
+
+        public IEnumerator<SymbolScope> GetEnumerator()
+        {
+            for (int i = 0; i < ScopeCount; i++)
+                yield return _bindings[i].scope;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }
