@@ -32,7 +32,7 @@ namespace ScriptEngine.Compiler
     public partial class StackMachineCodeGenerator : BslSyntaxWalker
     {
         private readonly IErrorSink _errorSink;
-        private readonly StackRuntimeModule _module;
+        private readonly StackModuleImage _module;
         private SourceCode _sourceCode;
         private SymbolTable _ctx;
         private List<ConstDefinition> _constMap = new List<ConstDefinition>();
@@ -47,14 +47,14 @@ namespace ScriptEngine.Compiler
         public StackMachineCodeGenerator(IErrorSink errorSink)
         {
             _errorSink = errorSink;
-            _module = new StackRuntimeModule(typeof(IRuntimeContextInstance));
+            _module = new StackModuleImage(typeof(IRuntimeContextInstance));
         }
         
         public CodeGenerationFlags ProduceExtraCode { get; set; }
 
         public IDependencyResolver DependencyResolver { get; set; }
         
-        public StackRuntimeModule CreateModule(ModuleNode moduleNode, SourceCode source, SymbolTable context,
+        public StackModuleImage CreateModule(ModuleNode moduleNode, SourceCode source, SymbolTable context,
             IBslProcess process)
         {
             if (moduleNode.Kind != NodeKind.Module)
@@ -69,7 +69,7 @@ namespace ScriptEngine.Compiler
             return CreateImageInternal(moduleNode);
         }
 
-        private StackRuntimeModule CreateImageInternal(ModuleNode moduleNode)
+        private StackModuleImage CreateImageInternal(ModuleNode moduleNode)
         {
             VisitModule(moduleNode);
             CheckForwardedDeclarations();

@@ -24,7 +24,7 @@ namespace ScriptEngine.Libraries
         public IList<UserAddedScript> Classes { get; } = new List<UserAddedScript>();
         public IList<UserAddedScript> Modules { get; } = new List<UserAddedScript>();
 
-        public UserAddedScript AddClass(string identifier, string filePath, StackRuntimeModule module = null)
+        public UserAddedScript AddClass(string identifier, string filePath, IExecutableModule module = null)
         {
             var item = new UserAddedScript
             {
@@ -39,7 +39,7 @@ namespace ScriptEngine.Libraries
             return item;
         }
 
-        public UserAddedScript AddModule(string identifier, string filePath, StackRuntimeModule module = null)
+        public UserAddedScript AddModule(string identifier, string filePath, IExecutableModule module = null)
         {
             var item = new UserAddedScript
             {

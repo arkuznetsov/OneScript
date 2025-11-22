@@ -36,7 +36,7 @@ namespace ScriptEngine.Compiler
         public void Write(TextWriter output, SourceCode source)
         {
             var compilerResult = _compiler.Compile(source, _process);
-            if (compilerResult is StackRuntimeModule stackModule)
+            if (compilerResult is StackModuleImage stackModule)
             {
                 var module = stackModule;
                 WriteImage(output, module);
@@ -109,12 +109,12 @@ namespace ScriptEngine.Compiler
             output.WriteLine($"{field.FieldType} {field.Name}");
         }
 
-        public void Write(TextWriter output, StackRuntimeModule module)
+        public void Write(TextWriter output, StackModuleImage module)
         {
             WriteImage(output, module);
         }
 
-        private void WriteImage(TextWriter output, StackRuntimeModule module)
+        private void WriteImage(TextWriter output, StackModuleImage module)
         {
             output.WriteLine(".variableFrame:");
             module.Fields
