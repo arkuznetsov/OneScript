@@ -177,7 +177,13 @@ namespace ScriptEngine.Compiler
             var field = fieldBuilder.Build();
             _module.Fields.Add(field);
             var binding = _ctx.DefineVariable(field.ToSymbol());
-            _module.VariableRefs.Add(binding);
+            var target = _ctx.GetBinding(binding.ScopeNumber);
+            var imageBinding = new ModuleImageBinding
+            {
+                Target = target,
+                MemberNumber = binding.MemberNumber
+            };
+            _module.VariableRefs.Add(imageBinding);
         }
 
         protected override void VisitModuleBody(BslSyntaxNode child)
@@ -214,9 +220,10 @@ namespace ScriptEngine.Compiler
                 methodInfo.SetRuntimeParameters(entry, GetVariableNames(localCtx));
                 
                 var entryRefNumber = _module.MethodRefs.Count;
-                var bodyBinding = new SymbolBinding
+                var target = _ctx.GetBinding(topIdx);
+                var bodyBinding = new ModuleImageBinding
                 {
-                    ScopeNumber = topIdx,
+                    Target = target,
                     MemberNumber = _module.Methods.Count
                 };
                 
@@ -303,7 +310,13 @@ namespace ScriptEngine.Compiler
                 AddError(LocalizedErrors.DuplicateMethodDefinition(signature.MethodName), signature.Location);
                 binding = default;
             }
-            _module.MethodRefs.Add(binding);
+            var target = _ctx.GetBinding(binding.ScopeNumber);
+            var imageBinding = new ModuleImageBinding
+            {
+                Target = target,
+                MemberNumber = binding.MemberNumber
+            };
+            _module.MethodRefs.Add(imageBinding);
             _module.Methods.Add(methodInfo);
         }
 
@@ -1264,22 +1277,36 @@ namespace ScriptEngine.Compiler
 
         private int GetMethodRefNumber(in SymbolBinding methodBinding)
         {
-            var idx = _module.MethodRefs.IndexOf(methodBinding);
+            var target = _ctx.GetBinding(methodBinding.ScopeNumber);
+            var imageBinding = new ModuleImageBinding
+            {
+                Target = target,
+                MemberNumber = methodBinding.MemberNumber
+            };
+            
+            var idx = _module.MethodRefs.IndexOf(imageBinding);
             if (idx < 0)
             {
                 idx = _module.MethodRefs.Count;
-                _module.MethodRefs.Add(methodBinding);
+                _module.MethodRefs.Add(imageBinding);
             }
             return idx;
         }
 
         private int GetVariableRefNumber(in SymbolBinding binding)
         {
-            var idx = _module.VariableRefs.IndexOf(binding);
+            var target = _ctx.GetBinding(binding.ScopeNumber);
+            var imageBinding = new ModuleImageBinding
+            {
+                Target = target,
+                MemberNumber = binding.MemberNumber
+            };
+            
+            var idx = _module.VariableRefs.IndexOf(imageBinding);
             if (idx < 0)
             {
                 idx = _module.VariableRefs.Count;
-                _module.VariableRefs.Add(binding);
+                _module.VariableRefs.Add(imageBinding);
             }
 
             return idx;

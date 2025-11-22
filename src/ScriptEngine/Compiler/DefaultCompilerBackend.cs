@@ -10,6 +10,7 @@ using OneScript.Compilation.Binding;
 using OneScript.Execution;
 using OneScript.Language;
 using OneScript.Language.SyntaxAnalysis.AstNodes;
+using ScriptEngine.Machine;
 
 namespace ScriptEngine.Compiler
 {
@@ -34,7 +35,13 @@ namespace ScriptEngine.Compiler
         {
             _codeGen.ProduceExtraCode = GetCodeFlags();
             _codeGen.DependencyResolver = DependencyResolver;
-            return _codeGen.CreateModule(parsedModule, parsedModule.Source, Symbols, process);
+            var module = _codeGen.CreateModule(parsedModule, parsedModule.Source, Symbols, process);
+            return LoadModuleImage(module);
+        }
+
+        public IExecutableModule LoadModuleImage(StackModuleImage module)
+        {
+            throw new NotImplementedException();
         }
 
         private CodeGenerationFlags GetCodeFlags()

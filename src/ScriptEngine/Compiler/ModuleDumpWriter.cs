@@ -149,12 +149,13 @@ namespace ScriptEngine.Compiler
             output.WriteLine(module.EntryMethodIndex.ToString());
         }
 
-        private void WriteSymbolMap(TextWriter output, IList<SymbolBinding> map)
+        private void WriteSymbolMap(TextWriter output, IList<ModuleImageBinding> map)
         {
             for (int i = 0; i < map.Count; i++)
             {
                 var item = map[i];
-                output.Write(string.Format("{0,-3}:({1},{2})\n", i, item.ScopeNumber, item.MemberNumber));
+                var typeName = item.Target?.GetType().Name ?? "null";
+                output.Write(string.Format("{0,-3}:({1},{2})\n", i, typeName, item.MemberNumber));
             }
         }
 

@@ -15,7 +15,28 @@ using OneScript.Values;
 
 namespace ScriptEngine.Machine
 {
-    public class StackModuleImage : IExecutableModule
+    public struct ModuleImageBinding : IEquatable<ModuleImageBinding>
+    {
+        public IAttachableContext Target { get; set; }
+        
+        public int MemberNumber { get; set; }
+
+        public bool Equals(ModuleImageBinding other)
+        {
+            return ReferenceEquals(Target, other.Target) && MemberNumber == other.MemberNumber;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is ModuleImageBinding other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Target, MemberNumber);
+        }
+    }
+    public class StackModuleImage
     {
         public StackModuleImage(Type ownerType)
         {
@@ -28,11 +49,9 @@ namespace ScriptEngine.Machine
 
         public List<BslPrimitiveValue> Constants { get; } = new List<BslPrimitiveValue>();
         
-        internal IList<SymbolBinding> VariableRefs { get; } = new List<SymbolBinding>();
+        internal IList<ModuleImageBinding> VariableRefs { get; } = new List<ModuleImageBinding>();
         
-        internal IList<SymbolBinding> MethodRefs { get; } = new List<SymbolBinding>();
-        
-        #region IExecutableModule members
+        internal IList<ModuleImageBinding> MethodRefs { get; } = new List<ModuleImageBinding>();
 
         public BslScriptMethodInfo ModuleBody
         {
@@ -58,8 +77,6 @@ namespace ScriptEngine.Machine
         public SourceCode Source { get; set; }
         
         public IDictionary<Type, object> Interfaces { get; } = new Dictionary<Type, object>();
-
-        #endregion
     }
 }
 
