@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------
+/*----------------------------------------------------------
 This Source Code Form is subject to the terms of the 
 Mozilla Public License, v.2.0. If a copy of the MPL 
 was not distributed with this file, You can obtain one 
@@ -37,13 +37,13 @@ namespace OneScript.StandardLibrary.Http
             _autoDecompress = string.Equals(response.ContentEncoding, "gzip", StringComparison.OrdinalIgnoreCase);
             _contentSize = _autoDecompress ? -1 : response.ContentLength;
 
-            if (String.IsNullOrEmpty(dumpToFile))
+            if (!String.IsNullOrEmpty(dumpToFile))
+            {
+                 InitFileBackedResponse(response, dumpToFile);
+            }
+            else if(_autoDecompress)
             {
                 InitInMemoryResponse(response);
-            }
-            else
-            {
-                InitFileBackedResponse(response, dumpToFile);
             }
         }
 
@@ -72,18 +72,18 @@ namespace OneScript.StandardLibrary.Http
 
         public long ContentSize => _contentSize < 0 ? 0 : _contentSize;
 
-        public Stream OpenReadStream()
+        public Stream OpenReadStream(Stream rawStream)
         {
             if (_backingFileName != null)
             {
                 return new FileStream(_backingFileName, FileMode.Open, FileAccess.Read);
             }
-            else if (_inMemBody != null)
-            {
-                return new MemoryStream(_inMemBody);
-            }
+           else if (_inMemBody != null)
+           {
+               return new MemoryStream(_inMemBody);
+           }
             else
-                throw new InvalidOperationException("No response body");
+                return rawStream;
         }
 
         private Stream GetResponseStream(HttpWebResponse response)

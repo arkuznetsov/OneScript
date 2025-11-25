@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------
+/*----------------------------------------------------------
 This Source Code Form is subject to the terms of the 
 Mozilla Public License, v.2.0. If a copy of the MPL 
 was not distributed with this file, You can obtain one 
@@ -28,18 +28,27 @@ namespace OneScript.StandardLibrary.Http
         // TODO: Нельзя выделить массив размером больше чем 2GB
         // поэтому функционал сохранения в файл не должен использовать промежуточный буфер _body
         private HttpResponseBody _body;
-        
+        private Stream _rawStream;
+        private HttpWebResponse _response;
+
         private string _defaultCharset;
         private string _filename;
 
-        public HttpResponseContext(HttpWebResponse response)
-        {
-            RetrieveResponseData(response, null);
-        }
-
         public HttpResponseContext(HttpWebResponse response, string dumpToFile)
         {
-            RetrieveResponseData(response, dumpToFile);
+             StatusCode = (int)response.StatusCode;
+            _defaultCharset = response.CharacterSet;
+
+            ProcessHeaders(response.Headers);
+            ProcessResponseBody(response, dumpToFile);
+            _rawStream = response.GetResponseStream();
+            _response = response;
+
+            if (_body != null && _body.AutoDecompress)
+            {
+                _headers.Delete(ValueFactory.Create("Content-Encoding"));
+                _headers.SetIndexedValue(ValueFactory.Create("Content-Length"), ValueFactory.Create(_body.ContentSize));
+            }
         }
 
         private void RetrieveResponseData(HttpWebResponse response, string dumpToFile)
@@ -119,7 +128,7 @@ namespace OneScript.StandardLibrary.Http
             else
                 enc = TextEncodingEnum.GetEncoding(encoding);
 
-            using(var reader = new StreamReader(_body.OpenReadStream(), enc))
+            using(var reader = new StreamReader(_body.OpenReadStream(_rawStream), enc))
             {
                 return ValueFactory.Create(reader.ReadToEnd());
             }
@@ -136,11 +145,11 @@ namespace OneScript.StandardLibrary.Http
             if (_body == null)
                 return ValueFactory.Create();
 
-            using (var stream = _body.OpenReadStream())
-            {
-                var data = new byte[stream.Length];
-                stream.Read(data, 0, data.Length);
-                return new BinaryDataContext(data);
+            using (var stream = _body.OpenReadStream(_rawStream))
+            using (var memoryStream = new MemoryStream())
+            {   
+                stream.CopyTo(memoryStream);
+                return new BinaryDataContext(memoryStream.ToArray());
             }
         }
 
@@ -154,7 +163,7 @@ namespace OneScript.StandardLibrary.Http
             if (_body == null)
                 return ValueFactory.Create();
 
-            return new GenericStream(_body.OpenReadStream(), true);
+            return new GenericStream(_body.OpenReadStream(_rawStream), true);
         }
 
         /// <summary>
@@ -181,8 +190,11 @@ namespace OneScript.StandardLibrary.Http
 
         public void Dispose()
         {
-            if (_body != null)
-                _body.Dispose();
+            _response?.Dispose();
+                _response = null;
+            
+            _body?.Dispose();
+                _body = null;
         }
     }
 }
