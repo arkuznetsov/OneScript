@@ -34,17 +34,26 @@ namespace OneScript.Localization
         {
             return str.ToString();
         }
+
+        private readonly int _ruHash;
+        private readonly int _enHash;
         
         public BilingualString(string ru, string en)
         {
             Russian = ru;
             English = en;
+            
+            _enHash = en.GetHashCode();
+            _ruHash = ru.GetHashCode();
         }
         
         public BilingualString(string single)
         {
             Russian = single;
             English = string.Empty;
+            
+            _enHash = English.GetHashCode();
+            _ruHash = Russian.GetHashCode();
         }
 
         public string Russian { get; }
@@ -58,6 +67,10 @@ namespace OneScript.Localization
 
         public bool HasName(string name, StringComparison comparison = StringComparison.CurrentCultureIgnoreCase)
         {
+            var nameHash = name.GetHashCode();
+            if (nameHash != _ruHash && nameHash != _enHash)
+                return false;
+            
             return string.Equals(Russian, name, comparison) || string.Equals(English, name, comparison);
         }
 
