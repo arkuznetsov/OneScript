@@ -670,7 +670,7 @@ namespace ScriptEngine.Machine
         private void PushVar(int arg)
         {
             var binding = _module.VariableRefs[arg];
-            var target = binding.Target ?? _currentFrame.ThisScope;
+            var target = ResolveBindingTarget(binding);
             _operationStack.Push(target.GetVariable(binding.MemberNumber));
             
             NextInstruction();
@@ -716,7 +716,7 @@ namespace ScriptEngine.Machine
         {
             var binding = _module.VariableRefs[arg];
 
-            var target = binding.Target ?? _currentFrame.ThisScope;
+            var target = ResolveBindingTarget(binding);
             var reference = Variable.CreateContextPropertyReference(target, binding.MemberNumber, "$stackvar");
             
             _operationStack.Push(reference);
@@ -726,7 +726,7 @@ namespace ScriptEngine.Machine
         private void LoadVar(int arg)
         {
             var binding = _module.VariableRefs[arg];
-            var target = binding.Target ?? _currentFrame.ThisScope;
+            var target = ResolveBindingTarget(binding);
             target.GetVariable(binding.MemberNumber).Value = PopRawValue();
             
             NextInstruction();
@@ -913,7 +913,7 @@ namespace ScriptEngine.Machine
         {
             var methodRef = _module.MethodRefs[arg];
 
-            var boundInstance = methodRef.Target ?? _currentFrame.ThisScope;
+            var boundInstance = ResolveBindingTarget(methodRef);
             var methodSignature = boundInstance.GetMethod(methodRef.MemberNumber);
 
             IValue[] argValues = PopArguments();
@@ -2456,10 +2456,14 @@ namespace ScriptEngine.Machine
         {
             var ctx = new SymbolTable();
             var scopes = _currentFrame.Scopes ?? Array.Empty<IAttachableContext>();
+            var scopeCount = scopes.Count;
+            var thisScope = _currentFrame.ThisScope;
 
             // Добавляем все контексты из scopes (глобальные + локальные из предыдущих кадров)
-            foreach (var scope in scopes)
+            for (int index = 0; index < scopeCount; index++)
             {
+                var scope = scopes[index];
+
                 var symbolScope = new SymbolScope();
                 
                 // Добавляем методы
@@ -2470,12 +2474,10 @@ namespace ScriptEngine.Machine
                 }
                 
                 // Добавляем переменные
-                // Используем VariablesCount для получения количества переменных
                 for (int i = 0; i < scope.VariablesCount; i++)
                 {
                     var variable = scope.GetVariable(i);
                     
-                    // Получаем информацию о свойстве, если scope поддерживает это
                     string alias = null;
                     if (scope is IRuntimeContextInstance runtimeContext)
                     {
@@ -2486,7 +2488,6 @@ namespace ScriptEngine.Machine
                         }
                         catch
                         {
-                            // Если GetPropertyInfo не поддерживается, используем только имя переменной
                         }
                     }
                     
@@ -2499,8 +2500,8 @@ namespace ScriptEngine.Machine
                         symbolScope.DefineVariable(new LocalVariableSymbol(variable.Name));
                     }
                 }
-                
-                ctx.PushScope(symbolScope, scope);
+
+                ctx.PushScope(symbolScope, CreateScopeDescriptor(scope, thisScope, index));
             }
 
             // Локальные переменные текущего фрейма
@@ -2510,8 +2511,19 @@ namespace ScriptEngine.Machine
                 locals.DefineVariable(new LocalVariableSymbol(variable.Name));
             }
 
-            ctx.PushScope(locals, new EvalExecLocalContext(_currentFrame.Locals));
+            ctx.PushScope(locals, ScopeBindingDescriptor.ThisScope());
             return ctx;
+        }
+
+        private ScopeBindingDescriptor CreateScopeDescriptor(IAttachableContext scope, IAttachableContext thisScope, int index)
+        {
+            return ScopeBindingDescriptor.FrameScope(index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private IAttachableContext ResolveBindingTarget(ModuleSymbolBinding binding)
+        {
+            return binding.ResolveTarget(_currentFrame);
         }
 
         private void NextInstruction()

@@ -177,11 +177,13 @@ namespace ScriptEngine.Compiler
             var field = fieldBuilder.Build();
             _module.Fields.Add(field);
             var binding = _ctx.DefineVariable(field.ToSymbol());
-            var target = _ctx.GetBinding(binding.ScopeNumber);
+            var descriptor = _ctx.GetBinding(binding.ScopeNumber);
             var imageBinding = new ModuleSymbolBinding
             {
-                Target = target,
-                MemberNumber = binding.MemberNumber
+                Target = descriptor.Target,
+                MemberNumber = binding.MemberNumber,
+                Kind = descriptor.Kind,
+                ScopeIndex = descriptor.ScopeIndex
             };
             _module.VariableRefs.Add(imageBinding);
         }
@@ -193,7 +195,7 @@ namespace ScriptEngine.Compiler
 
             var entry = _module.Code.Count;
             var localCtx = new SymbolScope();
-            _ctx.PushScope(localCtx, null);
+            _ctx.PushScope(localCtx, ScopeBindingDescriptor.Static(null));
 
             try
             {
@@ -220,11 +222,13 @@ namespace ScriptEngine.Compiler
                 methodInfo.SetRuntimeParameters(entry, GetVariableNames(localCtx));
                 
                 var entryRefNumber = _module.MethodRefs.Count;
-                var target = _ctx.GetBinding(topIdx);
+                var descriptor = _ctx.GetBinding(topIdx);
                 var bodyBinding = new ModuleSymbolBinding
                 {
-                    Target = target,
-                    MemberNumber = _module.Methods.Count
+                    Target = descriptor.Target,
+                    MemberNumber = _module.Methods.Count,
+                    Kind = descriptor.Kind,
+                    ScopeIndex = descriptor.ScopeIndex
                 };
                 
                 _module.Methods.Add(methodInfo);
@@ -286,7 +290,7 @@ namespace ScriptEngine.Compiler
                 methodCtx.DefineVariable(new LocalVariableSymbol(paramNode.Name));
             }
             
-            _ctx.PushScope(methodCtx, null);
+            _ctx.PushScope(methodCtx, ScopeBindingDescriptor.Static(null));
             var entryPoint = _module.Code.Count;
             try
             {
@@ -310,11 +314,13 @@ namespace ScriptEngine.Compiler
                 AddError(LocalizedErrors.DuplicateMethodDefinition(signature.MethodName), signature.Location);
                 binding = default;
             }
-            var target = _ctx.GetBinding(binding.ScopeNumber);
+            var descriptor = _ctx.GetBinding(binding.ScopeNumber);
             var imageBinding = new ModuleSymbolBinding
             {
-                Target = target,
-                MemberNumber = binding.MemberNumber
+                Target = descriptor.Target,
+                MemberNumber = binding.MemberNumber,
+                Kind = descriptor.Kind,
+                ScopeIndex = descriptor.ScopeIndex
             };
             _module.MethodRefs.Add(imageBinding);
             _module.Methods.Add(methodInfo);
@@ -1277,11 +1283,13 @@ namespace ScriptEngine.Compiler
 
         private int GetMethodRefNumber(in SymbolBinding methodBinding)
         {
-            var target = _ctx.GetBinding(methodBinding.ScopeNumber);
+            var descriptor = _ctx.GetBinding(methodBinding.ScopeNumber);
             var imageBinding = new ModuleSymbolBinding
             {
-                Target = target,
-                MemberNumber = methodBinding.MemberNumber
+                Target = descriptor.Target,
+                MemberNumber = methodBinding.MemberNumber,
+                Kind = descriptor.Kind,
+                ScopeIndex = descriptor.ScopeIndex
             };
             
             var idx = _module.MethodRefs.IndexOf(imageBinding);
@@ -1295,11 +1303,13 @@ namespace ScriptEngine.Compiler
 
         private int GetVariableRefNumber(in SymbolBinding binding)
         {
-            var target = _ctx.GetBinding(binding.ScopeNumber);
+            var descriptor = _ctx.GetBinding(binding.ScopeNumber);
             var imageBinding = new ModuleSymbolBinding
             {
-                Target = target,
-                MemberNumber = binding.MemberNumber
+                Target = descriptor.Target,
+                MemberNumber = binding.MemberNumber,
+                Kind = descriptor.Kind,
+                ScopeIndex = descriptor.ScopeIndex
             };
             
             var idx = _module.VariableRefs.IndexOf(imageBinding);

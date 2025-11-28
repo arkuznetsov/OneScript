@@ -67,7 +67,7 @@ namespace OneScript.Core.Tests
             var node = parser.ParseStatefulModule() as ModuleNode;
 
             var ctx = new SymbolTable();
-            ctx.PushScope(new SymbolScope(), null);
+            ctx.PushScope(new SymbolScope(), ScopeBindingDescriptor.Static(null));
             var compiler = new StackMachineCodeGenerator(errSink);
             return compiler.CreateModule(node, lexer.Iterator.Source, ctx, process);
         }

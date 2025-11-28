@@ -154,8 +154,14 @@ namespace ScriptEngine.Compiler
             for (int i = 0; i < map.Count; i++)
             {
                 var item = map[i];
-                var typeName = item.Target?.GetType().Name ?? "null";
-                output.Write(string.Format("{0,-3}:({1},{2})\n", i, typeName, item.MemberNumber));
+                var targetInfo = item.Kind switch
+                {
+                    ScopeBindingKind.Static => item.Target?.GetType().Name ?? "null",
+                    ScopeBindingKind.ThisScope => "this",
+                    ScopeBindingKind.FrameScope => $"frame[{item.ScopeIndex}]",
+                    _ => "unknown"
+                };
+                output.Write(string.Format("{0,-3}:({1},{2},{3})\n", i, item.Kind, targetInfo, item.MemberNumber));
             }
         }
 
