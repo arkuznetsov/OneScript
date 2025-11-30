@@ -99,7 +99,7 @@ namespace OneScript.Native.Compiler
             {
                 MethodReturn = Expression.Label(typeof(BslValue))
             });
-            Symbols.PushScope(new SymbolScope(), ScopeBindingDescriptor.Static(null));
+            Symbols.PushScope(new SymbolScope(), ScopeBindingDescriptor.ThisScope());
             FillParameterVariables();
 
             try
