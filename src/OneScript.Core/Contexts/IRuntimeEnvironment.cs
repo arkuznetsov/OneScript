@@ -6,6 +6,7 @@ at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
 using System.Collections.Generic;
+using OneScript.Compilation;
 using OneScript.Compilation.Binding;
 using ScriptEngine.Machine;
 
@@ -40,6 +41,14 @@ namespace OneScript.Contexts
         /// <param name="readOnly">Флаг доступности свойства только для чтения</param>
         void InjectGlobalProperty(IValue value, string identifier, bool readOnly);
         
+        /// <summary>
+        /// Инжект глобального свойства
+        /// </summary>
+        /// <param name="value">Значение свойства</param>
+        /// <param name="identifier">Идентификатор</param>
+        /// <param name="ownerPackage">Пакет, предоставивший это свойство</param>
+        void InjectGlobalProperty(IValue value, string identifier, PackageInfo ownerPackage);
+
         /// <summary>
         /// Инжект глобального свойства с помощью описания свойства.
         /// </summary>

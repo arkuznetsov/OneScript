@@ -20,7 +20,8 @@ using Xunit;
 
 namespace OneScript.Core.Tests
 {
-    public class ObsoleteMembersTest
+    [Collection("SystemLogger")]
+    public class ObsoleteMembersTest : IDisposable
     {
         private readonly List<string> _messages;
         public ObsoleteMembersTest()
@@ -35,6 +36,12 @@ namespace OneScript.Core.Tests
         }
 
         private ISystemLogWriter LogWriter { get; set; }
+
+        public void Dispose()
+        {
+            // Очищаем логгер после каждого теста
+            SystemLogger.Reset();
+        }
 
         [Fact]
         public void TestLoggingOfObsoletePropAccess()

@@ -10,7 +10,6 @@ using OneScript.Compilation.Binding;
 using OneScript.Execution;
 using OneScript.Language;
 using OneScript.Language.SyntaxAnalysis.AstNodes;
-using ScriptEngine.Machine;
 
 namespace ScriptEngine.Compiler
 {
@@ -18,9 +17,9 @@ namespace ScriptEngine.Compiler
     {
         private readonly StackMachineCodeGenerator _codeGen;
 
-        public DefaultCompilerBackend(IErrorSink errorSink)
+        public DefaultCompilerBackend(IErrorSink errorSink, ExplicitImportsBehavior importsOption)
         {
-            _codeGen = new StackMachineCodeGenerator(errorSink);
+            _codeGen = new StackMachineCodeGenerator(errorSink, importsOption);
         }
         
         public IDependencyResolver DependencyResolver { get; set; }

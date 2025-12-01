@@ -32,10 +32,12 @@ namespace ScriptEngine.Compiler
     public partial class StackMachineCodeGenerator : BslSyntaxWalker
     {
         private readonly IErrorSink _errorSink;
+        private readonly ExplicitImportsBehavior _importsOption;
         private readonly StackRuntimeModule _module;
         private SourceCode _sourceCode;
         private SymbolTable _ctx;
         private List<ConstDefinition> _constMap = new List<ConstDefinition>();
+        private HashSet<string> _localImports = new HashSet<string>();
         
         private readonly List<ForwardedMethodDecl> _forwardedMethods = new List<ForwardedMethodDecl>();
         private readonly Stack<NestedLoopInfo> _nestedLoops = new Stack<NestedLoopInfo>();
@@ -44,9 +46,10 @@ namespace ScriptEngine.Compiler
         
         private HashSet<BslPropertyInfo> _reportedOldProperties = new HashSet<BslPropertyInfo>();
 
-        public StackMachineCodeGenerator(IErrorSink errorSink)
+        public StackMachineCodeGenerator(IErrorSink errorSink, ExplicitImportsBehavior importsOption)
         {
             _errorSink = errorSink;
+            _importsOption = importsOption;
             _module = new StackRuntimeModule(typeof(IRuntimeContextInstance));
         }
         
@@ -102,10 +105,11 @@ namespace ScriptEngine.Compiler
             
             try
             {
-                DependencyResolver.Resolve(_sourceCode, libName, _compilerProcess);
-                // TODO: решить проблему с импортами
-                // if(_ctx is ModuleCompilerContext moduleContext)
-                //     moduleContext.Update();
+                var resolvedLib = DependencyResolver.Resolve(_sourceCode, libName, _compilerProcess);
+                if (resolvedLib != null && _importsOption != ExplicitImportsBehavior.Disabled)
+                {
+                    _localImports.Add(resolvedLib.Id);
+                }
             }
             catch (DependencyResolveException e)
             {
@@ -756,6 +760,11 @@ namespace ScriptEngine.Compiler
             
             if (symbol is IPropertySymbol propSymbol)
             {
+                if (_importsOption != ExplicitImportsBehavior.Disabled && symbol is IPackageSymbol pkgSymbol)
+                {
+                    CheckExplicitImport(node, pkgSymbol, symbol);
+                }
+                
                 if (propSymbol.Property is ISupportsDeprecation { IsDeprecated: true } && 
                     !_reportedOldProperties.Contains(propSymbol.Property))
                 {
@@ -772,6 +781,31 @@ namespace ScriptEngine.Compiler
             else
             {
                 return PushSimpleVariable(varNum);
+            }
+        }
+
+        private void CheckExplicitImport(TerminalNode node, IPackageSymbol pkgSymbol, IVariableSymbol symbol)
+        {
+            var packageInfo = pkgSymbol.GetPackageInfo();
+            var id = packageInfo.Id;
+
+            // Если модуль принадлежит той же библиотеке - не требуем явный импорт
+            if (_sourceCode.OwnerPackageId != null && id == _sourceCode.OwnerPackageId)
+                return;
+
+            if (!_localImports.Contains(id))
+            {
+                var error = CompilerErrors.MissedImport(symbol.Name, packageInfo.ShortName);
+                error.Position = MakeCodePosition(node.Location);
+                switch (_importsOption)
+                {
+                    case ExplicitImportsBehavior.Enabled:
+                        AddError(error);
+                        break;
+                    case ExplicitImportsBehavior.Warn:
+                        SystemLogger.Write(error.ToString());
+                        break;
+                }
             }
         }
 

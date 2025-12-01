@@ -97,8 +97,9 @@ namespace OneScript.Dynamic.Tests
         
         private class DependencyResolverMock : ICompileTimeDependencyResolver
         {
-            public void Resolve(SourceCode module, string libraryName, IBslProcess process)
+            public PackageInfo Resolve(SourceCode module, string libraryName, IBslProcess process)
             {
+                return null;
             }
         }
     }

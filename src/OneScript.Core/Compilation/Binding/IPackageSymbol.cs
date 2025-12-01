@@ -5,12 +5,13 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-namespace OneScript.Language.Sources
+namespace OneScript.Compilation.Binding
 {
-    public interface ICodeSource
+    /// <summary>
+    /// Символ, который импортирован из внешнего пакета
+    /// </summary>
+    public interface IPackageSymbol
     {
-        string Location { get; }
-
-        string GetSourceCode();
+        PackageInfo GetPackageInfo();
     }
 }
