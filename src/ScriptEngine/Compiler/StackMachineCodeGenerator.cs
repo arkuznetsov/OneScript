@@ -199,7 +199,7 @@ namespace ScriptEngine.Compiler
 
             var entry = _module.Code.Count;
             var localCtx = new SymbolScope();
-            _ctx.PushScope(localCtx, ScopeBindingDescriptor.Static(null));
+            _ctx.PushScope(localCtx, ScopeBindingDescriptor.ThisScope());
 
             try
             {
@@ -294,7 +294,7 @@ namespace ScriptEngine.Compiler
                 methodCtx.DefineVariable(new LocalVariableSymbol(paramNode.Name));
             }
             
-            _ctx.PushScope(methodCtx, ScopeBindingDescriptor.Static(null));
+            _ctx.PushScope(methodCtx, ScopeBindingDescriptor.ThisScope());
             var entryPoint = _module.Code.Count;
             try
             {
