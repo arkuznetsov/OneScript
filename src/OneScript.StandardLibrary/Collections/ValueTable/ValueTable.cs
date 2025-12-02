@@ -121,7 +121,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             // ValueTableColumn Column = Columns.GetColumnByIIndex(ColumnIndex);
             var row_iterator = _rows.GetEnumerator();
-            var array_iterator = (values as ArrayImpl).GetEnumerator();
+            var array_iterator = (values as ArrayImpl)?.GetEnumerator()
+                ?? throw RuntimeException.InvalidNthArgumentType(1);
 
             Indexes.ClearIndexes();
             
