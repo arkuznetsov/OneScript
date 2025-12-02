@@ -13,7 +13,7 @@ using OneScript.DebugProtocol.Abstractions;
 
 namespace OneScript.DebugProtocol.TcpServer
 {
-    public class JsonDtoChannel : IMessageChannel
+    public sealed class JsonDtoChannel : IMessageChannel
     {
         private readonly IDebuggerClient _client;
         private readonly Stream _dataStream;
