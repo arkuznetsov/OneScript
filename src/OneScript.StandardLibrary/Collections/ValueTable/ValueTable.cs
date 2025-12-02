@@ -76,13 +76,18 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// <summary>
         /// Вставляет строку в указанную позицию
         /// </summary>
-        /// <param name="index">Число - Индекс позиции куда будет произведена вставка</param>
+        /// <param name="index">Число - Индекс позиции куда будет произведена вставка.
+        /// Если индекс вне размера Таблицы значений, строка добавляется в конец</param>
         /// <returns>СтрокаТаблицыЗначений</returns>
         [ContextMethod("Вставить", "Insert")]
         public ValueTableRow Insert(int index)
         {
             var row = new ValueTableRow(this);
-            _rows.Insert(index, row);
+            if (index < 0 || index > _rows.Count)
+                _rows.Add(row); // для совместимости с 1С, хотя логичней было бы исключение
+            else
+                _rows.Insert(index, row);
+
             Indexes.ElementAdded(row);
             return row;
         }
