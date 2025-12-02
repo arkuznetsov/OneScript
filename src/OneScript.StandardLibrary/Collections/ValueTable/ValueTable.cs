@@ -345,6 +345,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             foreach (var kv in filter)
             {
                 var key = Columns.FindColumnByName(kv.Key.ToString());
+                if (key == null)
+                    throw ColumnException.WrongColumnName(kv.Key.ToString());
+
                 result.Insert(key, kv.Value);
             }
 
