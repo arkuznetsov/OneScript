@@ -171,9 +171,12 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
             foreach (var column_name in columnNames.Split(','))
             {
-                var name = column_name.Trim();
-                var Column = Columns.FindColumnByName(name);
+                if (column_name == String.Empty)
+                    continue;
 
+                var name = column_name.Trim();
+
+                var Column = Columns.FindColumnByName(name);
                 if (Column == null)
                     throw ColumnException.WrongColumnName(column_name);
 
