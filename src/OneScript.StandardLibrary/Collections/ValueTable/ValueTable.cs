@@ -528,7 +528,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             int index_dest = index_source + offset;
 
             if (index_dest < 0 || index_dest >= _rows.Count)
-                throw RuntimeException.InvalidNthArgumentValue(2);
+                throw RuntimeException.IncorrectOffset();
 
             ValueTableRow tmp = _rows[index_source];
 
