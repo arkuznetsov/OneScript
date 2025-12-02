@@ -546,59 +546,43 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Скопировать", "Copy")]
         public ValueTable Copy(IValue rows = null, string columnNames = null)
         {
-            var Result = CopyColumns(columnNames);
+            var result = CopyColumns(columnNames);
             var columns = GetProcessingColumnList(columnNames);
             
-            IEnumerable<ValueTableRow> requestedRows;
-            if (rows == null)
+            IEnumerable<ValueTableRow> requestedRows = rows switch
             {
-                requestedRows = _rows;
-            }
-            else
-            {
-                if (rows is StructureImpl structure)
-                    requestedRows = FindRows(structure).Select(x => x as ValueTableRow);
-                else if (rows is ArrayImpl array)
-                    requestedRows = GetRowsEnumByArray(array);
-                else
-                    throw RuntimeException.InvalidArgumentType();
-            }
+                null => _rows,
+                StructureImpl structure => FindRows(structure).Select(x => x as ValueTableRow),
+                ArrayImpl array => GetRowsEnumByArray(array),
+                _ => throw RuntimeException.InvalidArgumentType(),
+            };
 
             var columnMap = new Dictionary<ValueTableColumn, ValueTableColumn>();
             foreach (var column in columns)
             {
-                var destinationColumn = Result.Columns.FindColumnByName(column.Name);
+                var destinationColumn = result.Columns.FindColumnByName(column.Name);
                 columnMap.Add(column, destinationColumn);
             }
 
             foreach (var row in requestedRows)
             {
-                var new_row = Result.Add();
+                var new_row = result.Add();
                 foreach (var Column in columns)
                 {
                     new_row.Set(columnMap[Column], row.Get(Column));
                 }
             }
 
-            return Result;
+            return result;
         }
 
-        private IEnumerable<ValueTableRow> GetRowsEnumByArray(IValue rows)
+        private IEnumerable<ValueTableRow> GetRowsEnumByArray(ArrayImpl rowsArray)
         {
-            IEnumerable<ValueTableRow> requestedRows;
-            var rowsArray = rows as ArrayImpl;
             if (rowsArray == null)
                 throw RuntimeException.InvalidArgumentType();
 
-            requestedRows = rowsArray.Select(x =>
-            {
-                var vtr = x as ValueTableRow;
-                if (vtr == null || vtr.Owner() != this)
-                    throw RuntimeException.InvalidArgumentValue();
-
-                return vtr;
-            });
-            return requestedRows;
+            return rowsArray.Select(x => x is ValueTableRow vtr && vtr.Owner() == this ? vtr
+                : throw RuntimeException.InvalidArgumentValue());
         }
 
         private struct ValueTableSortRule
