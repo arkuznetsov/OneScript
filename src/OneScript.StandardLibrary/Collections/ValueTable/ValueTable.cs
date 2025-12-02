@@ -17,6 +17,7 @@ using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using OneScript.StandardLibrary.Collections.Exceptions;
+using OneScript.Localization;
 
 namespace OneScript.StandardLibrary.Collections.ValueTable
 {
@@ -619,19 +620,14 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 string[] description = column.Trim().Split(' ');
                 if (description.Length == 0)
                     throw ColumnException.WrongColumnName();
+                if (description.Length > 2)
+                    throw RuntimeException.InvalidNthArgumentValue(1);
 
-                ValueTableSortRule Desc = new ValueTableSortRule();
-                Desc.Column = this.Columns.FindColumnByName(description[0]);
-
-                if (description.Length > 1)
+                var Desc = new ValueTableSortRule
                 {
-                    if (String.Compare(description[1], "DESC", true) == 0 || String.Compare(description[1], "УБЫВ", true) == 0)
-                        Desc.direction = -1;
-                    else
-                        Desc.direction = 1;
-                }
-                else
-                    Desc.direction = 1;
+                    Column = this.Columns.FindColumnByName(description[0]),
+                    direction = (description.Length > 1 && description[1].BilingualEquals("УБЫВ", "DESC")) ? -1 : 1
+                };
 
                 Rules.Add(Desc);
             }
