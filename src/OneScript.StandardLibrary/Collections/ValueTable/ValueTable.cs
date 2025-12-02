@@ -227,25 +227,51 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// Число - Индекс колонки для суммирования
         /// КолонкаТаблицыЗначений - Колонка для суммирования
         /// </param>
+        /// <remarks>
+        /// Если в колонке установлен тип и он единственный,
+        ///  то при суммировании будет попытка преобразования значения к типу Число.
+        /// <br/>Если колонке не присвоены типы 
+        ///  или в колонке несколько типов и среди них есть тип Число,
+        /// то в суммироваться будут только значения типа Число
+        /// <br/>Если в колонке несколько типов и среди них нет типа Число, то результатом будет Неопределено.
+        /// </remarks>
         /// <returns>Число</returns>
         [ContextMethod("Итог", "Total")]
         public IValue Total(IValue columnIndex)
         {
             var Column = Columns.GetColumnByIIndex(columnIndex);
             bool has_data = false;
-            decimal Result = 0;
+            decimal result = 0;
 
-            foreach (var row in _rows)
+            var types = Column.ValueType.Types();
+            if (types.Count() == 1)  // единственный тип
             {
-                var current_value = row.Get(Column);
-                if (current_value.SystemType == BasicTypes.Number)
+                foreach (var row in _rows)
                 {
-                    has_data = true;
-                    Result += current_value.AsNumber();
+                    try
+                    {
+                        result += row.Get(Column).AsNumber();
+                        has_data = true;
+                    }
+                    catch (RuntimeException)
+                    { }
                 }
             }
-            
-            return has_data ? ValueFactory.Create(Result) : ValueFactory.Create();
+            else if (types.Count() == 0 // нет типов
+                || types.Any(x => ((BslTypeValue)x).TypeValue == BasicTypes.Number)) // среди типов есть Число
+            {
+                foreach (var row in _rows)
+                {
+                    var current_value = row.Get(Column);
+                    if (current_value.SystemType == BasicTypes.Number)
+                    {
+                        result += current_value.AsNumber();
+                        has_data = true;
+                    }
+                }
+            }
+ 
+            return has_data ? ValueFactory.Create(result) : ValueFactory.Create();
         }
 
         /// <summary>
