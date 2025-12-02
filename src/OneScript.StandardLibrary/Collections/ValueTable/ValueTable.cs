@@ -157,33 +157,30 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             return result;
         }
 
-        private List<ValueTableColumn> GetProcessingColumnList(string ColumnNames, bool EmptyListInCaseOfNull = false)
+        private List<ValueTableColumn> GetProcessingColumnList(string columnNames, bool emptyListInCaseOfNull = false)
         {
-            List<ValueTableColumn> processing_list = new List<ValueTableColumn>();
-            if (ColumnNames != null)
+            var processing_list = new List<ValueTableColumn>();
+            if (string.IsNullOrEmpty(columnNames)) // Передали пустую строку вместо списка колонок
             {
-                if (ColumnNames.Trim().Length == 0)
+                if (!emptyListInCaseOfNull)
                 {
-                    // Передали пустую строку вместо списка колонок
-                    return processing_list;
+                    processing_list.AddRange(Columns);
                 }
-
-                foreach (var column_name in ColumnNames.Split(','))
-                {
-                    var name = column_name.Trim();
-                    var Column = Columns.FindColumnByName(name);
-
-                    if (Column == null)
-                        throw ColumnException.WrongColumnName(name);
-
-                    if (processing_list.Find( x=> x.Name==name ) == null)
-                        processing_list.Add(Column);
-                }
+                return processing_list;
             }
-            else if (!EmptyListInCaseOfNull)
+
+            foreach (var column_name in columnNames.Split(','))
             {
-                processing_list.AddRange(Columns);
+                var name = column_name.Trim();
+                var Column = Columns.FindColumnByName(name);
+
+                if (Column == null)
+                    throw ColumnException.WrongColumnName(column_name);
+
+                if (processing_list.Find(x => x.Name == name) == null)
+                    processing_list.Add(Column);
             }
+ 
             return processing_list;
         }
 
@@ -191,7 +188,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// Заполнить колонку/колонки указанным значением
         /// </summary>
         /// <param name="value">Произвольный - Устанавливаемое значение</param>
-        /// <param name="columnNames">Строка - Список имен колонок для установки значения (разделены запятыми)</param>
+        /// <param name="columnNames">Строка - Список имен колонок для установки значения (разделены запятыми).
+        /// Если параметр не указан или передана пустая строка, будут заполнены все колонки</param>
         [ContextMethod("ЗаполнитьЗначения", "FillValues")]
         public void FillValues(IValue value, string columnNames = null)
         {
@@ -517,7 +515,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// <summary>
         /// Создает новую таблицу значений с указанными колонками. Данные не копируются.
         /// </summary>
-        /// <param name="columnNames">Строка - Имена колонок для копирования, разделены запятыми</param>
+        /// <param name="columnNames">Строка - Имена колонок для копирования, разделены запятыми
+        /// Если параметр не указан или передана пустая строка, будут скопированы все колонки</param>
         /// <returns>ТаблицаЗначений</returns>
         [ContextMethod("СкопироватьКолонки", "CopyColumns")]
         public ValueTable CopyColumns(string columnNames = null)
