@@ -17,6 +17,7 @@ using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 
 namespace OneScript.StandardLibrary.Collections.ValueTable
@@ -650,13 +651,17 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 if (description.Length > 2)
                     throw RuntimeException.InvalidNthArgumentValue(1);
 
-                var Desc = new ValueTableSortRule
+                var sortColumn = this.Columns.FindColumnByName(description[0]);
+                if (sortColumn == null)
+                    throw ColumnException.WrongColumnName(description[0]);
+
+                var rule = new ValueTableSortRule
                 {
-                    Column = this.Columns.FindColumnByName(description[0]),
+                    Column = sortColumn,
                     direction = (description.Length > 1 && description[1].BilingualEquals("УБЫВ", "DESC")) ? -1 : 1
                 };
 
-                Rules.Add(Desc);
+                Rules.Add(rule);
             }
 
             return Rules;
