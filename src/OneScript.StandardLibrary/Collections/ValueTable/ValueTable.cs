@@ -17,7 +17,6 @@ using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 
 namespace OneScript.StandardLibrary.Collections.ValueTable
@@ -220,7 +219,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             if (row is ValueTableRow tableRow)
                 return _rows.IndexOf(tableRow);
 
-            return -1;
+            throw RuntimeException.InvalidArgumentType();
         }
 
         /// <summary>
