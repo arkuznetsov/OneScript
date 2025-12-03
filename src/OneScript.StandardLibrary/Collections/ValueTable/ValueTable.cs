@@ -17,7 +17,6 @@ using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 
 namespace OneScript.StandardLibrary.Collections.ValueTable
@@ -36,7 +35,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             Columns = new ValueTableColumnCollection(this);
             _rows = new List<ValueTableRow>();
             Indexes = new CollectionIndexes(this);
-    }
+        }
 
         /// <summary>
         /// Коллекция колонок
@@ -127,12 +126,12 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 ?? throw RuntimeException.InvalidNthArgumentType(1);
 
             Indexes.ClearIndexes();
-            
+
             while (row_iterator.MoveNext() && array_iterator.MoveNext())
             {
                 row_iterator.Current.Set(columnIndex, array_iterator.Current);
             }
-            
+
             Indexes.Rebuild();
         }
 
@@ -184,7 +183,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 if (processing_list.Find(x => x.Name == name) == null)
                     processing_list.Add(Column);
             }
- 
+
             return processing_list;
         }
 
@@ -250,7 +249,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             {
                 return TotalAllAsNumber(column);
             }
-            
+
             if (types.Count() == 0 // нет типов
                 || types.Any(x => ((BslTypeValue)x).TypeValue == BasicTypes.Number)) // среди типов есть Число
             {
@@ -343,7 +342,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
             var mapped = ColumnsMap(filter);
             var suitableIndex = Indexes.FindSuitableIndex(mapped.Keys());
-            var dataToScan = suitableIndex != null ? suitableIndex.GetData(mapped) : _rows; 
+            var dataToScan = suitableIndex != null ? suitableIndex.GetData(mapped) : _rows;
 
             foreach (var element in dataToScan)
             {
@@ -440,8 +439,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
         private static void CheckMixedColumns(List<ValueTableColumn> groupColumns, List<ValueTableColumn> aggregateColumns)
         {
-            foreach (var groupColumn in groupColumns )
-                if ( aggregateColumns.Find(x => x.Name==groupColumn.Name)!=null )
+            foreach (var groupColumn in groupColumns)
+                if (aggregateColumns.Find(x => x.Name == groupColumn.Name) != null)
                     throw ColumnException.ColumnsMixed(groupColumn.Name);
         }
 
@@ -451,7 +450,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 dest.Set(column, source.Get(column));
         }
 
-        private void AppendRowData(ValueTableRow source, ValueTableRow dest, IEnumerable<ValueTableColumn> columns)
+        private static void AppendRowData(ValueTableRow source, ValueTableRow dest, IEnumerable<ValueTableColumn> columns)
         {
             foreach (var column in columns)
             {
@@ -593,7 +592,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             var result = CopyColumns(columnNames);
             var columns = GetProcessingColumnList(columnNames);
-            
+
             IEnumerable<ValueTableRow> requestedRows = rows switch
             {
                 null => _rows,
@@ -679,7 +678,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                     throw RuntimeException.InvalidArgumentValue();
 
                 this.Rules = Rules;
-                 _comparer = new GenericIValueComparer(process);
+                _comparer = new GenericIValueComparer(process);
             }
 
             private int OneCompare(ValueTableRow x, ValueTableRow y, ValueTableSortRule Rule)
@@ -742,7 +741,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 yield return item;
             }
         }
-        
+
         public override IValue GetIndexedValue(IValue index)
         {
             return Get((int)index.AsNumber());
