@@ -180,8 +180,8 @@ namespace OneScript.Exceptions
         public static RuntimeException IncorrectOffset()
         {
             return new RuntimeException(
-                $"Неправильное смещение внутри коллекции",
-                $"Incorrect offset within collection");
+                "Неправильное смещение внутри коллекции",
+                "Incorrect offset within collection");
         }
         #endregion
     }

@@ -5,19 +5,20 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using OneScript.Contexts;
-using OneScript.StandardLibrary.Collections.Indexes;
 using OneScript.Exceptions;
 using OneScript.Execution;
+using OneScript.Localization;
+using OneScript.StandardLibrary.Collections.Exceptions;
+using OneScript.StandardLibrary.Collections.Indexes;
 using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
-using OneScript.StandardLibrary.Collections.Exceptions;
-using OneScript.Localization;
+using System;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Linq;
 
 namespace OneScript.StandardLibrary.Collections.ValueTable
 {
@@ -242,39 +243,51 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Итог", "Total")]
         public IValue Total(IValue columnIndex)
         {
-            var Column = Columns.GetColumnByIIndex(columnIndex);
-            bool has_data = false;
-            decimal result = 0;
+            var column = Columns.GetColumnByIIndex(columnIndex);
 
-            var types = Column.ValueType.Types();
+            var types = column.ValueType.Types();
             if (types.Count() == 1)  // единственный тип
             {
-                foreach (var row in _rows)
-                {
-                    try
-                    {
-                        result += row.Get(Column).AsNumber();
-                        has_data = true;
-                    }
-                    catch (RuntimeException)
-                    { }
-                }
+                return TotalAllAsNumber(column);
             }
-            else if (types.Count() == 0 // нет типов
+            
+            if (types.Count() == 0 // нет типов
                 || types.Any(x => ((BslTypeValue)x).TypeValue == BasicTypes.Number)) // среди типов есть Число
             {
-                foreach (var row in _rows)
+                return TotalNumbersOnly(column);
+            }
+
+            // несколько типов и нет типа Число
+            return ValueFactory.Create();
+        }
+
+        private IValue TotalAllAsNumber(ValueTableColumn column)
+        {
+            decimal result = 0;
+            foreach (var row in _rows)
+            {
+                try
                 {
-                    var current_value = row.Get(Column);
-                    if (current_value.SystemType == BasicTypes.Number)
-                    {
-                        result += current_value.AsNumber();
-                        has_data = true;
-                    }
+                    result += row.Get(column).AsNumber();
+                }
+                catch (RuntimeException)
+                { }
+            }
+            return ValueFactory.Create(result);
+        }
+
+        private IValue TotalNumbersOnly(ValueTableColumn column)
+        {
+            decimal result = 0;
+            foreach (var row in _rows)
+            {
+                var current_value = row.Get(column);
+                if (current_value.SystemType == BasicTypes.Number)
+                {
+                    result += current_value.AsNumber();
                 }
             }
- 
-            return has_data ? ValueFactory.Create(result) : ValueFactory.Create();
+            return ValueFactory.Create(result);
         }
 
         /// <summary>
