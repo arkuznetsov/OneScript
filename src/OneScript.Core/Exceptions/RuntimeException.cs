@@ -183,6 +183,14 @@ namespace OneScript.Exceptions
                 "Неправильное смещение внутри коллекции",
                 "Incorrect offset within collection");
         }
+
+        public static RuntimeException IndexOutOfRange()
+        {
+            return new RuntimeException(
+                "Значение индекса выходит за пределы диапазона",
+                "Index is out of range");
+        }
+
         #endregion
     }
 }

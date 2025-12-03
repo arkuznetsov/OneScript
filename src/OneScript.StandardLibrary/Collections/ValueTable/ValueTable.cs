@@ -504,7 +504,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             {
                 index = IndexOf(row);
                 if (index == -1)
-                    throw new RuntimeException("Строка не принадлежит таблице значений");
+                    throw ValueTableException.RowDoesntBelongTo();
             }
             else
             {
@@ -518,7 +518,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 }
 
                 if (index < 0 || index >= _rows.Count)
-                    throw new RuntimeException("Значение индекса выходит за пределы диапазона");
+                    throw RuntimeException.IndexOutOfRange();
             }
 
             return index;
@@ -759,6 +759,25 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         public IValue GetField(string name)
         {
             return Columns.FindColumnByName(name);
+        }
+    }
+
+    public class ValueTableException : RuntimeException
+    {
+        public ValueTableException(BilingualString message, Exception innerException) : base(message,
+            innerException)
+        {
+        }
+
+        public ValueTableException(BilingualString message) : base(message)
+        {
+        }
+
+        public static ValueTableException RowDoesntBelongTo()
+        {
+            return new ValueTableException(new BilingualString(
+                "Строка не принадлежит таблице значений",
+                "Row does not belong to table"));
         }
     }
 }
