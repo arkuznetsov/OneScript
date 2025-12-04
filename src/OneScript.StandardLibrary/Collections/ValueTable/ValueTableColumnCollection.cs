@@ -46,6 +46,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Добавить", "Add")]
         public ValueTableColumn Add(string name, TypeDescription type = null, string title = null, int width = 0)
         {
+            if (!Utils.IsValidIdentifier(name))
+                throw ColumnException.WrongColumnName(name);
+
             if (FindColumnByName(name) != null)
                 throw ColumnException.DuplicatedColumnName(name);
 
@@ -67,6 +70,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Вставить", "Insert")]
         public ValueTableColumn Insert(int index, string name, TypeDescription type = null, string title = null, int width = 0)
         {
+            if (!Utils.IsValidIdentifier(name))
+                throw ColumnException.WrongColumnName(name);
+
             if (FindColumnByName(name) != null)
                 throw ColumnException.DuplicatedColumnName(name);
 
