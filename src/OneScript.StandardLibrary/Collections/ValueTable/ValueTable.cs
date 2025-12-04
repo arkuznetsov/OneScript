@@ -270,7 +270,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                     result += row.Get(column).AsNumber();
                 }
                 catch (RuntimeException)
-                { }
+                {
+                    // игнорировать неприводимые к числу
+                }
             }
             return ValueFactory.Create(result);
         }
@@ -388,7 +390,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         public ValueTableRow Get(int index)
         {
             if (index < 0 || index >= Count())
-                throw RuntimeException.InvalidArgumentValue();
+                throw RuntimeException.IndexOutOfRange();
             return _rows[index];
         }
 
@@ -469,7 +471,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         private class RowsByColumnsEqComparer : IEqualityComparer<ValueTableRow>
         {
             private readonly IBslProcess _process;
-            private List<ValueTableColumn> _columns;
+            private readonly List<ValueTableColumn> _columns;
 
             public RowsByColumnsEqComparer(IBslProcess process, List<ValueTableColumn> columns)
             {
@@ -531,7 +533,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         /// СтрокаТаблицыЗначений - Строка которую сдвигаем
         /// Число - Индекс сдвигаемой строки
         /// </param>
-        /// <param name="offset">Количество строк, на которое сдвигается строка. Если значение положительное - сдвиг вниз, иначе вверх</param>
+        /// <param name="offset">Количество строк, на которое сдвигается строка.
+        /// Если значение положительное - сдвиг вниз, иначе вверх</param>
         [ContextMethod("Сдвинуть", "Move")]
         public void Move(BslValue row, int offset)
         {
