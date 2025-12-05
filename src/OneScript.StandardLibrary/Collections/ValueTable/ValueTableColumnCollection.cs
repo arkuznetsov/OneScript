@@ -7,7 +7,6 @@ at http://mozilla.org/MPL/2.0/.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Exceptions;
@@ -140,7 +139,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Очистить", "Clear")]
         public void Clear()
         {
-            while (_columns.Any())
+            while (_columns.Count != 0)
             {
                 Delete(_columns[0]);
             }
