@@ -647,7 +647,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
             foreach (string column in a_columns)
             {
-                string[] description = column.Trim().Split(' ');
+                string[] description = column.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (description.Length == 0)
                     throw ColumnException.WrongColumnName();
                 if (description.Length > 2)
@@ -769,7 +769,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         }
     }
 
-    public class ValueTableException : RuntimeException
+    public sealed class ValueTableException : RuntimeException
     {
         public ValueTableException(BilingualString message, Exception innerException) : base(message,
             innerException)
