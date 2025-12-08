@@ -156,7 +156,13 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             return _columns.Find(column => _namesComparer.Equals(name, column.Name));
         }
 
-        public ValueTableColumn FindColumnByIndex(int index) => _columns[index];
+        public ValueTableColumn FindColumnByIndex(int index)
+        {
+            if (index < 0 || index >= _columns.Count)
+                throw RuntimeException.IndexOutOfRange();
+            return _columns[index];
+        }
+
 
         public IEnumerator<ValueTableColumn> GetEnumerator()
         {
@@ -209,11 +215,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
             if (index.SystemType == BasicTypes.Number)
             {
-                int i_index = Decimal.ToInt32(index.AsNumber());
-                if (i_index < 0 || i_index >= Count())
-                    throw RuntimeException.IndexOutOfRange();
-
-                return FindColumnByIndex(i_index);
+                return FindColumnByIndex(decimal.ToInt32(index.AsNumber()));
             }
 
             if (index is ValueTableColumn column)
