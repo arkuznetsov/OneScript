@@ -167,8 +167,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
 		public override void SetIndexedValue(IValue index, IValue val)
 		{
-			var C = GetColumnByIIndex(index);
-			_data[C] = C.ValueType.AdjustValue(val);
+            Set(GetColumnByIIndex(index), val);
 		}
 
         void IDebugPresentationAcceptor.Accept(IDebugValueVisitor visitor)
