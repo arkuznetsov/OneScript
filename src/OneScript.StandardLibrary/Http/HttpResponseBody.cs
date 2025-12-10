@@ -1,7 +1,7 @@
 /*----------------------------------------------------------
-This Source Code Form is subject to the terms of the 
-Mozilla Public License, v.2.0. If a copy of the MPL 
-was not distributed with this file, You can obtain one 
+This Source Code Form is subject to the terms of the
+Mozilla Public License, v.2.0. If a copy of the MPL
+was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
@@ -23,7 +23,7 @@ namespace OneScript.StandardLibrary.Http
         bool _backFileIsTemp = false;
         byte[] _inMemBody;
 
-        private readonly bool _autoDecompress; 
+        private readonly bool _autoDecompress;
         private long _contentSize = 0;
         private Stream _rawStream;
 
@@ -41,9 +41,9 @@ namespace OneScript.StandardLibrary.Http
 
             if (!String.IsNullOrEmpty(dumpToFile))
             {
-                 InitFileBackedResponse(response, dumpToFile);
+                InitFileBackedResponse(response, dumpToFile);
             }
-            else if(_autoDecompress)
+            else if (_autoDecompress)
             {
                 InitInMemoryResponse(response);
             }
@@ -51,7 +51,7 @@ namespace OneScript.StandardLibrary.Http
 
         private void InitInMemoryResponse(HttpWebResponse response)
         {
-            if(_contentSize > INMEMORY_BODY_LIMIT)
+            if (_contentSize > INMEMORY_BODY_LIMIT)
             {
                 var filename = Path.GetTempFileName();
                 _backFileIsTemp = true;
@@ -59,7 +59,7 @@ namespace OneScript.StandardLibrary.Http
             }
             else
             {
-                if(_contentSize == UNDEFINED_LENGTH)
+                if (_contentSize == UNDEFINED_LENGTH)
                 {
                     ReadToStream(response);
                 }
@@ -80,10 +80,10 @@ namespace OneScript.StandardLibrary.Http
             {
                 return new FileStream(_backingFileName, FileMode.Open, FileAccess.Read);
             }
-           else if (_inMemBody != null)
-           {
-               return new MemoryStream(_inMemBody);
-           }
+            else if (_inMemBody != null)
+            {
+                return new MemoryStream(_inMemBody);
+            }
             else
                 return _rawStream;
         }
@@ -94,11 +94,11 @@ namespace OneScript.StandardLibrary.Http
                 return new GZipStream(response.GetResponseStream(), CompressionMode.Decompress);
             return response.GetResponseStream();
         }
-        
+
         private void ReadToStream(HttpWebResponse response)
         {
             using (var responseStream = GetResponseStream(response))
-            using(var ms = new MemoryStream())
+            using (var ms = new MemoryStream())
             {
                 bool memStreamIsAlive = true;
 
@@ -114,12 +114,12 @@ namespace OneScript.StandardLibrary.Http
 
                     readTotal += bytesRead;
 
-                    if(readTotal > INMEMORY_BODY_LIMIT)
+                    if (readTotal > INMEMORY_BODY_LIMIT)
                     {
                         var filename = Path.GetTempFileName();
                         _backFileIsTemp = true;
                         _backingFileName = filename;
-                        
+
                         ms.Position = 0;
                         using (var file = new FileStream(filename, FileMode.Create))
                         {
@@ -130,11 +130,10 @@ namespace OneScript.StandardLibrary.Http
                         }
 
                         break;
-
                     }
                 }
 
-                if(memStreamIsAlive)
+                if (memStreamIsAlive)
                 {
                     _inMemBody = new byte[ms.Length];
                     ms.Position = 0;
@@ -149,7 +148,7 @@ namespace OneScript.StandardLibrary.Http
         private void ReadToArray(HttpWebResponse response)
         {
             System.Diagnostics.Debug.Assert(_contentSize <= INMEMORY_BODY_LIMIT);
-            
+
             using var stream = GetResponseStream(response);
             var mustRead = (int)_contentSize;
             _inMemBody = new byte[mustRead];
@@ -171,9 +170,9 @@ namespace OneScript.StandardLibrary.Http
         private void InitFileBackedResponse(HttpWebResponse response, string backingFileName)
         {
             _backingFileName = backingFileName;
-            using(var responseStream = GetResponseStream(response))
+            using (var responseStream = GetResponseStream(response))
             {
-                using(var file = new FileStream(backingFileName, FileMode.Create))
+                using (var file = new FileStream(backingFileName, FileMode.Create))
                 {
                     StreamToStreamCopy(responseStream, file);
                 }
@@ -195,7 +194,7 @@ namespace OneScript.StandardLibrary.Http
 
         private void Dispose(bool manualDispose)
         {
-            if(manualDispose)
+            if (manualDispose)
             {
                 GC.SuppressFinalize(this);
                 _inMemBody = null;
@@ -206,9 +205,9 @@ namespace OneScript.StandardLibrary.Http
 
         private void KillTemporaryFile()
         {
-            if(_backFileIsTemp && _backingFileName != null)
+            if (_backFileIsTemp && _backingFileName != null)
             {
-                if(File.Exists(_backingFileName))
+                if (File.Exists(_backingFileName))
                 {
                     try
                     {

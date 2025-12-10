@@ -49,23 +49,6 @@ namespace OneScript.StandardLibrary.Http
             }
         }
 
-        private void RetrieveResponseData(HttpWebResponse response, string dumpToFile)
-        {
-            using(response)
-            {
-                StatusCode = (int)response.StatusCode;
-                _defaultCharset = response.CharacterSet;
-
-                ProcessHeaders(response.Headers);
-                ProcessResponseBody(response, dumpToFile);
-                if (_body != null && _body.AutoDecompress)
-                {
-                    _headers.Delete(ValueFactory.Create("Content-Encoding"));
-                    _headers.SetIndexedValue(ValueFactory.Create("Content-Length"), ValueFactory.Create(_body.ContentSize));
-                }
-            }
-        }
-
         private void ProcessHeaders(WebHeaderCollection webHeaderCollection)
         {
             foreach (var item in webHeaderCollection.AllKeys)
@@ -90,13 +73,7 @@ namespace OneScript.StandardLibrary.Http
         /// Соответствие. Заголовки ответа сервера.
         /// </summary>
         [ContextProperty("Заголовки", "Headers")]
-        public MapImpl Headers
-        {
-            get
-            {
-                return _headers;
-            }
-        }
+        public MapImpl Headers => _headers;
 
         /// <summary>
         /// Код состояния HTTP ответа. Число.
