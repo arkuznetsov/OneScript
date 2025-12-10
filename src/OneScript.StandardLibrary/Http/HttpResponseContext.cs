@@ -28,7 +28,6 @@ namespace OneScript.StandardLibrary.Http
         // TODO: Нельзя выделить массив размером больше чем 2GB
         // поэтому функционал сохранения в файл не должен использовать промежуточный буфер _body
         private HttpResponseBody _body;
-        private Stream _rawStream;
         private HttpWebResponse _response;
 
         private string _defaultCharset;
@@ -41,7 +40,6 @@ namespace OneScript.StandardLibrary.Http
 
             ProcessHeaders(response.Headers);
             ProcessResponseBody(response, dumpToFile);
-            _rawStream = response.GetResponseStream();
             _response = response;
 
             if (_body != null && _body.AutoDecompress)
@@ -128,7 +126,7 @@ namespace OneScript.StandardLibrary.Http
             else
                 enc = TextEncodingEnum.GetEncoding(encoding);
 
-            using(var reader = new StreamReader(_body.OpenReadStream(_rawStream), enc))
+            using(var reader = new StreamReader(_body.OpenReadStream(), enc))
             {
                 return ValueFactory.Create(reader.ReadToEnd());
             }
@@ -145,7 +143,7 @@ namespace OneScript.StandardLibrary.Http
             if (_body == null)
                 return ValueFactory.Create();
 
-            using (var stream = _body.OpenReadStream(_rawStream))
+            using (var stream = _body.OpenReadStream())
             using (var memoryStream = new MemoryStream())
             {   
                 stream.CopyTo(memoryStream);
@@ -163,7 +161,7 @@ namespace OneScript.StandardLibrary.Http
             if (_body == null)
                 return ValueFactory.Create();
 
-            return new GenericStream(_body.OpenReadStream(_rawStream), true);
+            return new GenericStream(_body.OpenReadStream(), true);
         }
 
         /// <summary>

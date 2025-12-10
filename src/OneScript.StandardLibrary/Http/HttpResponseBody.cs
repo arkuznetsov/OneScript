@@ -25,6 +25,7 @@ namespace OneScript.StandardLibrary.Http
 
         private readonly bool _autoDecompress; 
         private long _contentSize = 0;
+        private Stream _rawStream;
 
         public HttpResponseBody(HttpWebResponse response, string dumpToFile)
         {
@@ -33,7 +34,8 @@ namespace OneScript.StandardLibrary.Http
                 _inMemBody = Array.Empty<byte>();
                 return;
             }
-            
+
+            _rawStream = response.GetResponseStream();
             _autoDecompress = string.Equals(response.ContentEncoding, "gzip", StringComparison.OrdinalIgnoreCase);
             _contentSize = _autoDecompress ? -1 : response.ContentLength;
 
@@ -72,7 +74,7 @@ namespace OneScript.StandardLibrary.Http
 
         public long ContentSize => _contentSize < 0 ? 0 : _contentSize;
 
-        public Stream OpenReadStream(Stream rawStream)
+        public Stream OpenReadStream()
         {
             if (_backingFileName != null)
             {
@@ -83,7 +85,7 @@ namespace OneScript.StandardLibrary.Http
                return new MemoryStream(_inMemBody);
            }
             else
-                return rawStream;
+                return _rawStream;
         }
 
         private Stream GetResponseStream(HttpWebResponse response)
