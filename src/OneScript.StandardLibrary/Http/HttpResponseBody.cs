@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------
+/*----------------------------------------------------------
 This Source Code Form is subject to the terms of the 
 Mozilla Public License, v.2.0. If a copy of the MPL 
 was not distributed with this file, You can obtain one 
@@ -25,6 +25,7 @@ namespace OneScript.StandardLibrary.Http
 
         private readonly bool _autoDecompress; 
         private long _contentSize = 0;
+        private Stream _rawStream;
 
         public HttpResponseBody(HttpWebResponse response, string dumpToFile)
         {
@@ -33,17 +34,18 @@ namespace OneScript.StandardLibrary.Http
                 _inMemBody = Array.Empty<byte>();
                 return;
             }
-            
+
+            _rawStream = response.GetResponseStream();
             _autoDecompress = string.Equals(response.ContentEncoding, "gzip", StringComparison.OrdinalIgnoreCase);
             _contentSize = _autoDecompress ? -1 : response.ContentLength;
 
-            if (String.IsNullOrEmpty(dumpToFile))
+            if (!String.IsNullOrEmpty(dumpToFile))
+            {
+                 InitFileBackedResponse(response, dumpToFile);
+            }
+            else if(_autoDecompress)
             {
                 InitInMemoryResponse(response);
-            }
-            else
-            {
-                InitFileBackedResponse(response, dumpToFile);
             }
         }
 
@@ -78,12 +80,12 @@ namespace OneScript.StandardLibrary.Http
             {
                 return new FileStream(_backingFileName, FileMode.Open, FileAccess.Read);
             }
-            else if (_inMemBody != null)
-            {
-                return new MemoryStream(_inMemBody);
-            }
+           else if (_inMemBody != null)
+           {
+               return new MemoryStream(_inMemBody);
+           }
             else
-                throw new InvalidOperationException("No response body");
+                return _rawStream;
         }
 
         private Stream GetResponseStream(HttpWebResponse response)
