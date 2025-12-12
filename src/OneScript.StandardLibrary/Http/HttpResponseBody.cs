@@ -79,7 +79,7 @@ namespace OneScript.StandardLibrary.Http
 
         public Stream OpenReadStream(bool raw = false)
         {
-            if (raw && !_inMemoryResponseInited)
+            if (raw)
             {
                 return GetResponseStream();
             }
