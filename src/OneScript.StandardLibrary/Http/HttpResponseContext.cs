@@ -161,7 +161,7 @@ namespace OneScript.StandardLibrary.Http
             if (_body == null)
                 return ValueFactory.Create();
 
-            return new GenericStream(_body.OpenReadStream(), true);
+            return new GenericStream(_body.OpenReadStream(true), true);
         }
 
         /// <summary>
