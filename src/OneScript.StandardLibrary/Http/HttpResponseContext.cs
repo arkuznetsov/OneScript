@@ -131,14 +131,14 @@ namespace OneScript.StandardLibrary.Http
         /// <summary>
         /// Интерпретировать ответ, как Поток
         /// </summary>
+        /// <param name="rawStream">Булево. Будет получен сырой поток без дополнительной обработки. По умолчанию Ложь</param>
         /// <returns>Поток</returns>
         [ContextMethod("ПолучитьТелоКакПоток", "GetBodyAsStream")]
-        public IValue GetBodyAsStream()
+        public IValue GetBodyAsStream(bool rawStream = false)
         {
             if (_body == null)
                 return ValueFactory.Create();
-
-            return new GenericStream(_body.OpenReadStream(), true);
+            return new GenericStream(_body.OpenReadStream(rawStream), true);
         }
 
         /// <summary>
