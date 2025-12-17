@@ -18,21 +18,31 @@ namespace OneScript.StandardLibrary.Collections.Indexes
     [ContextClass("ИндексКоллекции", "CollectionIndex")]
     public class CollectionIndex : AutoCollectionContext<CollectionIndex, IValue>
     {
-        private readonly List<IValue> _fields = new List<IValue>();
+        readonly List<IValue> _fields = new List<IValue>();
         private readonly IIndexCollectionSource _source;
 
-        private readonly IDictionary<CollectionIndexKey, HashSet<IValue>> _data =
+        private readonly Dictionary<CollectionIndexKey, HashSet<IValue>> _data =
             new Dictionary<CollectionIndexKey, HashSet<IValue>>();
         
         public CollectionIndex(IIndexCollectionSource source, IEnumerable<IValue> fields)
         {
             _source = source;
-            _fields.AddRange(fields);
+            foreach (var value in _source)
+            {
+                ElementAdded(value);
+            }
+
+            foreach (var field in fields)
+            {
+                if (field is ValueTable.ValueTableColumn column) 
+                    column.IsIndexable = true;
+                _fields.Add(field);
+            }
         }
 
         internal bool CanBeUsedFor(IEnumerable<IValue> searchFields)
         {
-            return _fields.Any() && _fields.ToHashSet().IsSubsetOf(searchFields.ToHashSet());
+            return _fields.Count>0 && _fields.ToHashSet().IsSubsetOf(searchFields);
         }
 
         private CollectionIndexKey IndexKey(PropertyNameIndexAccessor source)
@@ -82,10 +92,7 @@ namespace OneScript.StandardLibrary.Collections.Indexes
             }
         }
 
-        internal void Clear()
-        {
-            _data.Clear();
-        }
+        internal void Clear() => _data.Clear();
 
         internal void Rebuild()
         {

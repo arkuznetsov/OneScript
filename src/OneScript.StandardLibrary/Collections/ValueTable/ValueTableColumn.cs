@@ -21,17 +21,18 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
     {
         private string _title;
         private string _name;
-        private TypeDescription _valueType;
+        private readonly TypeDescription _valueType;
         private readonly WeakReference _owner;
-        private readonly int _id;
+
+        public bool IsIndexable { get; set; }
         
-        public ValueTableColumn(ValueTableColumnCollection owner, int id, string name, string title, TypeDescription type, int width)
+        public ValueTableColumn(ValueTableColumnCollection owner, string name, string title, TypeDescription type, int width)
         {
             _name = name;
             _title = title;
             _valueType = type ?? new TypeDescription();
             Width = width;
-            _id = id;
+            IsIndexable = false;
 
             _owner = new WeakReference(owner);
         }
@@ -65,7 +66,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                     _title = value;
 
                 _name = value;
-
             }
         }
         /// <summary>

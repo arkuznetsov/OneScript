@@ -89,9 +89,14 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
         public void Set(ValueTableColumn column, IValue value)
         {
-            _owner.Indexes.ElementRemoved(this);
-            _data[column] = column.ValueType.AdjustValue(value);
-            _owner.Indexes.ElementAdded(this);
+            if (column.IsIndexable)
+            {
+                _owner.Indexes.ElementRemoved(this);
+                _data[column] = column.ValueType.AdjustValue(value);
+                _owner.Indexes.ElementAdded(this);
+            }
+            else
+                _data[column] = column.ValueType.AdjustValue(value);
         }
 
         public void OnOwnerColumnRemoval(ValueTableColumn column)

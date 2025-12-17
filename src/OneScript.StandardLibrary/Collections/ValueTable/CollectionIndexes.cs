@@ -32,7 +32,6 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         public CollectionIndex Add(string columns)
         {
             var newIndex = new CollectionIndex(_owner, BuildFieldList(_owner, columns));
-            newIndex.Rebuild();
             _indexes.Add(newIndex);
             return newIndex;
         }
