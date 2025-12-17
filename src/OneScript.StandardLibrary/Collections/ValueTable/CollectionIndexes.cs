@@ -40,7 +40,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Количество", "Count")]
         public override int Count()
         {
-            return _indexes.Count();
+            return _indexes.Count;
         }
 
         [ContextMethod("Удалить", "Delete")]
@@ -130,21 +130,18 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             return _indexes.FirstOrDefault(index => index.CanBeUsedFor(searchFields));
         }
 
-        private static IList<IValue> BuildFieldList(IIndexCollectionSource source, string fieldList)
+        private static List<IValue> BuildFieldList(IIndexCollectionSource source, string fieldList)
         {
             var fields = new List<IValue>();
-            var fieldNames = fieldList.Split(',');
+            if (string.IsNullOrEmpty(fieldList))
+                return fields;
+
+            var fieldNames = fieldList.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
             foreach (var fieldName in fieldNames)
             {
-                if (!string.IsNullOrWhiteSpace(fieldName))
-                {
-                    var field = source.GetField(fieldName.Trim());
-                    if (field == null)
-                    {
-                        throw ColumnException.WrongColumnName(fieldName);
-                    }
-                    fields.Add(field);
-                }
+                var name = fieldName.Trim();
+                var field = source.GetField(name) ?? throw ColumnException.WrongColumnName(fieldName);
+                fields.Add(field);
             }
 
             return fields;
