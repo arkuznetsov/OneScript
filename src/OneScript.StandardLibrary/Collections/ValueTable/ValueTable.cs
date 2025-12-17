@@ -70,7 +70,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         {
             var row = new ValueTableRow(this);
             _rows.Add(row);
-            Indexes.ElementAdded(row);
+            if (Indexes.Count() > 0) 
+                Indexes.ElementAdded(row);
             return row;
         }
 
@@ -157,7 +158,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             return result;
         }
 
-        private List<ValueTableColumn> GetProcessingColumnList(string columnNames, bool emptyListInCaseOfNull = false)
+         private List<ValueTableColumn> GetProcessingColumnList(string columnNames, bool emptyListInCaseOfNull = false)
         {
             var processing_list = new List<ValueTableColumn>();
             if (string.IsNullOrEmpty(columnNames)) // Передали пустую строку вместо списка колонок
@@ -313,15 +314,17 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             }
             return ValueFactory.Create();
         }
+ 
+        private ValueTableColumn GetColumnOrThrow(string column_name)
+            => this.Columns.FindColumnByName(column_name)
+                ?? throw ColumnException.WrongColumnName(column_name);
+
 
         private bool CheckFilterCriteria(ValueTableRow Row, StructureImpl Filter)
         {
             foreach (var kv in Filter)
             {
-                var Column = Columns.FindColumnByName(kv.Key.ToString());
-                if (Column == null)
-                    throw ColumnException.WrongColumnName(kv.Key.ToString());
-
+                var Column = GetColumnOrThrow(kv.Key.ToString());
                 IValue current = Row.Get(Column);
                 if (!current.StrictEquals(kv.Value))
                     return false;
@@ -361,10 +364,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             var result = new MapImpl();
             foreach (var kv in filter)
             {
-                var key = Columns.FindColumnByName(kv.Key.ToString());
-                if (key == null)
-                    throw ColumnException.WrongColumnName(kv.Key.ToString());
-
+                var key = GetColumnOrThrow(kv.Key.ToString());
                 result.Insert(key, kv.Value);
             }
 
@@ -653,10 +653,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
                 if (description.Length > 2)
                     throw RuntimeException.InvalidNthArgumentValue(1);
 
-                var sortColumn = this.Columns.FindColumnByName(description[0]);
-                if (sortColumn == null)
-                    throw ColumnException.WrongColumnName(description[0]);
-
+                var sortColumn = GetColumnOrThrow(description[0]);
                 var rule = new ValueTableSortRule
                 {
                     Column = sortColumn,
