@@ -141,11 +141,14 @@ namespace OneScript.StandardLibrary
             }
         }
 
+
+        private const int annotNameColumnIndex = 0;
+        private const int annotParamsColumnIndex = 1;
         private static ValueTable EmptyAnnotationsTable()
         {
             var annotationsTable = new ValueTable();
-            annotationsTable.Columns.Add("Имя");
-            annotationsTable.Columns.Add("Параметры");
+            annotationsTable.Columns.AddUnchecked("Имя","Имя");
+            annotationsTable.Columns.AddUnchecked("Параметры", "Параметры");
 
             return annotationsTable;
         }
@@ -153,8 +156,8 @@ namespace OneScript.StandardLibrary
         private static ValueTable CreateAnnotationTable(BslAnnotationAttribute[] annotations)
         {
             var annotationsTable = EmptyAnnotationsTable();
-            var annotationNameColumn = annotationsTable.Columns.FindColumnByName("Имя");
-            var annotationParamsColumn = annotationsTable.Columns.FindColumnByName("Параметры");
+            var annotationNameColumn = annotationsTable.Columns.FindColumnByIndex(annotNameColumnIndex);
+            var annotationParamsColumn = annotationsTable.Columns.FindColumnByIndex(annotParamsColumnIndex);
 
             foreach (var annotation in annotations)
             {
@@ -186,9 +189,10 @@ namespace OneScript.StandardLibrary
                 if (annotationParameter.Value is BslAnnotationValue annotationValue)
                 {
                     var expandedValue = EmptyAnnotationsTable();
+                    var expandedValueColumns = expandedValue.Columns;
                     var row = expandedValue.Add();
-                    row.Set(expandedValue.Columns.FindColumnByName("Имя"), ValueFactory.Create(annotationValue.Name));
-                    row.Set(expandedValue.Columns.FindColumnByName("Параметры"), FillAnnotationParameters(annotationValue.Parameters));
+                    row.Set(expandedValueColumns.FindColumnByIndex(annotNameColumnIndex), ValueFactory.Create(annotationValue.Name));
+                    row.Set(expandedValueColumns.FindColumnByIndex(annotParamsColumnIndex), FillAnnotationParameters(annotationValue.Parameters));
                     parameterRow.Set(parameterValueColumn, row);
                 }
                 else
@@ -344,12 +348,12 @@ namespace OneScript.StandardLibrary
 
         private static void FillMethodsTable(ValueTable result, IEnumerable<BslMethodInfo> methods)
         {
-            var nameColumn = result.Columns.Add("Имя", TypeDescription.StringType(), "Имя");
-            var countColumn = result.Columns.Add("КоличествоПараметров", TypeDescription.IntegerType(), "Количество параметров");
-            var isFunctionColumn = result.Columns.Add("ЭтоФункция", TypeDescription.BooleanType(), "Это функция");
-            var annotationsColumn = result.Columns.Add("Аннотации", new TypeDescription(), "Аннотации");
-            var paramsColumn = result.Columns.Add("Параметры", new TypeDescription(), "Параметры");
-            var isExportlColumn = result.Columns.Add("Экспорт", TypeDescription.BooleanType(), "Экспорт");
+            var nameColumn = result.Columns.AddUnchecked("Имя", "Имя", TypeDescription.StringType());
+            var countColumn = result.Columns.AddUnchecked("КоличествоПараметров", "Количество параметров", TypeDescription.IntegerType());
+            var isFunctionColumn = result.Columns.AddUnchecked("ЭтоФункция", "Это функция", TypeDescription.BooleanType());
+            var annotationsColumn = result.Columns.AddUnchecked("Аннотации", "Аннотации");
+            var paramsColumn = result.Columns.AddUnchecked("Параметры", "Параметры");
+            var isExportlColumn = result.Columns.AddUnchecked("Экспорт", "Экспорт", TypeDescription.BooleanType());
 
             foreach (var methInfo in methods)
             {
@@ -365,12 +369,11 @@ namespace OneScript.StandardLibrary
                 new_row.Set(annotationsColumn, CreateAnnotationTable(annotations));
 
                 var paramTable = new ValueTable();
-                var paramNameColumn = paramTable.Columns.Add("Имя", TypeDescription.StringType(), "Имя");
-                var paramByValue = paramTable.Columns.Add("ПоЗначению", TypeDescription.BooleanType(), "По значению");
-                var paramHasDefaultValue = paramTable.Columns.Add("ЕстьЗначениеПоУмолчанию", TypeDescription.BooleanType(), "Есть значение по-умолчанию");
-                var paramDefaultValue = paramTable.Columns.Add("ЗначениеПоУмолчанию", new TypeDescription(), "Значение по умолчанию");
-                var paramAnnotationsColumn = paramTable.Columns.Add("Аннотации", new TypeDescription(), "Аннотации");
-
+                var paramNameColumn = paramTable.Columns.AddUnchecked("Имя", "Имя", TypeDescription.StringType());
+                var paramByValue = paramTable.Columns.AddUnchecked("ПоЗначению", "По значению", TypeDescription.BooleanType());
+                var paramHasDefaultValue = paramTable.Columns.AddUnchecked("ЕстьЗначениеПоУмолчанию", "Есть значение по-умолчанию", TypeDescription.BooleanType());
+                var paramDefaultValue = paramTable.Columns.AddUnchecked("ЗначениеПоУмолчанию", "Значение по умолчанию");
+                var paramAnnotationsColumn = paramTable.Columns.AddUnchecked("Аннотации", "Аннотации");
                 new_row.Set(paramsColumn, paramTable);
 
                 if (parameters.Length != 0)
@@ -454,9 +457,9 @@ namespace OneScript.StandardLibrary
 
         private static void FillPropertiesTable(ValueTable result, IEnumerable<BslPropertyInfo> properties)
         {
-            var nameColumn = result.Columns.Add("Имя", TypeDescription.StringType(), "Имя");
-            var annotationsColumn = result.Columns.Add("Аннотации", new TypeDescription(), "Аннотации");
-            var isExportedColumn = result.Columns.Add("Экспорт", TypeDescription.BooleanType(), "Экспорт");
+            var nameColumn = result.Columns.AddUnchecked("Имя", "Имя", TypeDescription.StringType());
+            var annotationsColumn = result.Columns.AddUnchecked("Аннотации", "Аннотации");
+            var isExportedColumn = result.Columns.AddUnchecked("Экспорт", "Экспорт", TypeDescription.BooleanType());
             
             var systemVarNames = new string[] { "этотобъект", "thisobject" };
 
@@ -532,11 +535,11 @@ namespace OneScript.StandardLibrary
         {
             var result = new ValueTable();
             
-            var nameColumn = result.Columns.Add("Имя", TypeDescription.StringType());
-            var valueColumn = result.Columns.Add("Значение", new TypeDescription(new List<BslTypeValue>() { new BslTypeValue(BasicTypes.Type) }));
-            var primitiveColumn = result.Columns.Add("Примитивный", TypeDescription.BooleanType());
-            var userColumn = result.Columns.Add("Пользовательский", TypeDescription.BooleanType());
-            var collectionColumn = result.Columns.Add("Коллекция", TypeDescription.BooleanType());
+            var nameColumn = result.Columns.AddUnchecked("Имя", "Имя", TypeDescription.StringType());
+            var valueColumn = result.Columns.AddUnchecked("Значение", "Значение", new TypeDescription(new[] { new BslTypeValue(BasicTypes.Type) }));
+            var primitiveColumn = result.Columns.AddUnchecked("Примитивный", "Примитивный", TypeDescription.BooleanType());
+            var userColumn = result.Columns.AddUnchecked("Пользовательский", "Пользовательский", TypeDescription.BooleanType());
+            var collectionColumn = result.Columns.AddUnchecked("Коллекция", "Коллекция", TypeDescription.BooleanType());
             
             _typeManager.RegisteredTypes().ForEach(descriptor =>
             {
