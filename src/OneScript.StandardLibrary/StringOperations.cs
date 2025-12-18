@@ -138,10 +138,13 @@ namespace OneScript.StandardLibrary
         /// <param name="occurance">Указывает номер вхождения искомой подстроки в исходной строке</param>
         /// <returns>Позицию искомой строки в исходной строке. Возвращает 0, если подстрока не найдена.</returns>
         [ContextMethod("СтрНайти", "StrFind")]
-        public int StrFind(string haystack, string needle, SearchDirection direction = SearchDirection.FromBegin, int startPos = 0, int occurance = 0)
+        public int StrFind(string haystack, string needle, SearchDirection direction = SearchDirection.FromBegin, int startPos = 0, int occurance = 1)
         {
+            if (needle.Length == 0)
+                return 1;
+
             int len = haystack.Length;
-            if (len == 0 || needle.Length == 0)
+            if (len == 0)
                 return 0;
 
             bool fromBegin = direction == SearchDirection.FromBegin;
@@ -150,12 +153,13 @@ namespace OneScript.StandardLibrary
             {
                 startPos = fromBegin ? 1 : len;
             }
+            else if (startPos < 1 || startPos > len)
+                throw RuntimeException.InvalidNthArgumentValue(4);
 
-            if (startPos < 1 || startPos > len)
-                throw RuntimeException.InvalidArgumentValue();
-
-            if (occurance == 0)
-                occurance = 1;
+            if (occurance < 0)
+                return 0;
+            else if (occurance == 0)
+                throw RuntimeException.InvalidNthArgumentValue(5);
 
             int startIndex = startPos - 1;
             int foundTimes = 0;
@@ -174,7 +178,6 @@ namespace OneScript.StandardLibrary
                     if (startIndex >= len)
                         break;
                 }
-
             }
             else
             {
@@ -189,13 +192,9 @@ namespace OneScript.StandardLibrary
                     if (startIndex < 0)
                         break;
                 }
-
             }
 
-            if (foundTimes == occurance)
-                return index + 1;
-            else
-                return 0;
+            return foundTimes == occurance ? index + 1 : 0;
         }
 
         /// <summary>
