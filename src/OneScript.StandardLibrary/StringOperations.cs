@@ -5,30 +5,34 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
-using System;
-using System.Linq;
 using OneScript.Commons;
 using OneScript.Contexts;
 using OneScript.Contexts.Enums;
 using OneScript.Exceptions;
 using OneScript.Execution;
+using OneScript.Localization;
 using OneScript.StandardLibrary.Collections;
 using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
+using System;
+using System.Linq;
 
 namespace OneScript.StandardLibrary
 {
     [GlobalContext(Category = "Операции со строками")]
     public class StringOperations : GlobalContextBase<StringOperations>
     {
+        private static readonly System.Text.RegularExpressions.Regex _templateRe 
+            = new System.Text.RegularExpressions.Regex(@"(%%)|%(\d+)|%\((\d+)\)|%");
+
         /// <summary>
         /// Получает строку на языке, заданном во втором параметре (коды языков в соответствии с  ISO 639-1)
         /// или на текущем языке системы.
         /// </summary>
         /// <param name="src">Строка на нескольких языках</param>
         /// <param name="lang">Код языка (если не указан, возвращает вариант для текущего языка системы, 
-        /// если вариант не найден, то возвращает вариант для английского языка, если не задан вариант для английского языка,
-        /// то возвращает первый вариант из списка)</param>
+        /// если вариант не найден, то возвращает вариант для английского языка,
+        /// если не задан вариант для английского языка, то возвращает первый вариант из списка)</param>
         [ContextMethod("НСтр", "NStr")]
         public string NStr(string src, string lang = null)
         {
@@ -39,7 +43,8 @@ namespace OneScript.StandardLibrary
         /// Определяет, что строка начинается с указанной подстроки.
         /// </summary>
         /// <param name="inputString">Строка, начало которой проверяется на совпадение с подстрокой поиска.</param>
-        /// <param name="searchString">Строка, содержащая предполагаемое начало строки. В случае если переданное значение является пустой строкой генерируется исключительная ситуация.</param>
+        /// <param name="searchString">Строка, содержащая предполагаемое начало строки. 
+        /// В случае, если переданное значение является пустой строкой, генерируется исключительная ситуация.</param>
         [ContextMethod("СтрНачинаетсяС", "StrStartsWith")]
         public bool StrStartsWith(string inputString, string searchString)
         {
@@ -51,7 +56,7 @@ namespace OneScript.StandardLibrary
                 {
                     result = inputString.StartsWith(searchString);
                 }
-                else throw new RuntimeException("Ошибка при вызове метода контекста (СтрНачинаетсяС): Недопустимое значение параметра (параметр номер '2')"); 
+                else throw StringOpException.StrStartsWith(); 
             }
 
             return result;
@@ -61,7 +66,8 @@ namespace OneScript.StandardLibrary
         /// Определяет, заканчивается ли строка указанной подстрокой.
         /// </summary>
         /// <param name="inputString">Строка, окончание которой проверяется на совпадение с подстрокой поиска.</param>
-        /// <param name="searchString">Строка, содержащая предполагаемое окончание строки. В случае если переданное значение является пустой строкой генерируется исключительная ситуация.</param>
+        /// <param name="searchString">Строка, содержащая предполагаемое окончание строки.
+        /// В случае, если переданное значение является пустой строкой, генерируется исключительная ситуация.</param>
         [ContextMethod("СтрЗаканчиваетсяНа", "StrEndsWith")]
         public bool StrEndsWith(string inputString, string searchString)
         {
@@ -73,7 +79,7 @@ namespace OneScript.StandardLibrary
                 {
                     result = inputString.EndsWith(searchString);
                 }
-                else throw new RuntimeException("Ошибка при вызове метода контекста (СтрЗаканчиваетсяНа): Недопустимое значение параметра (параметр номер '2')"); 
+                else throw StringOpException.StrEndsWith();
             }
 
             return result;
@@ -84,7 +90,8 @@ namespace OneScript.StandardLibrary
         /// </summary>
         /// <param name="inputString">Разделяемая строка.</param>
         /// <param name="stringDelimiter">Строка символов, каждый из которых является индивидуальным разделителем.</param>
-        /// <param name="includeEmpty">Указывает необходимость включать в результат пустые строки, которые могут образоваться в результате разделения исходной строки. Значение по умолчанию: Истина. </param>
+        /// <param name="includeEmpty">Указывает необходимость включать в результат пустые строки, 
+        /// которые могут образоваться в результате разделения исходной строки. Значение по умолчанию: Истина. </param>
         [ContextMethod("СтрРазделить", "StrSplit")]
         public ArrayImpl StrSplit(string inputString, string stringDelimiter, bool? includeEmpty = true)
         {
@@ -94,12 +101,14 @@ namespace OneScript.StandardLibrary
             
             if(!string.IsNullOrEmpty(inputString))
             {
-                arrParsed = inputString.Split(stringDelimiter?.ToCharArray(), (bool) includeEmpty ? StringSplitOptions.None : StringSplitOptions.RemoveEmptyEntries);
+                arrParsed = inputString.Split(stringDelimiter?.ToCharArray(),
+                                              (bool)includeEmpty ? StringSplitOptions.None : StringSplitOptions.RemoveEmptyEntries);
             }
             else
             {
-                arrParsed = (bool) includeEmpty ? new string[] { string.Empty } : new string[0];
+                arrParsed = (bool)includeEmpty ? new string[] { string.Empty } : Array.Empty<string>();
             }
+
             return new ArrayImpl(arrParsed.Select(x => ValueFactory.Create(x)));
         }
 
@@ -149,7 +158,7 @@ namespace OneScript.StandardLibrary
 
             bool fromBegin = direction == SearchDirection.FromBegin;
 
-            if(startPos == 0)
+            if (startPos == 0)
             {
                 startPos = fromBegin ? 1 : len;
             }
@@ -215,9 +224,8 @@ namespace OneScript.StandardLibrary
                 .SkipWhile(x => x == null)
                 .Count();
 
-            var re = new System.Text.RegularExpressions.Regex(@"(%%)|%(\d+)|%\((\d+)\)|%");
             int maxNumber = 0;
-            var result = re.Replace(srcFormat, (m) =>
+            var result = _templateRe.Replace(srcFormat, (m) =>
             {
                 if (m.Groups[1].Success)
                     return "%";
@@ -227,7 +235,7 @@ namespace OneScript.StandardLibrary
                     var number = int.Parse(m.Groups[2].Success ? m.Groups[2].Value : m.Groups[3].Value);
 
                     if (number < 1 || number > 10)
-                        throw new RuntimeException($"Ошибка синтаксиса шаблона в позиции {m.Index+2}: недопустимый номер подстановки");
+                        throw StringOpException.TemplateSubst(m.Index + 2, number);
 
                     //FIXME: отключено, т.к. платформа игнорирует ошибку с недостаточным числом параметров
                     //if (number > passedArgsCount)
@@ -239,7 +247,7 @@ namespace OneScript.StandardLibrary
                     return arguments[10-number] ?? "";
                 }
 
-                throw new RuntimeException("Ошибка синтаксиса шаблона в позиции " + (m.Index + 2));
+                throw StringOpException.TemplateSyntax(m.Index + 2);
             });
 
             if (passedArgsCount > maxNumber)
@@ -252,8 +260,8 @@ namespace OneScript.StandardLibrary
         {
             return new StringOperations();
         }
-
     }
+
 
     [EnumerationType("НаправлениеПоиска", "SearchDirection")]
     public enum SearchDirection
@@ -265,4 +273,41 @@ namespace OneScript.StandardLibrary
     }
 
     
+    public class StringOpException : RuntimeException
+    {
+        public StringOpException(BilingualString message, Exception innerException) : base(message,
+            innerException)
+        {}
+
+        public StringOpException(BilingualString message) : base(message)
+        {}
+
+        public static StringOpException StrStartsWith()
+        {
+            return new StringOpException(new BilingualString(
+                "Error calling context method (StrStartsWith): Invalid parameter number '2' value",
+                "Ошибка при вызове метода контекста (СтрНачинаетсяС): Недопустимое значение параметра номер '2'"));
+        }
+        public static StringOpException StrEndsWith()
+        {
+            return new StringOpException(new BilingualString(
+                "Error calling context method (StrEndsWith): Invalid parameter number '2' value",
+                "Ошибка при вызове метода контекста (СтрЗаканчиваетсяНа): Недопустимое значение параметра номер '2'"));
+        }
+
+        public static StringOpException TemplateSyntax(int pos)
+        {
+            return new StringOpException(new BilingualString(
+                $"Ошибка синтаксиса шаблона в позиции {pos}",
+                $"Template syntax error at position {pos}"));
+        }
+
+        public static StringOpException TemplateSubst(int pos, int num)
+        {
+            return new StringOpException(new BilingualString(
+                $"Ошибка синтаксиса шаблона в позиции {pos}. Недопустимый номер подстановки: '{num}'",
+                $"Template syntax error at position {pos}. Invalid substitution number: '{num}'"));
+        }
+     }
+
 }
