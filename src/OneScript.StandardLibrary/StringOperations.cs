@@ -22,8 +22,9 @@ namespace OneScript.StandardLibrary
     [GlobalContext(Category = "Операции со строками")]
     public class StringOperations : GlobalContextBase<StringOperations>
     {
-        private static readonly System.Text.RegularExpressions.Regex _templateRe 
-            = new System.Text.RegularExpressions.Regex(@"(%%)|%(\d+)|%\((\d+)\)|%");
+        private static readonly System.Text.RegularExpressions.Regex _templateRe
+            = new System.Text.RegularExpressions.Regex(@"(%%)|%(\d+)|%\((\d+)\)|%",
+                  System.Text.RegularExpressions.RegexOptions.Compiled);
 
         /// <summary>
         /// Получает строку на языке, заданном во втором параметре (коды языков в соответствии с  ISO 639-1)
@@ -50,13 +51,13 @@ namespace OneScript.StandardLibrary
         {
             bool result = false;
 
-            if(!string.IsNullOrEmpty(inputString))
+            if (!string.IsNullOrEmpty(inputString))
             {
                 if (!string.IsNullOrEmpty(searchString))
                 {
                     result = inputString.StartsWith(searchString);
                 }
-                else throw StringOpException.StrStartsWith(); 
+                else throw StringOpException.StrStartsWith();
             }
 
             return result;
@@ -73,7 +74,7 @@ namespace OneScript.StandardLibrary
         {
             bool result = false;
 
-            if(!string.IsNullOrEmpty(inputString))
+            if (!string.IsNullOrEmpty(inputString))
             {
                 if (!string.IsNullOrEmpty(searchString))
                 {
@@ -98,8 +99,8 @@ namespace OneScript.StandardLibrary
             string[] arrParsed;
             if (includeEmpty == null)
                 includeEmpty = true;
-            
-            if(!string.IsNullOrEmpty(inputString))
+
+            if (!string.IsNullOrEmpty(inputString))
             {
                 arrParsed = inputString.Split(stringDelimiter?.ToCharArray(),
                                               (bool)includeEmpty ? StringSplitOptions.None : StringSplitOptions.RemoveEmptyEntries);
@@ -121,7 +122,7 @@ namespace OneScript.StandardLibrary
         public string StrConcat(IBslProcess process, ArrayImpl input, string delimiter = null)
         {
             var strings = input.Select(x => x.AsString(process));
-            
+
             return String.Join(delimiter, strings);
         }
 
@@ -149,10 +150,10 @@ namespace OneScript.StandardLibrary
         [ContextMethod("СтрНайти", "StrFind")]
         public int StrFind(string haystack, string needle, SearchDirection direction = SearchDirection.FromBegin, int startPos = 0, int occurance = 1)
         {
-            if (needle.Length == 0)
+            if (needle == null || needle.Length == 0)
                 return 1;
 
-            int len = haystack.Length;
+            int len = haystack?.Length ?? 0;
             if (len == 0)
                 return 0;
 
@@ -285,14 +286,14 @@ namespace OneScript.StandardLibrary
         public static StringOpException StrStartsWith()
         {
             return new StringOpException(new BilingualString(
-                "Error calling context method (StrStartsWith): Invalid parameter number '2' value",
-                "Ошибка при вызове метода контекста (СтрНачинаетсяС): Недопустимое значение параметра номер '2'"));
+                "Ошибка при вызове метода контекста (СтрНачинаетсяС): Недопустимое значение параметра номер '2'",
+                "Error calling context method (StrStartsWith): Invalid parameter number '2' value"));
         }
         public static StringOpException StrEndsWith()
         {
             return new StringOpException(new BilingualString(
-                "Error calling context method (StrEndsWith): Invalid parameter number '2' value",
-                "Ошибка при вызове метода контекста (СтрЗаканчиваетсяНа): Недопустимое значение параметра номер '2'"));
+                "Ошибка при вызове метода контекста (СтрЗаканчиваетсяНа): Недопустимое значение параметра номер '2'",
+                "Error calling context method (StrEndsWith): Invalid parameter number '2' value"));
         }
 
         public static StringOpException TemplateSyntax(int pos)
