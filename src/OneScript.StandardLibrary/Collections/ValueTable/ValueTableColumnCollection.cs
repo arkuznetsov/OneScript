@@ -25,8 +25,9 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
     [ContextClass("КоллекцияКолонокТаблицыЗначений", "ValueTableColumnCollection")]
     public class ValueTableColumnCollection : AutoContext<ValueTableColumnCollection>, ICollectionContext<ValueTableColumn>, IDebugPresentationAcceptor
     {
+        private static readonly StringComparer _namesComparer = StringComparer.OrdinalIgnoreCase;
+
         private readonly List<ValueTableColumn> _columns = new List<ValueTableColumn>();
-        private readonly StringComparer _namesComparer = StringComparer.OrdinalIgnoreCase;
         private readonly ValueTable _owner;
 
         public ValueTableColumnCollection(ValueTable owner)
@@ -40,6 +41,14 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             _columns.Add(column);
             return column;
         }
+
+        public ValueTableColumn AddUnchecked(string name, string title = null)
+        {
+            var column = new ValueTableColumn(this, name, title ?? name, null, 0);
+            _columns.Add(column);
+            return column;
+        }
+
 
         private void CheckColumnName(string name)
         {
