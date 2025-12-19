@@ -379,11 +379,13 @@ namespace VSCode.DebugAdapter
             var localHandle = _threadState.RegisterVariablesProvider(localProvider);
             scopes.Add(new Scope("Локальные переменные", localHandle));
             
-            // Scope 2: Переменные модуля (для будущего расширения)
-            // Раскомментировать когда будет готов протокол:
-            // var moduleProvider = new ModuleScopeProvider(frame.ThreadId, frame.Index);
-            // var moduleHandle = _threadState.RegisterVariablesProvider(moduleProvider);
-            // scopes.Add(new Scope("Переменные модуля", moduleHandle));
+            // Scope 2: Переменные модуля (начиная с протокола версии 4)
+            if (_debuggee.ProtocolVersion >= ProtocolVersions.Version4)
+            {
+                var moduleProvider = new ModuleScopeProvider(frame.ThreadId, frame.Index);
+                var moduleHandle = _threadState.RegisterVariablesProvider(moduleProvider);
+                scopes.Add(new Scope("Переменные модуля", moduleHandle));
+            }
             
             SendResponse(response, new ScopesResponseBody(scopes.ToArray()));
         }

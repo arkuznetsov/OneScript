@@ -32,7 +32,11 @@ namespace VSCode.DebugAdapter
 
         public IVariablesProvider CreateChildProvider(int variableIndex)
         {
-            return new ChildVariablesProvider(_threadId, _frameIndex, new[] { variableIndex });
+            return new ChildVariablesProvider(
+                _threadId, 
+                _frameIndex, 
+                new[] { variableIndex },
+                (service, tid, fid, path) => service.GetVariables(tid, fid, path));
         }
     }
 }

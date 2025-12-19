@@ -46,7 +46,11 @@ namespace VSCode.DebugAdapter
             var newPath = new int[_path.Length + 1];
             Array.Copy(_path, newPath, _path.Length);
             newPath[_path.Length] = variableIndex;
-            return new EvaluatedExpressionProvider(_expression, _threadId, _frameIndex, newPath);
+            return new ChildVariablesProvider(
+                _threadId, 
+                _frameIndex, 
+                newPath,
+                (service, tid, fid, path) => service.GetEvaluatedVariables(_expression, tid, fid, path));
         }
     }
 }

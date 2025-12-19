@@ -11,14 +11,12 @@ using OneScript.DebugProtocol;
 namespace VSCode.DebugAdapter
 {
     /// <summary>
-    /// Провайдер переменных модуля (для будущего расширения)
-    /// Требует расширения протокола отладки для получения переменных модуля
+    /// Провайдер переменных модуля
     /// </summary>
     public class ModuleScopeProvider : IVariablesProvider
     {
         private readonly int _threadId;
         private readonly int _frameIndex;
-        // В будущем может потребоваться moduleId или другой идентификатор
 
         public ModuleScopeProvider(int threadId, int frameIndex)
         {
@@ -28,14 +26,17 @@ namespace VSCode.DebugAdapter
 
         public Variable[] FetchVariables(IDebuggerService service)
         {
-            // TODO: когда будет расширен протокол - заменить на GetModuleVariables или подобное
-            // Пока возвращаем пустой массив
-            throw new NotImplementedException("Module scope requires protocol extension");
+            // path пустой - получаем переменные модуля верхнего уровня фрейма
+            return service.GetModuleVariables(_threadId, _frameIndex, Array.Empty<int>());
         }
 
         public IVariablesProvider CreateChildProvider(int variableIndex)
         {
-            throw new NotImplementedException("Module scope requires protocol extension");
+            return new ChildVariablesProvider(
+                _threadId, 
+                _frameIndex, 
+                new[] { variableIndex },
+                (service, tid, fid, path) => service.GetModuleVariables(tid, fid, path));
         }
     }
 }

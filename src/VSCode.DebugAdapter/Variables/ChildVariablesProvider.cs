@@ -11,24 +11,30 @@ using OneScript.DebugProtocol;
 namespace VSCode.DebugAdapter
 {
     /// <summary>
-    /// Провайдер вложенных переменных объекта
+    /// Универсальный провайдер вложенных переменных
     /// </summary>
     public class ChildVariablesProvider : IVariablesProvider
     {
         private readonly int _threadId;
         private readonly int _frameIndex;
         private readonly int[] _path;
+        private readonly Func<IDebuggerService, int, int, int[], Variable[]> _fetchFunc;
 
-        public ChildVariablesProvider(int threadId, int frameIndex, int[] path)
+        public ChildVariablesProvider(
+            int threadId, 
+            int frameIndex, 
+            int[] path,
+            Func<IDebuggerService, int, int, int[], Variable[]> fetchFunc)
         {
             _threadId = threadId;
             _frameIndex = frameIndex;
             _path = path;
+            _fetchFunc = fetchFunc;
         }
 
         public Variable[] FetchVariables(IDebuggerService service)
         {
-            return service.GetVariables(_threadId, _frameIndex, _path);
+            return _fetchFunc(service, _threadId, _frameIndex, _path);
         }
 
         public IVariablesProvider CreateChildProvider(int variableIndex)
@@ -36,7 +42,7 @@ namespace VSCode.DebugAdapter
             var newPath = new int[_path.Length + 1];
             Array.Copy(_path, newPath, _path.Length);
             newPath[_path.Length] = variableIndex;
-            return new ChildVariablesProvider(_threadId, _frameIndex, newPath);
+            return new ChildVariablesProvider(_threadId, _frameIndex, newPath, _fetchFunc);
         }
     }
 }
