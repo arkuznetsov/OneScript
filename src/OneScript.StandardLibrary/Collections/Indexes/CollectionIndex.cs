@@ -26,17 +26,17 @@ namespace OneScript.StandardLibrary.Collections.Indexes
         
         public CollectionIndex(IIndexCollectionSource source, IEnumerable<IValue> fields)
         {
-            _source = source;
-            foreach (var value in _source)
-            {
-                ElementAdded(value);
-            }
-
             foreach (var field in fields)
             {
                 if (field is ValueTable.ValueTableColumn column) 
                     column.IsIndexable = true;
                 _fields.Add(field);
+            }
+        
+            _source = source;
+            foreach (var value in _source)
+            {
+                ElementAdded(value);
             }
         }
 
