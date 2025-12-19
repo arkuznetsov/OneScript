@@ -81,7 +81,7 @@ namespace OneScript.StandardLibrary.Collections.Indexes
             foreach (var field in _fields)
             {
                 if (field is ValueTable.ValueTableColumn column)
-                    column.AddToIndex();
+                    column.DeleteFromIndex();
             }
         }
 
