@@ -24,15 +24,17 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         private readonly TypeDescription _valueType;
         private readonly WeakReference _owner;
 
-        public bool IsIndexable { get; internal set; }
-        
+        private int _indicesCount = 0;
+        public bool IsIndexable => _indicesCount != 0;
+        public void AddToIndex() { _indicesCount++; }
+        public void DeleteFromIndex() { if (_indicesCount != 0) _indicesCount--; }
+
         public ValueTableColumn(ValueTableColumnCollection owner, string name, string title, TypeDescription type, int width)
         {
             _name = name;
             _title = title;
             _valueType = type ?? new TypeDescription();
             Width = width;
-            IsIndexable = false;
 
             _owner = new WeakReference(owner);
         }

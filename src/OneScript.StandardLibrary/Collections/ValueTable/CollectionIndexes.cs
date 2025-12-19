@@ -45,12 +45,17 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Удалить", "Delete")]
         public void Delete(IValue index)
         {
-            _indexes.Remove(GetIndex(index));
+            var idx = GetIndex(index);
+            idx.ExcludeFields();
+            _indexes.Remove(idx);
         }
 
         [ContextMethod("Очистить", "Clear")]
         public void Clear()
         {
+            foreach (var idx in _indexes)
+                idx.ExcludeFields();
+
             _indexes.Clear();
         }
 

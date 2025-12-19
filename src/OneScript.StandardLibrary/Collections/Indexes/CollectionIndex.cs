@@ -18,7 +18,7 @@ namespace OneScript.StandardLibrary.Collections.Indexes
     [ContextClass("ИндексКоллекции", "CollectionIndex")]
     public class CollectionIndex : AutoCollectionContext<CollectionIndex, IValue>
     {
-        readonly List<IValue> _fields = new List<IValue>();
+        private readonly List<IValue> _fields = new List<IValue>();
         private readonly IIndexCollectionSource _source;
 
         private readonly Dictionary<CollectionIndexKey, HashSet<IValue>> _data =
@@ -29,7 +29,7 @@ namespace OneScript.StandardLibrary.Collections.Indexes
             foreach (var field in fields)
             {
                 if (field is ValueTable.ValueTableColumn column) 
-                    column.IsIndexable = true;
+                    column.AddToIndex();
                 _fields.Add(field);
             }
         
@@ -65,8 +65,23 @@ namespace OneScript.StandardLibrary.Collections.Indexes
         {
             if (_fields.Contains(field))
             {
-                while (_fields.Contains(field)) _fields.Remove(field);
+                while (_fields.Contains(field))
+                {
+                    if (field is ValueTable.ValueTableColumn column)
+                        column.DeleteFromIndex();
+
+                    _fields.Remove(field);
+                }
                 Rebuild();
+            }
+        }
+
+        internal void ExcludeFields()
+        {
+            foreach (var field in _fields)
+            {
+                if (field is ValueTable.ValueTableColumn column)
+                    column.AddToIndex();
             }
         }
 
