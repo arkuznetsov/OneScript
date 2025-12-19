@@ -2577,6 +2577,24 @@ namespace ScriptEngine.Machine
             return frame.FrameObject.Locals;
         }
 
+        public IList<IVariable> GetModuleVariables(int frameId)
+        {
+            Debug.Assert(_fullCallstackCache != null);
+            if (frameId < 0 || frameId >= _fullCallstackCache.Count)
+                return Array.Empty<IVariable>();
+
+            var frame = _fullCallstackCache[frameId].FrameObject;
+            var thisScope = frame.ThisScope;
+
+            var variables = new List<IVariable>(thisScope.VariablesCount);
+            for (int i = 0; i < thisScope.VariablesCount; i++)
+            {
+                variables.Add(thisScope.GetVariable(i));
+            }
+            
+            return variables;
+        }
+
         private static ExecutionFrameInfo FrameInfo(StackRuntimeModule module, ExecutionFrame frame)
             => new ExecutionFrameInfo()
             {
