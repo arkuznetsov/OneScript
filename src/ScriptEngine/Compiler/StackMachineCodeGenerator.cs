@@ -388,7 +388,8 @@ namespace ScriptEngine.Compiler
             var jumpFalseIndex = AddCommand(OperationCode.JmpFalse, DUMMY_ADDRESS);
             
             VisitCodeBlock(node.Children[1]);
-
+            VisitBlockEnd(node.EndLocation);
+            
             AddCommand(OperationCode.Jmp, conditionIndex);
             var endLoop = AddCommand(OperationCode.Nop);
             CorrectCommandArgument(jumpFalseIndex, endLoop);
@@ -411,10 +412,9 @@ namespace ScriptEngine.Compiler
             _nestedLoops.Push(loopRecord);
             
             VisitIteratorLoopBody(node.LoopBody);
+            VisitBlockEnd(node.EndLocation);
             
             AddCommand(OperationCode.Jmp, loopBegin);
-            
-            VisitBlockEnd(node.EndLocation);
             
             var indexLoopEnd = AddCommand(OperationCode.StopIterator);
             CorrectCommandArgument(condition, indexLoopEnd);
