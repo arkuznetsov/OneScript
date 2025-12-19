@@ -84,13 +84,14 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         [ContextMethod("Вставить", "Insert")]
         public ValueTableRow Insert(int index)
         {
-            var row = new ValueTableRow(this);
             if (index < 0 || index > _rows.Count)
-                _rows.Add(row); // для совместимости с 1С, хотя логичней было бы исключение
-            else
-                _rows.Insert(index, row);
+                return Add(); // для совместимости с 1С, хотя логичней было бы исключение
 
-            Indexes.ElementAdded(row);
+            var row = new ValueTableRow(this);
+            _rows.Insert(index, row);
+
+            if (Indexes.Count() > 0)
+                Indexes.ElementAdded(row);
             return row;
         }
 
@@ -347,7 +348,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
 
             var mapped = ColumnsMap(filter);
             var suitableIndex = Indexes.FindSuitableIndex(mapped.Keys());
-            var dataToScan = suitableIndex != null ? suitableIndex.GetData(mapped) : _rows;
+            var dataToScan = suitableIndex?.GetData(mapped) ?? _rows;
 
             foreach (var element in dataToScan)
             {

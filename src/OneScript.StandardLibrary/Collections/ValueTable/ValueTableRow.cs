@@ -24,11 +24,8 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
             _owner = owner;
         }
 
-        public int Count()
-        {
-            return _owner.Columns.Count();
-        }
-        
+        public int Count() => _owner.Columns.Count();
+
         public int Count(IBslProcess process) => Count();
         
         /// <summary>

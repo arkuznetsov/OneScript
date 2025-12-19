@@ -24,7 +24,7 @@ namespace OneScript.StandardLibrary.Collections.ValueTable
         private readonly TypeDescription _valueType;
         private readonly WeakReference _owner;
 
-        public bool IsIndexable { get; set; }
+        public bool IsIndexable { get; internal set; }
         
         public ValueTableColumn(ValueTableColumnCollection owner, string name, string title, TypeDescription type, int width)
         {
