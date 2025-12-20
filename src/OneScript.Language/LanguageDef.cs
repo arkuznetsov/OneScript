@@ -247,6 +247,7 @@ namespace OneScript.Language
 
             return Enum.GetName(typeof(Token), token);
         }
+
         public static string GetTokenAlias(Token token)
         {
             if (_keywords.TryGetValue(token,out var strings))
@@ -257,11 +258,9 @@ namespace OneScript.Language
             return Enum.GetName(typeof(Token), token);
         }
 
-
         public static Token GetToken(string tokText)
         {
-            Token result;
-            if (_stringToToken.TryGetValue(tokText, out result))
+            if (_stringToToken.TryGetValue(tokText, out Token result))
             {
                 return result;
             }
@@ -285,19 +284,25 @@ namespace OneScript.Language
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBinaryOperator(Token token)
         {
-            return token == Token.Plus
-                   || token == Token.Minus
-                   || token == Token.Multiply
-                   || token == Token.Division
-                   || token == Token.Modulo
-                   || token == Token.And
-                   || token == Token.Or
-                   || token == Token.LessThan
-                   || token == Token.LessOrEqual
-                   || token == Token.MoreThan
-                   || token == Token.MoreOrEqual
-                   || token == Token.Equal
-                   || token == Token.NotEqual;
+            switch (token)
+            {
+                case Token.Plus:
+                case Token.Minus:
+                case Token.Multiply:
+                case Token.Division:
+                case Token.Modulo:
+                case Token.Equal:
+                case Token.LessThan:
+                case Token.LessOrEqual:
+                case Token.MoreThan:
+                case Token.MoreOrEqual:
+                case Token.NotEqual:
+                case Token.And:
+                case Token.Or:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -315,24 +320,42 @@ namespace OneScript.Language
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsLiteral(in Lexem lex)
         {
-            return lex.Type == LexemType.StringLiteral
-                   || lex.Type == LexemType.NumberLiteral
-                   || lex.Type == LexemType.BooleanLiteral
-                   || lex.Type == LexemType.DateLiteral
-                   || lex.Type == LexemType.UndefinedLiteral
-                   || lex.Type == LexemType.NullLiteral;
+            switch (lex.Type)
+            {
+                case LexemType.StringLiteral:
+                case LexemType.NumberLiteral:
+                case LexemType.BooleanLiteral:
+                case LexemType.DateLiteral:
+                case LexemType.UndefinedLiteral:
+                case LexemType.NullLiteral:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsValidPropertyName(in Lexem lex)
         {
-            return lex.Type == LexemType.Identifier 
-                   || lex.Type == LexemType.BooleanLiteral
-                   || lex.Type == LexemType.NullLiteral
-                   || lex.Type == LexemType.UndefinedLiteral
-                   || lex.Token == Token.And
-                   || lex.Token == Token.Or
-                   || lex.Token == Token.Not;
+            switch (lex.Type)
+            {
+                case LexemType.Identifier:
+                case LexemType.BooleanLiteral:
+                case LexemType.NullLiteral:
+                case LexemType.UndefinedLiteral:
+                    return true;
+
+                default:
+                    switch (lex.Token)
+                    {
+                        case Token.And:
+                        case Token.Or:
+                        case Token.Not:
+                            return true;
+                        default:
+                            return false;
+                    }
+            }
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -395,16 +418,21 @@ namespace OneScript.Language
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsEndOfBlockToken(Token token)
         {
-            return token == Token.EndIf
-                   || token == Token.EndProcedure
-                   || token == Token.EndFunction
-                   || token == Token.Else
-                   || token == Token.EndLoop
-                   || token == Token.EndTry
-                   || token == Token.EndOfText
-                   || token == Token.ElseIf
-                   || token == Token.Exception
-                   ;
+            switch (token)
+            {
+                case Token.EndIf:
+                case Token.EndProcedure:
+                case Token.EndFunction:
+                case Token.Else:
+                case Token.EndLoop:
+                case Token.EndTry:
+                case Token.EndOfText:
+                case Token.ElseIf:
+                case Token.Exception:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
