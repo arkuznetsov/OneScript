@@ -18,6 +18,7 @@ namespace OneScript.Language.LexicalAnalysis
         private int _lineCounter;
         private int _index;
         private int _startPosition;
+        private int _codeLength;
 
         private List<int> _lineBounds;
         private bool _onNewLine;
@@ -44,6 +45,7 @@ namespace OneScript.Language.LexicalAnalysis
         private void InitOnString(string code)
         {
             _code = code;
+            _codeLength = code.Length;
             int cap = code.Length < 512 ? 32 : 512;
             _lineBounds = new List<int>(cap);
             _index = OUT_OF_TEXT;
@@ -87,13 +89,13 @@ namespace OneScript.Language.LexicalAnalysis
         public bool MoveNext()
         {
             _index++;
-            if (_index < _code.Length)
+            if (_index < _codeLength)
             {
                 _currentSymbol = _code[_index];
                 if (_currentSymbol == '\n')
                 {
                     _lineCounter++;
-                    if (_index < _code.Length)
+                    if (_index < _codeLength)
                         _lineBounds.Add(_index + 1);
                 }
 
@@ -109,7 +111,7 @@ namespace OneScript.Language.LexicalAnalysis
         public char PeekNext()
         {
             char result = '\0';
-            if (_index + 1 < _code.Length)
+            if (_index + 1 < _codeLength)
             {
                 result = _code[_index + 1];
             }
@@ -155,7 +157,7 @@ namespace OneScript.Language.LexicalAnalysis
                 }
             }
 
-            if (_index >= _code.Length)
+            if (_index >= _codeLength)
             {
                 return false;
             }
@@ -200,7 +202,7 @@ namespace OneScript.Language.LexicalAnalysis
         {
             int len;
 
-            if (_startPosition == _index && _startPosition < _code.Length)
+            if (_startPosition == _index && _startPosition < _codeLength)
             {
                 len = 1;
             }
