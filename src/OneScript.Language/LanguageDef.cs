@@ -5,10 +5,11 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using OneScript.Language.LexicalAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using OneScript.Language.LexicalAnalysis;
+using static OneScript.Language.LanguageDef;
 
 namespace OneScript.Language
 {
@@ -21,13 +22,19 @@ namespace OneScript.Language
         
         private static readonly IdentifiersTrie<Token> _stringToToken = new IdentifiersTrie<Token>();
 
-        private static readonly IdentifiersTrie<bool> _undefined = new IdentifiersTrie<bool>();
-        private static readonly IdentifiersTrie<bool> _booleans = new IdentifiersTrie<bool>();
-        private static readonly IdentifiersTrie<bool> _logicalOp = new IdentifiersTrie<bool>();
-
-        private static readonly IdentifiersTrie<bool> _preprocImport = new IdentifiersTrie<bool>();
-
         const int BUILTINS_INDEX = (int)Token.ByValParam;
+
+        public enum WordType
+        {
+            Undefined,
+            Boolean,
+            Logical,
+            Null,
+            Preproc,
+            None
+        };
+
+        private static readonly IdentifiersTrie<WordType> _specwords = new IdentifiersTrie<WordType>();
 
         static LanguageDef()
         {
@@ -52,21 +59,26 @@ namespace OneScript.Language
 
             #region constants
 
-            _undefined.Add("Undefined", true);
-            _undefined.Add("Неопределено", true);
+            _specwords.Add("Undefined", WordType.Undefined);
+            _specwords.Add("Неопределено", WordType.Undefined);
 
-            _booleans.Add("True", true);
-            _booleans.Add("False", true);
-            _booleans.Add("Истина", true);
-            _booleans.Add("Ложь", true);
+            _specwords.Add("True", WordType.Boolean);
+            _specwords.Add("False", WordType.Boolean);
+            _specwords.Add("Истина", WordType.Boolean);
+            _specwords.Add("Ложь", WordType.Boolean);
 
-            _logicalOp.Add("And", true);
-            _logicalOp.Add("Or", true);
-            _logicalOp.Add("Not", true);
+            _specwords.Add("And", WordType.Logical);
+            _specwords.Add("Or", WordType.Logical);
+            _specwords.Add("Not", WordType.Logical);
 
-            _logicalOp.Add("И", true);
-            _logicalOp.Add("ИЛИ", true);
-            _logicalOp.Add("НЕ", true);
+            _specwords.Add("И", WordType.Logical);
+            _specwords.Add("ИЛИ", WordType.Logical);
+            _specwords.Add("НЕ", WordType.Logical);
+
+            _specwords.Add("NULL", WordType.Null);
+
+            _specwords.Add("Использовать", WordType.Preproc);
+            _specwords.Add("Use", WordType.Preproc);
 
             #endregion
 
@@ -216,8 +228,6 @@ namespace OneScript.Language
 
             #endregion
 
-            _preprocImport.Add("Использовать", true);
-            _preprocImport.Add("Use", true);
         }
 
         private static void AddToken(Token token, string name)
@@ -435,16 +445,22 @@ namespace OneScript.Language
             }
         }
 
+
+        public static WordType GetWordType(string value)
+        {
+            return _specwords.TryGetValue(value, out var wordType)? wordType : WordType.None;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBooleanLiteralString(string value)
         {
-            return _booleans.TryGetValue(value, out var nodeIsFilled) && nodeIsFilled;
+            return _specwords.TryGetValue(value, out var wordType) && wordType == WordType.Boolean;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsUndefinedString(string value)
         {
-            return _undefined.TryGetValue(value, out var nodeIsFilled) && nodeIsFilled;
+            return _specwords.TryGetValue(value, out var wordType) && wordType == WordType.Undefined;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -456,13 +472,13 @@ namespace OneScript.Language
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsLogicalOperatorString(string content)
         {
-            return _logicalOp.TryGetValue(content, out var nodeIsFilled) && nodeIsFilled;
+            return _specwords.TryGetValue(content, out var wordType) && wordType == WordType.Logical;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsImportDirective(string value)
         {
-            return _preprocImport.TryGetValue(value, out var nodeIsFilled) && nodeIsFilled;
+            return _specwords.TryGetValue(value, out var wordType) && wordType == WordType.Preproc;
         }
     }
 }
