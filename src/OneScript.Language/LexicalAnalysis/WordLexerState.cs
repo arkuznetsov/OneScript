@@ -66,8 +66,7 @@ namespace OneScript.Language.LexicalAnalysis
                     var tok = LanguageDef.GetToken(content);
                     if (LanguageDef.IsBuiltInFunction(tok))
                     {
-                        iterator.SkipSpaces();
-                        if (iterator.CurrentSymbol != '(')
+                        if (iterator.ReadNextChar() != '(')
                         {
                             tok = Token.NotAToken;
                         }

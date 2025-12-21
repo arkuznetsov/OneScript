@@ -9,7 +9,6 @@ using OneScript.Language.LexicalAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using static OneScript.Language.LanguageDef;
 
 namespace OneScript.Language
 {

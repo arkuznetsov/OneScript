@@ -78,7 +78,7 @@ namespace OneScript.Language.LexicalAnalysis
                     return OUT_OF_TEXT;
                 }
 
-                int start = GetLineBound(CurrentLine);
+                int start = GetLineBound(_lineCounter);
                 return _index - start + 1;
             }
         }
@@ -95,8 +95,7 @@ namespace OneScript.Language.LexicalAnalysis
                 if (_currentSymbol == '\n')
                 {
                     _lineCounter++;
-                    if (_index < _codeLength)
-                        _lineBounds.Add(_index + 1);
+                    _lineBounds.Add(_index + 1);
                 }
 
                 return true;
@@ -165,6 +164,24 @@ namespace OneScript.Language.LexicalAnalysis
             return true;
         }
 
+        public char ReadNextChar()
+        {
+            while (Char.IsWhiteSpace(_currentSymbol))
+            {
+                if (_currentSymbol == '\n')
+                {
+                    _onNewLine = true;
+                }
+                if (!MoveNext())
+                {
+                    break;
+                }
+            }
+
+            return _currentSymbol;
+        }
+
+
         public string ReadToLineEnd()
         {
             while (_currentSymbol != '\n' && MoveNext())
@@ -182,6 +199,9 @@ namespace OneScript.Language.LexicalAnalysis
         public string GetCodeLine(int lineNumber)
         {
             int start = GetLineBound(lineNumber);
+            if (start >= _code.Length)
+                return String.Empty;
+
             int end = _code.IndexOf('\n', start);
             if (end >= 0)
             {
