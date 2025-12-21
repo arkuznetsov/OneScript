@@ -70,18 +70,8 @@ namespace OneScript.Language.LexicalAnalysis
         public int CurrentLine => _lineCounter;
 
         public int CurrentColumn
-        {
-            get
-            {
-                if (_startPosition == OUT_OF_TEXT)
-                {
-                    return OUT_OF_TEXT;
-                }
-
-                int start = GetLineBound(_lineCounter);
-                return _index - start + 1;
-            }
-        }
+            => _startPosition == OUT_OF_TEXT ? OUT_OF_TEXT : _index - _lineBounds[^1] + 1;
+                // CurrentLine's start is last in _lineBounds
 
         public char CurrentSymbol => _currentSymbol;
 
