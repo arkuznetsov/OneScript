@@ -1051,7 +1051,7 @@ namespace ScriptEngine.Compiler
             var argsPassed = node.ConstructorArguments.Children.Count;
             if (argsPassed == 1)
             {
-                PushArgumentsList(node.ConstructorArguments);
+                VisitCallArgument(node.ConstructorArguments.Children[0]); ;
             }
             else if (argsPassed > 1)
             {

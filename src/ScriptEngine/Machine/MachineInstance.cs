@@ -24,6 +24,7 @@ using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Compiler;
 using ScriptEngine.Machine.Debugger;
+using System.Dynamic;
 
 namespace ScriptEngine.Machine
 {
@@ -1182,22 +1183,6 @@ namespace ScriptEngine.Machine
 
         private void NewInstance(int arg)
         {
-            var typeName = _module.Identifiers[arg];
-            if (!_typeManager.TryGetType(typeName, out var type))
-            {
-                throw RuntimeException.TypeIsNotDefined(typeName);
-            }
-
-            // TODO убрать cast после рефакторинга ITypeFactory
-            var factory = (TypeFactory)_typeManager.GetFactoryFor(type);
-            var context = new TypeActivationContext
-            {
-                TypeName = typeName,
-                TypeManager = _typeManager,
-                Services = _process.Services,
-                CurrentProcess = _process
-            };
-
             int argCount = (int)_operationStack.Pop().AsNumber();
             IValue[] argValues = new IValue[argCount];
             // fact args
@@ -1208,8 +1193,8 @@ namespace ScriptEngine.Machine
                     argValues[i] = RawValue(argValue);
             }
 
-            var instance = (IValue)factory.Activate(context, argValues);
-            _operationStack.Push(instance);
+            var typeName = _module.Identifiers[arg];
+            _operationStack.Push(CreateInstance(typeName, argValues));
             NextInstruction();
         }
 
@@ -2396,13 +2381,19 @@ namespace ScriptEngine.Machine
                 else
                     argValues = Array.Empty<IValue>();
             }
-            
+
             var typeName = PopRawBslValue().ToString(_process);
+            _operationStack.Push(CreateInstance(typeName, argValues));
+            NextInstruction();
+        }
+
+        private IValue CreateInstance(string typeName, IValue[] args)
+        {
             if (!_typeManager.TryGetType(typeName, out var type))
             {
                 throw RuntimeException.TypeIsNotDefined(typeName);
             }
-            
+
             // TODO убрать cast после рефакторинга ITypeFactory
             var factory = (TypeFactory)_typeManager.GetFactoryFor(type);
             var context = new TypeActivationContext
@@ -2412,10 +2403,7 @@ namespace ScriptEngine.Machine
                 Services = _process.Services,
                 CurrentProcess = _process
             };
-
-            var instance = factory.Activate(context, argValues);
-            _operationStack.Push(instance);
-            NextInstruction();
+            return factory.Activate(context, args);
         }
 
         #endregion
