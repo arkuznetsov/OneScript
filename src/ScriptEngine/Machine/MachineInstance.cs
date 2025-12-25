@@ -24,7 +24,6 @@ using OneScript.Types;
 using OneScript.Values;
 using ScriptEngine.Compiler;
 using ScriptEngine.Machine.Debugger;
-using System.Dynamic;
 
 namespace ScriptEngine.Machine
 {

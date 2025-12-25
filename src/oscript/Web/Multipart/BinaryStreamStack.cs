@@ -295,7 +295,7 @@ namespace HttpMultipartParser
                 while (amountRead == 0)
                 {
                     streams.Pop();
-                    if (!streams.Any())
+                    if (streams.Count == 0)
                     {
                         hitStreamEnd = true;
                         return builder.ToArray();
