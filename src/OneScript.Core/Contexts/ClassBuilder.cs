@@ -113,7 +113,7 @@ namespace OneScript.Contexts
 
         private static bool MarkedAsContextProperty(MemberInfo member, bool includeDeprecations = false)
         {
-            return member.GetCustomAttributes(typeof(ContextPropertyAttribute), false).Any();
+            return member.GetCustomAttributes(typeof(ContextPropertyAttribute), false).Length != 0;
         }
 
         public ClassBuilder ExportConstructor(MethodInfo info)

@@ -12,7 +12,6 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using OneScript.Compilation;
 using OneScript.Compilation.Binding;
 using OneScript.Contexts;
@@ -126,7 +125,7 @@ namespace ScriptEngine.Compiler
 
         private void CheckForwardedDeclarations()
         {
-            if (_forwardedMethods.Count > 0)
+            if (_forwardedMethods.Count != 0)
             {
                 foreach (var item in _forwardedMethods)
                 {
@@ -477,7 +476,7 @@ namespace ScriptEngine.Compiler
 
         protected override void VisitReturnNode(BslSyntaxNode node)
         {
-            if (node.Children.Count > 0)
+            if (node.Children.Count != 0)
             {
                 VisitExpression(node.Children[0]);
                 AddCommand(OperationCode.MakeRawValue);
@@ -1085,7 +1084,7 @@ namespace ScriptEngine.Compiler
 
         private void PushTryNesting()
         {
-            if (_nestedLoops.Count > 0)
+            if (_nestedLoops.Count != 0)
             {
                 _nestedLoops.Peek().tryNesting++;
             }
@@ -1093,7 +1092,7 @@ namespace ScriptEngine.Compiler
         
         private void PopTryNesting()
         {
-            if (_nestedLoops.Count > 0)
+            if (_nestedLoops.Count != 0)
             {
                 _nestedLoops.Peek().tryNesting--;
             }

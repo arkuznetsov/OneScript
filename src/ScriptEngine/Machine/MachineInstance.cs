@@ -1134,7 +1134,7 @@ namespace ScriptEngine.Machine
             if (_currentFrame.DiscardReturnValue)
                 _operationStack.Pop();
 
-            while(_exceptionsStack.Count > 0 && _exceptionsStack.Peek().HandlerFrame == _currentFrame)
+            while(_exceptionsStack.Count != 0 && _exceptionsStack.Peek().HandlerFrame == _currentFrame)
             {
                 _exceptionsStack.Pop();
             }
@@ -1248,7 +1248,7 @@ namespace ScriptEngine.Machine
 
         private void EndTry(int arg)
         {
-            if (_exceptionsStack.Count > 0)
+            if (_exceptionsStack.Count != 0)
             {
                 var jmpInfo = _exceptionsStack.Peek();
                 if (jmpInfo.HandlerFrame == _currentFrame && arg == jmpInfo.HandlerAddress)
@@ -1371,7 +1371,7 @@ namespace ScriptEngine.Machine
         {
             var code = PopRawBslValue().ToString(_process);
             var module = CompileCached(code, CompileExecutionBatchModule);
-            if (!module.Methods.Any())
+            if (module.Methods.Count == 0)
             {
                 NextInstruction();
                 return;
