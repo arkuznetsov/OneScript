@@ -856,11 +856,13 @@ namespace ScriptEngine.Compiler
             else
             {
                 // can be defined later
-                var forwarded = new ForwardedMethodDecl();
-                forwarded.identifier = identifier;
-                forwarded.asFunction = asFunction;
-                forwarded.location = identifierNode.Location;
-                forwarded.factArguments = argList;
+                var forwarded = new ForwardedMethodDecl
+                {
+                    identifier = identifier,
+                    asFunction = asFunction,
+                    location = identifierNode.Location,
+                    factArguments = argList
+                };
 
                 PushCallArguments(call.ArgumentList);
                 
@@ -878,17 +880,17 @@ namespace ScriptEngine.Compiler
 
         private void PushArgumentsList(BslSyntaxNode argList)
         {
-            for (int i = 0; i < argList.Children.Count; i++)
+            var arguments = argList.Children;
+            for (int i = 0; i < arguments.Count; i++)
             {
-                var passedArg = argList.Children[i];
-                VisitCallArgument(passedArg);
+                VisitCallArgument(arguments[i]);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void VisitCallArgument(BslSyntaxNode passedArg)
         {
-            if (passedArg.Children.Count > 0)
+            if (passedArg.Children.Count != 0)
             {
                 VisitExpression(passedArg.Children[0]);
             }
@@ -1061,21 +1063,17 @@ namespace ScriptEngine.Compiler
         
         private void MakeNewObjectStatic(NewObjectNode node)
         {
-            var cDef = new ConstDefinition()
-            {
-                Type = DataType.String,
-                Presentation = node.TypeNameNode.GetIdentifier()
-            };
-            AddCommand(OperationCode.PushConst, GetConstNumber(cDef));
-
-            var callArgs = 0;
             if (node.ConstructorArguments != default)
             {
-                PushArgumentsList(node.ConstructorArguments);
-                callArgs = node.ConstructorArguments.Children.Count;
+                PushCallArguments(node.ConstructorArguments);
+            }
+            else
+            {
+                AddCommand(OperationCode.ArgNum, 0);
             }
 
-            AddCommand(OperationCode.NewInstance, callArgs);
+            var idNum = GetIdentNumber(node.TypeNameNode.GetIdentifier());
+            AddCommand(OperationCode.NewInstance, idNum);
         }
 
         private void ExitTryBlocks()
@@ -1323,7 +1321,6 @@ namespace ScriptEngine.Compiler
 
         private int GetIdentNumber(string ident)
         {
-            
             var idx = _module.Identifiers.IndexOf(ident);
             if (idx < 0)
             {

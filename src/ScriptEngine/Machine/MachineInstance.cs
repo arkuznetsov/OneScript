@@ -1180,23 +1180,14 @@ namespace ScriptEngine.Machine
             NextInstruction();
         }
 
-        private void NewInstance(int argCount)
+        private void NewInstance(int arg)
         {
-            IValue[] argValues = new IValue[argCount];
-            // fact args
-            for (int i = argCount - 1; i >= 0; i--)
-            {
-                var argValue = _operationStack.Pop();
-                if(!argValue.IsSkippedArgument())
-                    argValues[i] = RawValue(argValue);
-            }
-
-            var typeName = _operationStack.Pop().ToString(); // is BslStringValue by code generation
+            var typeName = _module.Identifiers[arg];
             if (!_typeManager.TryGetType(typeName, out var type))
             {
                 throw RuntimeException.TypeIsNotDefined(typeName);
             }
-            
+
             // TODO убрать cast после рефакторинга ITypeFactory
             var factory = (TypeFactory)_typeManager.GetFactoryFor(type);
             var context = new TypeActivationContext
@@ -1206,7 +1197,17 @@ namespace ScriptEngine.Machine
                 Services = _process.Services,
                 CurrentProcess = _process
             };
-            
+
+            int argCount = (int)_operationStack.Pop().AsNumber();
+            IValue[] argValues = new IValue[argCount];
+            // fact args
+            for (int i = argCount - 1; i >= 0; i--)
+            {
+                var argValue = _operationStack.Pop();
+                if(!argValue.IsSkippedArgument())
+                    argValues[i] = RawValue(argValue);
+            }
+
             var instance = (IValue)factory.Activate(context, argValues);
             _operationStack.Push(instance);
             NextInstruction();
