@@ -681,7 +681,7 @@ namespace ScriptEngine.Machine
             _operationStack.Push(_module.Constants[arg]);
             NextInstruction();
         }
-        
+
         private void PushBool(int arg)
         {
             _operationStack.Push(BslBooleanValue.Create(arg == 1));
@@ -1011,7 +1011,7 @@ namespace ScriptEngine.Machine
             var objIValue = _operationStack.Pop();
             
             var context = objIValue.AsObject();
-            var propName = _module.Constants[arg].ToString(_process);
+            var propName = _module.Identifiers[arg];
             var propNum = context.GetPropertyNumber(propName);
 
             var propReference = Variable.CreateContextPropertyReference(context, propNum, "stackvar");
@@ -1048,7 +1048,7 @@ namespace ScriptEngine.Machine
  
             var objIValue = _operationStack.Pop();
             context = objIValue.AsObject();
-            var methodName = _module.Constants[arg].ToString(_process);
+            var methodName = _module.Identifiers[arg];
             methodId = context.GetMethodNumber(methodName);
             
             if (context.DynamicMethodSignatures)
@@ -1191,7 +1191,7 @@ namespace ScriptEngine.Machine
                     argValues[i] = RawValue(argValue);
             }
 
-            var typeName = PopRawBslValue().ToString(_process);
+            var typeName = _operationStack.Pop().ToString(); // is BslStringValue by code generation
             if (!_typeManager.TryGetType(typeName, out var type))
             {
                 throw RuntimeException.TypeIsNotDefined(typeName);

@@ -489,7 +489,7 @@ namespace ScriptEngine.Compiler
         protected override void VisitRaiseNode(BslSyntaxNode node)
         {
             int arg = -1;
-            if (node.Children.Any())
+            if (node.Children.Count != 0)
             {
                 VisitExpression(node.Children[0]);
                 arg = 0;
@@ -728,24 +728,17 @@ namespace ScriptEngine.Compiler
             
             PushCallArguments(args);
             
-            var cDef = new ConstDefinition();
-            cDef.Type = DataType.String;
-            cDef.Presentation = name.GetIdentifier();
-            int lastIdentifierConst = GetConstNumber(cDef);
+            int lastIdentifierIndex = GetIdentNumber(name.GetIdentifier());
             
             if (asFunction)
-                AddCommand(OperationCode.ResolveMethodFunc, lastIdentifierConst);
+                AddCommand(OperationCode.ResolveMethodFunc, lastIdentifierIndex);
             else
-                AddCommand(OperationCode.ResolveMethodProc, lastIdentifierConst);
+                AddCommand(OperationCode.ResolveMethodProc, lastIdentifierIndex);
         }
         
         private void ResolveProperty(string identifier)
         {
-            var cDef = new ConstDefinition();
-            cDef.Type = DataType.String;
-            cDef.Presentation = identifier;
-            var identifierConstIndex = GetConstNumber(cDef);
-            AddCommand(OperationCode.ResolveProp, identifierConstIndex);
+            AddCommand(OperationCode.ResolveProp, GetIdentNumber(identifier));
         }
 
         private int PushVariable(TerminalNode node)
@@ -1327,6 +1320,19 @@ namespace ScriptEngine.Compiler
             }
             return idx;
         }
+
+        private int GetIdentNumber(string ident)
+        {
+            
+            var idx = _module.Identifiers.IndexOf(ident);
+            if (idx < 0)
+            {
+                idx = _module.Identifiers.Count;
+                _module.Identifiers.Add(ident);
+            }
+            return idx;
+        }
+
 
         private int GetMethodRefNumber(in SymbolBinding methodBinding)
         {
