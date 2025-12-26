@@ -42,7 +42,7 @@ namespace OneScript.StandardLibrary.Collections.Indexes
 
         internal bool CanBeUsedFor(IEnumerable<IValue> searchFields)
         {
-            return _fields.Count > 0 && _fields.All(f => searchFields.Contains(f));
+            return _fields.Count != 0 && _fields.All(f => searchFields.Contains(f));
         }
 
         private CollectionIndexKey IndexKey(PropertyNameIndexAccessor source)
