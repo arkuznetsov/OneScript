@@ -123,7 +123,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 .Cast<ModuleAnnotationDirectiveHandler>()
                 .ToList();
             
-            if (!annotationParser.Any())
+            if (annotationParser.Count == 0)
                 return;
 
             while (_lastExtractedLexem.Type == LexemType.PreprocessorDirective)
@@ -1650,7 +1650,7 @@ namespace OneScript.Language.SyntaxAnalysis
 
             if (doFastForward)
             {
-                if (_tokenStack.Count > 0)
+                if (_tokenStack.Count != 0)
                     SkipToNextStatement(_tokenStack.Peek());
                 else
                     SkipToNextStatement();
