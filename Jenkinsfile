@@ -5,7 +5,6 @@ pipeline {
 
     environment {
         VersionPrefix = '2.0.0'
-        VersionSuffix = 'rc.11'+"+${BUILD_NUMBER}"
         outputEnc = '65001'
     }
 
@@ -240,6 +239,29 @@ pipeline {
             }
         }
         
+        stage ('Publishing latest') {
+            when { 
+                anyOf {
+                    branch 'release/latest';
+                }
+            }
+            agent { label 'master' }
+            options { skipDefaultCheckout() }
+            
+            steps {
+                cleanWs()
+                checkout scm // чтобы получить файл release-notes
+                unstash 'dist'
+                unstash 'vsix'
+                
+                // Положит описание для сайта
+                publishReleaseNotes('latest')
+                
+                // Положит файлы дистрибутива в целевую папку
+                publishRelease('latest', true)
+            }
+        }
+        
         stage ('Publishing artifacts to clouds') {
             when {
                 anyOf { 
@@ -266,7 +288,7 @@ pipeline {
                     agent { label 'linux' }
                     when { 
                         anyOf {
-                            branch 'release/latest'
+                            branch 'release/lts'
                             expression { 
                                 return env.TAG_NAME && env.TAG_NAME.startsWith('v1.')
                             }
@@ -274,7 +296,7 @@ pipeline {
                     }
                     steps {
                         script {
-                            def codename = env.TAG_NAME ? env.TAG_NAME : 'latest'
+                            def codename = env.TAG_NAME ? env.TAG_NAME : 'lts'
                             publishDockerImage('v1', codename)
                         }
                     }
@@ -285,6 +307,7 @@ pipeline {
                     when { 
                         anyOf {
                             branch 'develop'
+                            branch 'release/latest'
                             expression { 
                                 return env.TAG_NAME && env.TAG_NAME.startsWith('v2.')
                             }
@@ -302,6 +325,20 @@ pipeline {
     }
 }
 
+def fullVersionNumber() {
+    def version = env.VersionPrefix
+    if (env.VersionSuffix != null && !env.VersionSuffix.isEmpty())
+    {
+        version = version + "-${env.VersionSuffix}"
+    }
+    
+    return version
+}
+
+def underscoredVersion() {
+    return fullVersionNumber().replaceAll("\\.", "_")
+}
+
 def publishRelease(codename, isNumbered) {
     dir('targetContent') {
         sh """
@@ -317,7 +354,8 @@ def publishRelease(codename, isNumbered) {
         """.stripIndent()
         
         if (isNumbered) {
-            def version="${env.VersionPrefix}-${env.VersionSuffix}".replaceAll("\\.", "_")
+        
+            def version = underscoredVersion()
             
             sh """
             TARGET="/var/www/oscript.io/download/versions/${version}/"
@@ -330,7 +368,7 @@ def publishRelease(codename, isNumbered) {
 
 def publishReleaseNotes(codename) {
     dir('markdownContent') {
-        def version="${env.VersionPrefix}-${env.VersionSuffix}".replaceAll("\\.", "_")
+        def version=underscoredVersion()
         def targetDir='/var/www/oscript.io/markdown/versions'
         
         sh """
