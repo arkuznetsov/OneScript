@@ -308,14 +308,19 @@ pipeline {
                         anyOf {
                             branch 'develop'
                             branch 'release/latest'
-                            expression { 
-                                return env.TAG_NAME && env.TAG_NAME.startsWith('v2.')
-                            }
                         }
                     }
                     steps {
                         script {
-                            def codename = env.TAG_NAME ? env.TAG_NAME : 'dev'
+                            def codename = ''
+                            if (env.VersionSuffix != null && !env.VersionSuffix.isEmpty() {
+                                codename = 'dev'
+                            }
+                            else
+                            {
+                                codename = fullVersionNumber()
+                            }
+                            
                             publishDockerImage('v2', codename)
                         }
                     }
