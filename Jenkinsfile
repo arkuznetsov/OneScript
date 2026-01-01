@@ -262,25 +262,25 @@ pipeline {
             }
         }
         
-        stage ('Publishing artifacts to clouds') {
-            when {
-                anyOf { 
-                    branch 'release/latest';
-                    branch 'release/preview';
-                } 
-            }
-            
-            agent { label 'windows' }
-
-            steps{
-                
-                unstash 'buildResults'
-                
-                withCredentials([string(credentialsId: 'NuGetToken', variable: 'NUGET_TOKEN')]) {
-                    bat "chcp $outputEnc > nul\r\n\"${tool 'MSBuild'}\" Build.csproj /t:PublishNuget /p:NugetToken=$NUGET_TOKEN"
-                }
-            }
-        }
+//         stage ('Publishing artifacts to clouds') {
+//             when {
+//                 anyOf { 
+//                     branch 'release/latest';
+//                     branch 'release/preview';
+//                 } 
+//             }
+//             
+//             agent { label 'windows' }
+// 
+//             steps{
+//                 
+//                 unstash 'buildResults'
+//                 
+//                 withCredentials([string(credentialsId: 'NuGetToken', variable: 'NUGET_TOKEN')]) {
+//                     bat "chcp $outputEnc > nul\r\n\"${tool 'MSBuild'}\" Build.csproj /t:PublishNuget /p:NugetToken=$NUGET_TOKEN"
+//                 }
+//             }
+//         }
 
         stage ('Publishing docker-images') {
             parallel {
