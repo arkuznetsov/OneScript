@@ -313,7 +313,7 @@ pipeline {
                     steps {
                         script {
                             def codename = ''
-                            if (env.VersionSuffix != null && !env.VersionSuffix.isEmpty() {
+                            if (env.VersionSuffix != null && !env.VersionSuffix.isEmpty()) {
                                 codename = 'dev'
                             }
                             else
