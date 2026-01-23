@@ -757,9 +757,7 @@ namespace OneScript.Language.SyntaxAnalysis
             if (argument != default)
             {
                 CheckAsyncMethod();
-                var awaitOperator = new UnaryOperationNode(lexem);
-                awaitOperator.AddChild(argument);
-                return awaitOperator;
+                return new UnaryOperationNode(argument, lexem);
             }
             else if (!_isInAsyncMethod)
             {
@@ -1140,7 +1138,7 @@ namespace OneScript.Language.SyntaxAnalysis
 
         private BslSyntaxNode CallOrVariable(Lexem identifier)
         {
-            var target = NodeBuilder.CreateNode(NodeKind.Identifier, identifier);
+            BslSyntaxNode target = new TerminalNode(NodeKind.Identifier, identifier);
             if (_lastExtractedLexem.Token != Token.OpenPar)
             {
                 _lastDereferenceIsWritable = true; // одиночный идентификатор
@@ -1251,7 +1249,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 NextLexem();
                 var secondArg = BuildExpression(LanguageDef.GetBinaryPriority(operationLexem.Token));
 
-                firstArg = MakeBinaryOperationNode(firstArg, secondArg, operationLexem);
+                firstArg = new BinaryOperationNode(firstArg, secondArg, operationLexem);
             }
 
             return firstArg;
@@ -1293,9 +1291,7 @@ namespace OneScript.Language.SyntaxAnalysis
             }
 
             var arg = BuildExpression(prio);
-            var op = new UnaryOperationNode(operation);
-            op.AddChild(arg);
-            return op;
+            return new UnaryOperationNode(arg, operation);
         }
 
  
@@ -1336,14 +1332,6 @@ namespace OneScript.Language.SyntaxAnalysis
 
         #region Operators
 
-        private static BinaryOperationNode MakeBinaryOperationNode(BslSyntaxNode firstArg, BslSyntaxNode secondArg, in Lexem lexem)
-        {
-            var node = new BinaryOperationNode(lexem);
-            node.AddChild(firstArg);
-            node.AddChild(secondArg);
-            return node;
-        }
-
         private BslSyntaxNode BuildParenthesis()
         {
             NextLexem();
@@ -1375,7 +1363,7 @@ namespace OneScript.Language.SyntaxAnalysis
             BslSyntaxNode node = default;
             if (LanguageDef.IsLiteral(currentLexem))
             {
-                node = NodeBuilder.CreateNode(NodeKind.Constant, currentLexem);
+                node = new TerminalNode(NodeKind.Constant, currentLexem);
                 NextLexem();
             }
             else if (LanguageDef.IsUserSymbol(currentLexem))
@@ -1449,7 +1437,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 NextLexem();
                 if (_lastExtractedLexem.Token == Token.OpenPar)
                 {
-                    var ident = NodeBuilder.CreateNode(NodeKind.Identifier, identifier);
+                    var ident = new TerminalNode(NodeKind.Identifier, identifier);
                     var call = BuildCall(ident, NodeKind.MethodCall);
                     dotNode.AddChild(call);
                 }
