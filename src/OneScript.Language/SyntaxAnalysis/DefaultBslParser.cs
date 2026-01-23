@@ -390,7 +390,7 @@ namespace OneScript.Language.SyntaxAnalysis
             {
                 PopContext();
             }
-            
+
             CreateChild(CurrentParent, NodeKind.BlockEnd, _lastExtractedLexem);
             NextLexem();
         }
@@ -1237,130 +1237,68 @@ namespace OneScript.Language.SyntaxAnalysis
                 return default;
             }
 
-            var op = BuildOrExpression();
+            var op = BuildExpression(0);
             parent.AddChild(op);
             return op;
         }
-        
-        private BslSyntaxNode BuildOrExpression()
+
+        private BslSyntaxNode BuildExpression(int prio)
         {
-            var firstArg = BuildAndExpression();
-            while (_lastExtractedLexem.Token == Token.Or)
+            var firstArg = BuildPrimaryExpression();
+            while (LanguageDef.GetBinaryPriority(_lastExtractedLexem.Token) > prio)
             {
                 var operationLexem = _lastExtractedLexem;
                 NextLexem();
-                var secondArg = BuildAndExpression();
-                firstArg = MakeBinaryOperationNode(firstArg, secondArg, operationLexem);
-            }
+                var secondArg = BuildExpression(LanguageDef.GetBinaryPriority(operationLexem.Token));
 
-            return firstArg;
-        }
-        
-        private BslSyntaxNode BuildAndExpression()
-        {
-            var firstArg = BuildNotExpression();
-            while (_lastExtractedLexem.Token == Token.And)
-            {
-                var operationLexem = _lastExtractedLexem;
-                NextLexem();
-                var secondArg = BuildNotExpression();
-                firstArg = MakeBinaryOperationNode(firstArg, secondArg, operationLexem);
-            }
-
-            return firstArg;
-        }
-        
-        private BslSyntaxNode BuildNotExpression()
-        {
-            if (_lastExtractedLexem.Token == Token.Not)
-            {
-                var operation = _lastExtractedLexem;
-                NextLexem();
-                var op = new UnaryOperationNode(operation);
-                var argument = BuildLogicalComparison();
-                op.AddChild(argument);
-                return op;
-            }
-
-            return BuildLogicalComparison();
-        }
-
-        private BslSyntaxNode BuildLogicalComparison()
-        {
-            var firstArg = BuildAdditionExpression();
-            while (_lastExtractedLexem.Token == Token.Equal ||
-                _lastExtractedLexem.Token == Token.MoreThan ||
-                _lastExtractedLexem.Token == Token.LessThan ||
-                _lastExtractedLexem.Token == Token.MoreOrEqual ||
-                _lastExtractedLexem.Token == Token.LessOrEqual ||
-                _lastExtractedLexem.Token == Token.NotEqual)
-            {
-                var operationLexem = _lastExtractedLexem;
-                NextLexem();
-                var secondArg = BuildAdditionExpression();
-                firstArg = MakeBinaryOperationNode(firstArg, secondArg, operationLexem);
-            }
-
-            return firstArg;
-        }
-        
-        private BslSyntaxNode BuildAdditionExpression()
-        {
-            var firstArg = BuildMultiplyExpression();
-            while (_lastExtractedLexem.Token == Token.Plus ||
-                   _lastExtractedLexem.Token == Token.Minus)
-            {
-                var operationLexem = _lastExtractedLexem;
-                NextLexem();
-                var secondArg = BuildMultiplyExpression();
-                firstArg = MakeBinaryOperationNode(firstArg, secondArg, operationLexem);
-            }
-
-            return firstArg;
-        }
-        
-        private BslSyntaxNode BuildMultiplyExpression()
-        {
-            var firstArg = BuildUnaryMathExpression();
-            while (_lastExtractedLexem.Token == Token.Multiply ||
-                   _lastExtractedLexem.Token == Token.Division ||
-                   _lastExtractedLexem.Token == Token.Modulo)
-            {
-                var operationLexem = _lastExtractedLexem;
-                NextLexem();
-                var secondArg = BuildUnaryMathExpression();
                 firstArg = MakeBinaryOperationNode(firstArg, secondArg, operationLexem);
             }
 
             return firstArg;
         }
 
-        private BslSyntaxNode BuildUnaryMathExpression()
+        private BslSyntaxNode BuildPrimaryExpression()
         {
-            if (_lastExtractedLexem.Token == Token.Plus)
-                _lastExtractedLexem.Token = Token.UnaryPlus;
-            else if (_lastExtractedLexem.Token == Token.Minus)
-                _lastExtractedLexem.Token = Token.UnaryMinus;
-            else
+            if (_lastExtractedLexem.Token == Token.OpenPar)
+            {
                 return BuildParenthesis();
-            
-            // Можно оптимизировать численный литерал до константы
-            var operation = _lastExtractedLexem;
-            NextLexem();
-            if (_lastExtractedLexem.Type == LexemType.NumberLiteral)
-            {
-                if (operation.Token == Token.UnaryMinus)
-                    _lastExtractedLexem.Content = '-' + _lastExtractedLexem.Content;
+            }
 
+            var operation = _lastExtractedLexem;
+            var prio = LanguageDef.GetUnaryPriority(operation.Token);
+
+            if (prio == LanguageDef.MAX_OPERATION_PRIORITY)
+            {
                 return TerminalNode();
             }
-            
+
+            NextLexem();
+
+            if (operation.Token == Token.Plus)
+                operation.Token = Token.UnaryPlus;
+            else if (operation.Token == Token.Minus)
+            {
+                operation.Token = Token.UnaryMinus;
+                if (_lastExtractedLexem.Type == LexemType.NumberLiteral) //TODO:move it to lexer
+                {
+                    _lastExtractedLexem.Content = '-' + _lastExtractedLexem.Content;
+                    return TerminalNode();
+                }
+            }
+
+            if (LanguageDef.GetUnaryPriority(_lastExtractedLexem.Token) <= prio)
+            {
+                AddError(LocalizedErrors.ExpressionSyntax());
+                return default;
+            }
+
+            var arg = BuildExpression(prio);
             var op = new UnaryOperationNode(operation);
-            var argument = BuildParenthesis();
-            op.AddChild(argument);
+            op.AddChild(arg);
             return op;
         }
 
+ 
         private BslSyntaxNode BuildExpressionUpTo(NonTerminalNode parent, Token stopToken)
         {
             var node = BuildExpression(parent, stopToken);
@@ -1392,36 +1330,31 @@ namespace OneScript.Language.SyntaxAnalysis
                 return;
             }
 
-            var op = BuildOrExpression();
+            var op = BuildExpression(0);
             parent.AddChild(op);
         }
 
         #region Operators
 
-        private static BslSyntaxNode MakeBinaryOperationNode(BslSyntaxNode firstArg, BslSyntaxNode secondArg, in Lexem lexem)
+        private static BinaryOperationNode MakeBinaryOperationNode(BslSyntaxNode firstArg, BslSyntaxNode secondArg, in Lexem lexem)
         {
             var node = new BinaryOperationNode(lexem);
             node.AddChild(firstArg);
             node.AddChild(secondArg);
             return node;
         }
-        
+
         private BslSyntaxNode BuildParenthesis()
         {
-            if (_lastExtractedLexem.Token == Token.OpenPar)
+            NextLexem();
+            var expr = BuildExpression(0);
+            if (_lastExtractedLexem.Token != Token.ClosePar)
             {
-                NextLexem();
-                var expr = BuildOrExpression();
-                if (_lastExtractedLexem.Token != Token.ClosePar)
-                {
-                    AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
-                }
-                NextLexem();
-                
-                return BuildDereference(expr);
+                AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
             }
+            NextLexem();
 
-            return TerminalNode();
+            return BuildDereference(expr);
         }
 
         #endregion
@@ -1676,7 +1609,7 @@ namespace OneScript.Language.SyntaxAnalysis
             return tok;
         }
 
-        private BslSyntaxNode CreateChild(NonTerminalNode parent, NodeKind kind, in Lexem lex)
+        private static BslSyntaxNode CreateChild(NonTerminalNode parent, NodeKind kind, in Lexem lex)
         {
             var child = NodeBuilder.CreateNode(kind, lex);
             parent.AddChild(child);
