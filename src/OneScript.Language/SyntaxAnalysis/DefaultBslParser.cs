@@ -212,58 +212,53 @@ namespace OneScript.Language.SyntaxAnalysis
 
                 NextLexem();
 
-                if (IsUserSymbol(_lastExtractedLexem))
+                if (!IsUserSymbol(_lastExtractedLexem))
+                {
+                    AddError(LocalizedErrors.IdentifierExpected());
+                    return;
+                }
+
+                if (_inMethodScope)
+                {
+                    if (_isStatementsDefined)
+                    {
+                        AddError(LocalizedErrors.LateVarDefinition());
+                        return;
+                    }
+                }
+                else if (_isMethodsDefined)
+                {
+                    AddError(LocalizedErrors.LateVarDefinition());
+                    return;
+                }
+
+                var symbolicName = _lastExtractedLexem.Content;
+                CreateChild(variable, NodeKind.Identifier, _lastExtractedLexem);
+
+                NextLexem();
+                if (_lastExtractedLexem.Token == Token.Export)
                 {
                     if (_inMethodScope)
                     {
-                        if (_isStatementsDefined)
-                        {
-                            AddError(LocalizedErrors.LateVarDefinition());
-                            return;
-                        }
+                        AddError(LocalizedErrors.ExportedLocalVar(symbolicName));
+                        return;
                     }
-                    else
-                    {
-                        if (_isMethodsDefined)
-                        {
-                            AddError(LocalizedErrors.LateVarDefinition());
-                            return;
-                        }
-                    }
-                    
-                    var symbolicName = _lastExtractedLexem.Content;
-                    CreateChild(variable, NodeKind.Identifier, _lastExtractedLexem);
-                    
+                    CreateChild(variable, NodeKind.ExportFlag, _lastExtractedLexem);
                     NextLexem();
-                    if (_lastExtractedLexem.Token == Token.Export)
-                    {
-                        if (_inMethodScope)
-                        {
-                            AddError(LocalizedErrors.ExportedLocalVar(symbolicName));
-                            break;
-                        }
-                        CreateChild(variable, NodeKind.ExportFlag, _lastExtractedLexem);
-                        NextLexem();
-                    }
-                    
-                    if (_lastExtractedLexem.Token == Token.Comma)
-                    {
-                        continue;
-                    }
+                }
 
-                    if (_lastExtractedLexem.Token == Token.Semicolon)
-                    {
-                        NextLexem();
-                    }
-                    else
-                    {
-                        AddError(LocalizedErrors.SemicolonExpected());
-                    }
-                        
+                if (_lastExtractedLexem.Token == Token.Comma)
+                {
+                    continue;
+                }
+
+                if (_lastExtractedLexem.Token == Token.Semicolon)
+                {
+                    NextLexem();
                 }
                 else
                 {
-                    AddError(LocalizedErrors.IdentifierExpected());
+                    AddError(LocalizedErrors.SemicolonExpected());
                 }
 
                 break;
@@ -286,9 +281,7 @@ namespace OneScript.Language.SyntaxAnalysis
         private void BuildMethodsSection()
         {
             if (_lastExtractedLexem.Type != LexemType.Annotation 
-                && _lastExtractedLexem.Token != Token.Procedure 
-                && _lastExtractedLexem.Token != Token.Function
-                && _lastExtractedLexem.Token != Token.Async)
+                && !IsStartOfMethod(_lastExtractedLexem))
             {
                 return;
             }
@@ -487,12 +480,11 @@ namespace OneScript.Language.SyntaxAnalysis
 
             if (LanguageDef.IsLiteral(_lastExtractedLexem))
             {
-                string literalText = _lastExtractedLexem.Content;
                 if (hasSign)
                 {
                     if (_lastExtractedLexem.Type == LexemType.NumberLiteral && signIsMinus)
                     {
-                        literalText = '-' + literalText;
+                        _lastExtractedLexem.Content = '-' + _lastExtractedLexem.Content;
                     }
                     else if (_lastExtractedLexem.Type == LexemType.StringLiteral
                              || _lastExtractedLexem.Type == LexemType.DateLiteral)
@@ -502,7 +494,6 @@ namespace OneScript.Language.SyntaxAnalysis
                     }
                 }
 
-                _lastExtractedLexem.Content = literalText;
                 CreateChild(param, nodeKind, _lastExtractedLexem);
                 NextLexem();
             }
@@ -862,7 +853,6 @@ namespace OneScript.Language.SyntaxAnalysis
 
         private void BuildForStatement()
         {
-            var lexem = _lastExtractedLexem;
             NextLexem();
 
             NodeKind loopKind;
@@ -903,7 +893,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 BuildBatchWithContext(loopNode, Token.EndLoop);
                 return;
             }
-            
+
             var counter = _lastExtractedLexem;
             if (!NextExpected(Token.Equal))
             {
@@ -1073,7 +1063,8 @@ namespace OneScript.Language.SyntaxAnalysis
             if (source == null)
                 return;
 
-            if ((source.Kind != NodeKind.DereferenceOperation || !_lastDereferenceIsWritable) && source.Kind != NodeKind.IndexAccess)
+            if ((source.Kind != NodeKind.DereferenceOperation || !_lastDereferenceIsWritable) 
+                && source.Kind != NodeKind.IndexAccess)
             {
                 AddError(LocalizedErrors.WrongEventName());
                 return;
@@ -1151,7 +1142,7 @@ namespace OneScript.Language.SyntaxAnalysis
             return BuildDereference(target);
         }
 
-        private BslSyntaxNode BuildCall(BslSyntaxNode target, NodeKind callKind)
+        private CallNode BuildCall(BslSyntaxNode target, NodeKind callKind)
         {
             var callNode = new CallNode(callKind, _lastExtractedLexem);
             callNode.AddChild(target);
@@ -1200,7 +1191,7 @@ namespace OneScript.Language.SyntaxAnalysis
             if (_lastExtractedLexem.Token == Token.Comma)
             {
                 CreateChild(argsList, NodeKind.CallArgument, _lastExtractedLexem);
-                
+
                 BuildLastDefaultArg(argsList);
             }
             else if (_lastExtractedLexem.Token != Token.ClosePar)
