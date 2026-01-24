@@ -373,8 +373,8 @@ namespace OneScript.Language.SyntaxAnalysis
 
         private void BuildMethodBody()
         {
-            var body = CreateChild(CurrentParent, NodeKind.CodeBatch, _lastExtractedLexem);
-            PushContext((NonTerminalNode)body);
+            var body = _nodeContext.AddChild(new CodeBatchNode(_lastExtractedLexem));
+            PushContext(body);
             try
             {
                 BuildCodeBatch(_isInFunctionScope ? Token.EndFunction : Token.EndProcedure);
@@ -652,7 +652,7 @@ namespace OneScript.Language.SyntaxAnalysis
         private void DefineLabel(Lexem label)
         {
             var node = new LabelNode(label);
-            _nodeContext.AddChild(node);
+            CurrentParent.AddChild(node);
             NextLexem();
         }
 
@@ -733,8 +733,8 @@ namespace OneScript.Language.SyntaxAnalysis
         private void BuildGlobalCallAwaitOperator()
         {
             Debug.Assert(_lastExtractedLexem.Token == Token.Await);
-            
-            _nodeContext.AddChild(TerminalNode());
+
+            CurrentParent.AddChild(TerminalNode());
         }
 
 
@@ -775,7 +775,7 @@ namespace OneScript.Language.SyntaxAnalysis
             gotoNode.AddChild(new LabelNode(_lastExtractedLexem));
             NextLexem();
 
-            _nodeContext.AddChild(gotoNode);
+            CurrentParent.AddChild(gotoNode);
         }
         
         private void CheckAsyncMethod()
@@ -834,8 +834,9 @@ namespace OneScript.Language.SyntaxAnalysis
             var loopNode = _nodeContext.AddChild(new WhileLoopNode(_lastExtractedLexem));
             NextLexem();
             BuildExpressionUpTo(loopNode, Token.Loop);
-            var body = CreateChild(loopNode, NodeKind.CodeBatch, _lastExtractedLexem);
-            PushContext((NonTerminalNode)body);
+            var body = loopNode.AddNode(new CodeBatchNode(_lastExtractedLexem));
+
+            PushContext(body);
             var loopState = _isInLoopScope;
             try
             {
@@ -913,7 +914,7 @@ namespace OneScript.Language.SyntaxAnalysis
             var limit = new NonTerminalNode(NodeKind.ForLimit, _lastExtractedLexem);
             BuildExpressionUpTo(limit, Token.Loop);
             loopNode.AddChild(limit);
-            
+
             BuildBatchWithContext(loopNode, Token.EndLoop);
 
             CreateChild(loopNode, NodeKind.BlockEnd, _lastExtractedLexem);
@@ -1190,7 +1191,7 @@ namespace OneScript.Language.SyntaxAnalysis
         {
             if (_lastExtractedLexem.Token == Token.Comma)
             {
-                CreateChild(argsList, NodeKind.CallArgument, _lastExtractedLexem);
+                argsList.AddChild(new NonTerminalNode(NodeKind.CallArgument, _lastExtractedLexem));
 
                 BuildLastDefaultArg(argsList);
             }
@@ -1210,7 +1211,7 @@ namespace OneScript.Language.SyntaxAnalysis
             NextLexem();
             if (_lastExtractedLexem.Token == Token.ClosePar)
             {
-                CreateChild(argsList, NodeKind.CallArgument, _lastExtractedLexem);
+                argsList.AddChild(new NonTerminalNode(NodeKind.CallArgument, _lastExtractedLexem));
             }
         }
 
@@ -1588,11 +1589,10 @@ namespace OneScript.Language.SyntaxAnalysis
             return tok;
         }
 
-        private static BslSyntaxNode CreateChild(NonTerminalNode parent, NodeKind kind, in Lexem lex)
+        private static void CreateChild(NonTerminalNode parent, NodeKind kind, in Lexem lex)
         {
             var child = NodeBuilder.CreateNode(kind, lex);
             parent.AddChild(child);
-            return child;
         }
 
         private bool TryParseNode(Action action)
