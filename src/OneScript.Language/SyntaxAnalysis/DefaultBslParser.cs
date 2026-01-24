@@ -49,7 +49,7 @@ namespace OneScript.Language.SyntaxAnalysis
 
         private IErrorSink ErrorSink { get; }
         
-        public IEnumerable<CodeError> Errors => ErrorSink.Errors ?? new CodeError[0]; 
+        public IEnumerable<CodeError> Errors => ErrorSink.Errors ?? Array.Empty<CodeError>(); 
         
         public BslSyntaxNode ParseStatefulModule()
         {
@@ -57,12 +57,12 @@ namespace OneScript.Language.SyntaxAnalysis
             
             _preprocessorHandlers.OnModuleEnter();
             NextLexem();
-            
+
+            node = new ModuleNode(_lexer.Iterator.Source, _lastExtractedLexem);
+            PushContext(node);
             try
             {
-                node = new ModuleNode(_lexer.Iterator.Source, _lastExtractedLexem);
-                PushContext(node);
-                ParseModuleSections();
+                 ParseModuleSections();
             }
             finally
             {
@@ -81,11 +81,9 @@ namespace OneScript.Language.SyntaxAnalysis
             PushContext(node);
             try
             {
-                if (allowReturns)
-                {
-                    _inMethodScope = true;
-                    _isInFunctionScope = true;
-                }
+                _inMethodScope = allowReturns;
+                _isInFunctionScope = allowReturns;
+
                 BuildModuleBody();
             }
             finally
@@ -180,20 +178,16 @@ namespace OneScript.Language.SyntaxAnalysis
                 while (true)
                 {
                     BuildAnnotations();
-                    if (_lastExtractedLexem.Token == Token.VarDef)
-                    {
-                        if (!hasVars)
-                        {
-                            hasVars = true;
-                            parent.AddChild(allVarsSection);
-                        }
-
-                        BuildVariableDefinition();
-                    }
-                    else
-                    {
+                    if (_lastExtractedLexem.Token != Token.VarDef)
                         break;
+
+                    if (!hasVars)
+                    {
+                        hasVars = true;
+                        parent.AddChild(allVarsSection);
                     }
+
+                    BuildVariableDefinition();
                 }
             }
             finally
@@ -296,21 +290,17 @@ namespace OneScript.Language.SyntaxAnalysis
                 while (true)
                 {
                     BuildAnnotations();
-                    if (IsStartOfMethod(_lastExtractedLexem))
-                    {
-                        if (!sectionExist)
-                        {
-                            sectionExist = true;
-                            _isMethodsDefined = true;
-                            parent.AddChild(allMethodsSection);
-                        }
-
-                        BuildMethod();
-                    }
-                    else
-                    {
+                    if (!IsStartOfMethod(_lastExtractedLexem))
                         break;
+
+                    if (!sectionExist)
+                    {
+                        sectionExist = true;
+                        _isMethodsDefined = true;
+                        parent.AddChild(allMethodsSection);
                     }
+
+                    BuildMethod();
                 }
             }
             finally
@@ -1160,7 +1150,6 @@ namespace OneScript.Language.SyntaxAnalysis
             {
                 NextLexem(); // съели открывающую скобку
                 WalkCallArguments(node);
-
                 NextLexem(); // съели закрывающую скобку
             }
             finally
@@ -1366,13 +1355,13 @@ namespace OneScript.Language.SyntaxAnalysis
             {
                 node = BuildNewObjectCreation();
             }
-            else if (currentLexem.Token == Token.Question)
-            {
-                node = BuildQuestionOperator();
-            }
             else if (LanguageDef.IsBuiltInFunction(currentLexem.Token))
             {
                 node = BuildGlobalCall(currentLexem);
+            }
+            else if (currentLexem.Token == Token.Question)
+            {
+                node = BuildQuestionOperator();
             }
             else if (supportAwait && currentLexem.Token == Token.Await)
             {
