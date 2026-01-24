@@ -1374,28 +1374,20 @@ namespace OneScript.Language.SyntaxAnalysis
         private BslSyntaxNode BuildQuestionOperator()
         {
             var node = new NonTerminalNode(NodeKind.TernaryOperator, _lastExtractedLexem);
-            if(!NextExpected(Token.OpenPar))
+            if (!NextExpected(Token.OpenPar))
                 AddError(LocalizedErrors.TokenExpected(Token.OpenPar));
+
+            NextLexem();
 
             if (!TryParseNode(() =>
             {
-                NextLexem();
-                BuildExpression(node, Token.Comma);
-                NextLexem();
-                BuildExpression(node, Token.Comma);
-                NextLexem();
-                BuildExpression(node, Token.ClosePar);
+                BuildExpressionUpTo(node, Token.Comma);
+                BuildExpressionUpTo(node, Token.Comma);
+                BuildExpressionUpTo(node, Token.ClosePar);
             }))
             {
                 return default;
             }
-
-            if (_lastExtractedLexem.Token != Token.ClosePar)
-            {
-                AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
-                return default;
-            }
-            NextLexem();
 
             return BuildDereference(node);
         }

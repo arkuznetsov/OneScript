@@ -1245,7 +1245,16 @@ namespace OneScript.Language.Tests
 
             CatchParsingError(code);
         }
-        
+
+        [Fact]
+        public void Check_Question_Operator_Delimiters()
+        {
+            var code = @"Ф = ?(Истина? 1 ; 2);";
+
+            CatchParsingError(code);
+        }
+
+
         [Fact]
         public void TestLocalExportVar()
         {
