@@ -747,8 +747,7 @@ namespace OneScript.Language.SyntaxAnalysis
             }
             else
             {
-                AddError(LocalizedErrors.ExpressionSyntax());
-                return new ErrorTerminalNode(_lastExtractedLexem);
+                return CreateError(LocalizedErrors.ExpressionSyntax());
             }
         }
 
@@ -1051,8 +1050,6 @@ namespace OneScript.Language.SyntaxAnalysis
             NextLexem();
             
             var source = BuildExpressionUpTo(node, Token.Comma);
-            if (source == null)
-                return;
 
             if ((source.Kind != NodeKind.DereferenceOperation || !_lastDereferenceIsWritable) 
                 && source.Kind != NodeKind.IndexAccess)
@@ -1212,8 +1209,7 @@ namespace OneScript.Language.SyntaxAnalysis
         {
             if (_lastExtractedLexem.Token == stopToken)
             {
-                AddError(LocalizedErrors.ExpressionExpected());
-                return default;
+                return CreateError(LocalizedErrors.ExpressionExpected());
             }
 
             var op = BuildExpression(0);
@@ -1267,8 +1263,7 @@ namespace OneScript.Language.SyntaxAnalysis
 
             if (LanguageDef.GetUnaryPriority(_lastExtractedLexem.Token) <= prio)
             {
-                AddError(LocalizedErrors.ExpressionSyntax());
-                return default;
+                return CreateError(LocalizedErrors.ExpressionSyntax());
             }
 
             var arg = BuildExpression(prio);
@@ -1287,14 +1282,12 @@ namespace OneScript.Language.SyntaxAnalysis
             {
                 if (_lastExtractedLexem.Token == Token.EndOfText)
                 {
-                    AddError(LocalizedErrors.UnexpectedEof());
+                    return CreateError(LocalizedErrors.UnexpectedEof());
                 }
                 else
                 {
-                    AddError(LocalizedErrors.TokenExpected(stopToken), false);
+                    return CreateError(LocalizedErrors.TokenExpected(stopToken), false);
                 }
-
-                node = default;
             }
 
             return node;
@@ -1333,9 +1326,9 @@ namespace OneScript.Language.SyntaxAnalysis
             BslSyntaxNode node = SelectTerminalNode(_lastExtractedLexem, true);
             if (node == default)
             {
-                AddError(LocalizedErrors.ExpressionSyntax());
+                return CreateError(LocalizedErrors.ExpressionSyntax());
             }
-
+        
             return node;
         }
         
@@ -1351,7 +1344,7 @@ namespace OneScript.Language.SyntaxAnalysis
             {
                 node = BuildGlobalCall(currentLexem);
             }
-            else if(currentLexem.Token == Token.NewObject)
+            else if (currentLexem.Token == Token.NewObject)
             {
                 node = BuildNewObjectCreation();
             }
@@ -1367,7 +1360,7 @@ namespace OneScript.Language.SyntaxAnalysis
             {
                 node = BuildExpressionAwaitOperator(currentLexem);
             }
-            
+                
             return node;
         }
 
@@ -1375,7 +1368,7 @@ namespace OneScript.Language.SyntaxAnalysis
         {
             var node = new NonTerminalNode(NodeKind.TernaryOperator, _lastExtractedLexem);
             if (!NextExpected(Token.OpenPar))
-                AddError(LocalizedErrors.TokenExpected(Token.OpenPar));
+                return CreateError(LocalizedErrors.TokenExpected(Token.OpenPar));
 
             NextLexem();
 
@@ -1386,7 +1379,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 BuildExpressionUpTo(node, Token.ClosePar);
             }))
             {
-                return default;
+                return CreateError(LocalizedErrors.ExpressionSyntax());
             }
 
             return BuildDereference(node);
@@ -1402,8 +1395,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 NextLexem();
                 if (!LanguageDef.IsValidPropertyName(_lastExtractedLexem))
                 {
-                    AddError(LocalizedErrors.IdentifierExpected());
-                    return default;
+                    return CreateError(LocalizedErrors.IdentifierExpected());
                 }
 
                 var identifier = _lastExtractedLexem;
@@ -1434,10 +1426,9 @@ namespace OneScript.Language.SyntaxAnalysis
                 node.AddChild(target);
                 NextLexem();
                 var expression = BuildExpression(node, Token.CloseBracket);
-                if (expression == default)
+                if (expression.Kind == NodeKind.Unknown)
                 {
-                    AddError(LocalizedErrors.ExpressionSyntax());
-                    return default;
+                    return CreateError(LocalizedErrors.ExpressionSyntax());
                 }
                 NextLexem();
                 _lastDereferenceIsWritable = true;
@@ -1462,8 +1453,7 @@ namespace OneScript.Language.SyntaxAnalysis
             }
             else
             {
-                AddError(LocalizedErrors.IdentifierExpected());
-                node = default;
+                return CreateError(LocalizedErrors.IdentifierExpected());
             }
 
             return BuildDereference(node);
@@ -1552,6 +1542,13 @@ namespace OneScript.Language.SyntaxAnalysis
 
             if(_enableException)
                 throw new InternalParseException(err);
+        }
+
+        private ErrorTerminalNode CreateError(CodeError error, bool doFastForward = true)
+        {
+            var lexem = _lastExtractedLexem;
+            AddError(error, doFastForward);
+            return new ErrorTerminalNode(lexem);
         }
 
         private bool IsUserSymbol(in Lexem lex)
