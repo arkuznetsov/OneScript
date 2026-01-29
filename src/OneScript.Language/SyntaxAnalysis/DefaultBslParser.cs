@@ -194,6 +194,7 @@ namespace OneScript.Language.SyntaxAnalysis
             {
                 PopContext();
             }
+
         }
 
         private void BuildVariableDefinition()
@@ -413,49 +414,55 @@ namespace OneScript.Language.SyntaxAnalysis
                 
             NextLexem(); // (
 
-            var expectParameter = false;
-            while (_lastExtractedLexem.Token != Token.ClosePar)
+            if (_lastExtractedLexem.Token != Token.ClosePar)
+            while (true)
             {
-                BuildAnnotations();
-                var param = new MethodParameterNode();
-                paramList.AddChild(param);
-                ApplyAnnotations(param);
-                // [Знач] Identifier [= Literal],...
-                if (_lastExtractedLexem.Token == Token.ByValParam)
+                BuildMethodParameter(paramList);
+
+                if (_lastExtractedLexem.Token == Token.ClosePar)
                 {
-                    CreateChild(param, NodeKind.ByValModifier, _lastExtractedLexem);
-                    NextLexem();
+                    break;
                 }
 
-                if (!IsUserSymbol(_lastExtractedLexem))
-                {
-                    AddError(LocalizedErrors.IdentifierExpected());
-                    return;
-                }
-                CreateChild(param, NodeKind.Identifier, _lastExtractedLexem);
-                NextLexem();
-                if (_lastExtractedLexem.Token == Token.Equal)
-                {
-                    NextLexem();
-                    if(!BuildDefaultParameterValue(param, NodeKind.ParameterDefaultValue))
-                        return;
-                }
-
-                expectParameter = false;
                 if (_lastExtractedLexem.Token == Token.Comma)
                 {
                     NextLexem();
-                    expectParameter = true;
+                }
+                else
+                {
+                    AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
+                    return;
                 }
             }
 
-            if (expectParameter)
-            {
-                AddError(LocalizedErrors.IdentifierExpected(), false);
-            }
-            
             NextLexem(); // )
+        }
 
+        private void BuildMethodParameter(NonTerminalNode paramList)
+        {
+            BuildAnnotations();
+            var param = new MethodParameterNode();
+            paramList.AddChild(param);
+            ApplyAnnotations(param);
+            // [Знач] Identifier [= Literal],...
+            if (_lastExtractedLexem.Token == Token.ByValParam)
+            {
+                CreateChild(param, NodeKind.ByValModifier, _lastExtractedLexem);
+                NextLexem();
+            }
+
+            if (!IsUserSymbol(_lastExtractedLexem))
+            {
+                AddError(LocalizedErrors.IdentifierExpected());
+                return;
+            }
+            CreateChild(param, NodeKind.Identifier, _lastExtractedLexem);
+            NextLexem();
+            if (_lastExtractedLexem.Token == Token.Equal)
+            {
+                NextLexem();
+                BuildDefaultParameterValue(param, NodeKind.ParameterDefaultValue);
+            }
         }
 
         private bool BuildDefaultParameterValue(NonTerminalNode param, NodeKind nodeKind)
@@ -526,6 +533,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 _annotations.Add(node);
             }
         }
+
         private AnnotationNode BuildAnnotationDefinition() {
             var node = new AnnotationNode(NodeKind.Annotation, _lastExtractedLexem);
             NextLexem();
@@ -540,23 +548,31 @@ namespace OneScript.Language.SyntaxAnalysis
                 return;
 
             NextLexem();
-                
-            while (_lastExtractedLexem.Token != Token.EndOfText)
+
+            if (_lastExtractedLexem.Token != Token.ClosePar)
+            while (true)
             {
+                BuildAnnotationParameter(annotation);
+
                 if (_lastExtractedLexem.Token == Token.ClosePar)
                 {
-                    NextLexem();
                     break;
                 }
-            
-                BuildAnnotationParameter(annotation);
+
                 if (_lastExtractedLexem.Token == Token.Comma)
                 {
                     NextLexem();
                 }
+                else
+                {
+                    AddError(LocalizedErrors.TokenExpected(Token.ClosePar), false);
+                    return;
+                }
             }
+
+            NextLexem(); // )
         }
-        
+
         private void BuildAnnotationParameter(AnnotationNode annotation)
         {
             bool success = true;
@@ -1146,7 +1162,7 @@ namespace OneScript.Language.SyntaxAnalysis
             try
             {
                 NextLexem(); // съели открывающую скобку
-                WalkCallArguments(node);
+                BuildCallArguments(node);
                 NextLexem(); // съели закрывающую скобку
             }
             finally
@@ -1155,50 +1171,39 @@ namespace OneScript.Language.SyntaxAnalysis
             }
         }
 
-        private int WalkCallArguments(NonTerminalNode node)
+        private void BuildCallArguments(NonTerminalNode node)
         {
-            int argCount = 0;
-            while (_lastExtractedLexem.Token != Token.ClosePar)
-            {
-                BuildCallArgument(node);
-                argCount++;
-            }
-
             if (_lastExtractedLexem.Token != Token.ClosePar)
+            while (true)
             {
-                AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
-                argCount = -1;
-            }
+                BuildOptionalCallArgument(node);
 
-            return argCount;
-        }
+                if (_lastExtractedLexem.Token == Token.ClosePar)
+                {
+                    break;
+                }
 
-        private void BuildCallArgument(NonTerminalNode argsList)
-        {
-            if (_lastExtractedLexem.Token == Token.Comma)
-            {
-                argsList.AddChild(new NonTerminalNode(NodeKind.CallArgument, _lastExtractedLexem));
-
-                BuildLastDefaultArg(argsList);
-            }
-            else if (_lastExtractedLexem.Token != Token.ClosePar)
-            {
-                var node = argsList.AddNode(new NonTerminalNode(NodeKind.CallArgument, _lastExtractedLexem));
-                BuildOptionalExpression(node, Token.Comma);
                 if (_lastExtractedLexem.Token == Token.Comma)
                 {
-                    BuildLastDefaultArg(argsList);
+                    NextLexem();
+                }
+                else
+                {
+                    AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
                 }
             }
         }
 
-        private void BuildLastDefaultArg(NonTerminalNode argsList)
+        private void BuildOptionalCallArgument(NonTerminalNode argsList)
         {
-            NextLexem();
-            if (_lastExtractedLexem.Token == Token.ClosePar)
+            var arg = argsList.AddNode(new NonTerminalNode(NodeKind.CallArgument, _lastExtractedLexem));
+            if (_lastExtractedLexem.Token == Token.Comma
+                || _lastExtractedLexem.Token == Token.ClosePar)
             {
-                argsList.AddChild(new NonTerminalNode(NodeKind.CallArgument, _lastExtractedLexem));
+                return;
             }
+
+            arg.AddNode( BuildExpression(0) );
         }
 
         #endregion
@@ -1480,7 +1485,7 @@ namespace OneScript.Language.SyntaxAnalysis
                     // есть аргументы после имени
                     NextLexem();
                 }
-                WalkCallArguments(callArgs);
+                BuildCallArguments(callArgs);
                 node.AddChild(callArgs);
                 NextLexem();
             }

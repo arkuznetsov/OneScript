@@ -1254,6 +1254,26 @@ namespace OneScript.Language.Tests
             CatchParsingError(code);
         }
 
+        [Fact]
+        public void Check_Method_Definition_Delimiters()
+        {
+            var code = @"Процедура Проц1(арг1 арг2)
+                КонецПроцедуры";
+
+            CatchParsingError(code);
+        }
+
+        [Fact]
+        public void Check_Method_Call_Delimiters()
+        {
+            var code = @"Процедура Проц1(арг1, арг2)
+                КонецПроцедуры
+                Проц1(""1"" 2)";
+
+            CatchParsingError(code);
+        }
+
+
 
         [Fact]
         public void TestLocalExportVar()
