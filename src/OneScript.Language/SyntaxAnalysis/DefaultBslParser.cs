@@ -729,8 +729,7 @@ namespace OneScript.Language.SyntaxAnalysis
                     }
                     else
                     {
-                        var expected = _tokenStack.Peek();
-                        AddError(LocalizedErrors.TokenExpected(expected));
+                        AddError(LocalizedErrors.TokenExpected(_tokenStack.Peek()));
                     }
                     break;
             }
@@ -775,6 +774,7 @@ namespace OneScript.Language.SyntaxAnalysis
             if (_lastExtractedLexem.Type != LexemType.LabelRef)
             {
                 AddError(LocalizedErrors.LabelNameExpected());
+                return;
             }
             
             gotoNode.AddChild(new LabelNode(_lastExtractedLexem));
@@ -1190,6 +1190,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 else
                 {
                     AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
+                    return;
                 }
             }
         }
@@ -1318,6 +1319,7 @@ namespace OneScript.Language.SyntaxAnalysis
             if (_lastExtractedLexem.Token != Token.ClosePar)
             {
                 AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
+                return new ErrorTerminalNode();
             }
             NextLexem();
 
