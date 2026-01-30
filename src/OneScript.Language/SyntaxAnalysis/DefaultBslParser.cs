@@ -1318,8 +1318,7 @@ namespace OneScript.Language.SyntaxAnalysis
             var expr = BuildExpression(0);
             if (_lastExtractedLexem.Token != Token.ClosePar)
             {
-                AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
-                return new ErrorTerminalNode();
+                return CreateError(LocalizedErrors.TokenExpected(Token.ClosePar));
             }
             NextLexem();
 
