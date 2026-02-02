@@ -22,7 +22,7 @@ namespace OneScript.Language.SyntaxAnalysis
         private readonly PreprocessorHandlers _preprocessorHandlers;
 
         private Lexem _lastExtractedLexem;
-        
+
         private bool _inMethodScope;
         private bool _isMethodsDefined;
         private bool _isStatementsDefined;
@@ -33,7 +33,7 @@ namespace OneScript.Language.SyntaxAnalysis
         private readonly Stack<Token[]> _tokenStack = new Stack<Token[]>();
         private bool _isInLoopScope;
         private bool _enableException;
-        
+
         private readonly List<BslSyntaxNode> _annotations = new List<BslSyntaxNode>();
 
         public DefaultBslParser(
@@ -48,13 +48,13 @@ namespace OneScript.Language.SyntaxAnalysis
         }
 
         private IErrorSink ErrorSink { get; }
-        
-        public IEnumerable<CodeError> Errors => ErrorSink.Errors ?? Array.Empty<CodeError>(); 
-        
+
+        public IEnumerable<CodeError> Errors => ErrorSink.Errors ?? Array.Empty<CodeError>();
+
         public BslSyntaxNode ParseStatefulModule()
         {
             ModuleNode node;
-            
+
             _preprocessorHandlers.OnModuleEnter();
             NextLexem();
 
@@ -62,7 +62,7 @@ namespace OneScript.Language.SyntaxAnalysis
             PushContext(node);
             try
             {
-                 ParseModuleSections();
+                ParseModuleSections();
             }
             finally
             {
@@ -70,7 +70,7 @@ namespace OneScript.Language.SyntaxAnalysis
             }
 
             _preprocessorHandlers.OnModuleLeave();
-            
+
             return node;
         }
 
@@ -106,7 +106,7 @@ namespace OneScript.Language.SyntaxAnalysis
         }
 
         private void PushContext(NonTerminalNode node) => _nodeContext.PushContext(node);
-        
+
         private NonTerminalNode PopContext() => _nodeContext.PopContext();
 
         private NonTerminalNode CurrentParent => _nodeContext.CurrentParent;
@@ -115,12 +115,12 @@ namespace OneScript.Language.SyntaxAnalysis
         {
             if (_lastExtractedLexem.Type != LexemType.PreprocessorDirective)
                 return;
-            
+
             var annotationParser = _preprocessorHandlers
                 .Slice(x => x is ModuleAnnotationDirectiveHandler)
                 .Cast<ModuleAnnotationDirectiveHandler>()
                 .ToList();
-            
+
             if (annotationParser.Count == 0)
                 return;
 
@@ -131,7 +131,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 foreach (var handler in annotationParser)
                 {
                     handled = handler.ParseAnnotation(ref _lastExtractedLexem, _lexer, _nodeContext);
-                    if(handled)
+                    if (handled)
                         break;
                 }
 
@@ -140,7 +140,7 @@ namespace OneScript.Language.SyntaxAnalysis
                     AddError(LocalizedErrors.DirectiveNotSupported(directive));
                 }
             }
-            
+
             foreach (var handler in annotationParser)
             {
                 handler.OnModuleLeave();
@@ -150,19 +150,18 @@ namespace OneScript.Language.SyntaxAnalysis
         private void ParseModuleSections()
         {
             ParseModuleAnnotation();
-            BuildVariableSection();
+            BuildVariablesSection();
             BuildMethodsSection();
-            BuildModuleBody();
-
             if (_annotations.Count != 0)
             {
-                AddError(LocalizedErrors.UnexpectedEof());
+                AddError(LocalizedErrors.AnnotationNotAllowed());
             }
+            BuildModuleBody();
         }
 
         #region Variables
-        
-        private void BuildVariableSection()
+
+        private void BuildVariablesSection()
         {
             if (_lastExtractedLexem.Token != Token.VarDef && _lastExtractedLexem.Type != LexemType.Annotation)
             {
@@ -178,6 +177,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 while (true)
                 {
                     BuildAnnotations();
+
                     if (_lastExtractedLexem.Token != Token.VarDef)
                         break;
 
@@ -187,7 +187,7 @@ namespace OneScript.Language.SyntaxAnalysis
                         parent.AddChild(allVarsSection);
                     }
 
-                    BuildVariableDefinition();
+                    BuildVariablesDefinition();
                 }
             }
             finally
@@ -197,66 +197,75 @@ namespace OneScript.Language.SyntaxAnalysis
 
         }
 
-        private void BuildVariableDefinition()
+        private void BuildVariablesDefinition()
         {
-            while (true)
+            if (_inMethodScope)
             {
-                var variable = _nodeContext.AddChild(new VariableDefinitionNode(_lastExtractedLexem));
-                
-                ApplyAnnotations(variable);
-
-                NextLexem();
-
-                if (!IsUserSymbol(_lastExtractedLexem))
-                {
-                    AddError(LocalizedErrors.IdentifierExpected());
-                    return;
-                }
-
-                if (_inMethodScope)
-                {
-                    if (_isStatementsDefined)
-                    {
-                        AddError(LocalizedErrors.LateVarDefinition());
-                        return;
-                    }
-                }
-                else if (_isMethodsDefined)
+                if (_isStatementsDefined)
                 {
                     AddError(LocalizedErrors.LateVarDefinition());
                     return;
                 }
+            }
+            else if (_isMethodsDefined)
+            {
+                AddError(LocalizedErrors.LateVarDefinition());
+                return;
+            }
 
-                var symbolicName = _lastExtractedLexem.Content;
-                CreateChild(variable, NodeKind.Identifier, _lastExtractedLexem);
+            while (true)
+            {
+                NextLexem(); // skip opening VarDef or Comma
 
-                NextLexem();
-                if (_lastExtractedLexem.Token == Token.Export)
+                if (!IsUserSymbol(_lastExtractedLexem))
                 {
-                    if (_inMethodScope)
-                    {
-                        AddError(LocalizedErrors.ExportedLocalVar(symbolicName));
-                        return;
-                    }
-                    CreateChild(variable, NodeKind.ExportFlag, _lastExtractedLexem);
-                    NextLexem();
+                    if(_lastExtractedLexem.Type == LexemType.Annotation)
+                        AddError(LocalizedErrors.AnnotationNotAllowed());
+                    else
+                        AddError(LocalizedErrors.IdentifierExpected());
+                    return;
                 }
 
-                if (_lastExtractedLexem.Token == Token.Comma)
-                {
-                    continue;
-                }
+                BuildVariable();
 
                 if (_lastExtractedLexem.Token == Token.Semicolon)
                 {
-                    NextLexem();
-                }
-                else
-                {
-                    AddError(LocalizedErrors.SemicolonExpected());
+                    break;
                 }
 
-                break;
+                if (_lastExtractedLexem.Token != Token.Comma)
+                {
+                    AddError(LocalizedErrors.SemicolonExpected());
+                    return;
+                }
+            }
+
+            NextLexem(); // skip Semicolon
+            _annotations.Clear();
+        }
+
+        private void BuildVariable()
+        {
+            var variable = _nodeContext.AddChild(new VariableDefinitionNode(_lastExtractedLexem));
+            if (!_inMethodScope)
+                foreach (var astNode in _annotations)
+                {
+                    variable.AddChild(astNode);
+                }
+
+            var symbolicName = _lastExtractedLexem.Content;
+            CreateChild(variable, NodeKind.Identifier, _lastExtractedLexem);
+
+            NextLexem();
+            if (_lastExtractedLexem.Token == Token.Export)
+            {
+                if (_inMethodScope)
+                {
+                    AddError(LocalizedErrors.ExportedLocalVar(symbolicName));
+                    return;
+                }
+                CreateChild(variable, NodeKind.ExportFlag, _lastExtractedLexem);
+                NextLexem();
             }
         }
 
@@ -269,13 +278,13 @@ namespace OneScript.Language.SyntaxAnalysis
             _annotations.Clear();
         }
 
-        #endregion
+          #endregion
 
         #region Methods
 
         private void BuildMethodsSection()
         {
-            if (_lastExtractedLexem.Type != LexemType.Annotation 
+            if (_lastExtractedLexem.Type != LexemType.Annotation
                 && !IsStartOfMethod(_lastExtractedLexem))
             {
                 return;
@@ -314,13 +323,13 @@ namespace OneScript.Language.SyntaxAnalysis
         {
             return lex.Token == Token.Async || lex.Token == Token.Procedure || lex.Token == Token.Function;
         }
-        
+
         private void BuildMethod()
         {
             Debug.Assert(IsStartOfMethod(_lastExtractedLexem));
 
             var method = _nodeContext.AddChild(new MethodNode());
-            
+
             ApplyAnnotations(method);
             PushContext(method);
             if (_lastExtractedLexem.Token == Token.Async)
@@ -329,7 +338,7 @@ namespace OneScript.Language.SyntaxAnalysis
                 _isInAsyncMethod = true;
                 NextLexem();
             }
-            
+
             try
             {
                 BuildMethodSignature();
@@ -354,7 +363,7 @@ namespace OneScript.Language.SyntaxAnalysis
             {
                 // для корректной перемотки вперед в случае ошибок в секции переменных
                 PushStructureToken(_isInFunctionScope ? Token.EndFunction : Token.EndProcedure);
-                BuildVariableSection();
+                BuildVariablesSection();
             }
             finally
             {
@@ -383,7 +392,7 @@ namespace OneScript.Language.SyntaxAnalysis
         {
             var signature = _nodeContext.AddChild(new MethodSignatureNode(_lastExtractedLexem));
             var isFunction = _lastExtractedLexem.Token == Token.Function;
-            CreateChild(signature, isFunction? NodeKind.Function : NodeKind.Procedure, _lastExtractedLexem);
+            CreateChild(signature, isFunction ? NodeKind.Function : NodeKind.Procedure, _lastExtractedLexem);
             _isInFunctionScope = isFunction;
             NextLexem();
             if (!IsUserSymbol(_lastExtractedLexem))
@@ -411,29 +420,29 @@ namespace OneScript.Language.SyntaxAnalysis
 
             var paramList = new NonTerminalNode(NodeKind.MethodParameters, _lastExtractedLexem);
             signature.AddChild(paramList);
-                
+
             NextLexem(); // (
 
             if (_lastExtractedLexem.Token != Token.ClosePar)
-            while (true)
-            {
-                BuildMethodParameter(paramList);
+                while (true)
+                {
+                    BuildMethodParameter(paramList);
 
-                if (_lastExtractedLexem.Token == Token.ClosePar)
-                {
-                    break;
-                }
+                    if (_lastExtractedLexem.Token == Token.ClosePar)
+                    {
+                        break;
+                    }
 
-                if (_lastExtractedLexem.Token == Token.Comma)
-                {
-                    NextLexem();
+                    if (_lastExtractedLexem.Token == Token.Comma)
+                    {
+                        NextLexem();
+                    }
+                    else
+                    {
+                        AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
+                        return;
+                    }
                 }
-                else
-                {
-                    AddError(LocalizedErrors.TokenExpected(Token.ClosePar));
-                    return;
-                }
-            }
 
             NextLexem(); // )
         }
@@ -502,14 +511,14 @@ namespace OneScript.Language.SyntaxAnalysis
 
             return true;
         }
-        
+
         #endregion
-        
+
         private void BuildModuleBody()
         {
             if (!_lexer.Iterator.MoveToContent())
                 return;
-            
+
             var moduleBody = new NonTerminalNode(NodeKind.ModuleBody, _lastExtractedLexem);
             var node = moduleBody.AddNode(new CodeBatchNode(_lastExtractedLexem));
             PushContext(node);
@@ -529,6 +538,12 @@ namespace OneScript.Language.SyntaxAnalysis
         {
             while (_lastExtractedLexem.Type == LexemType.Annotation)
             {
+                if (_inMethodScope)
+                {
+                    AddError(LocalizedErrors.AnnotationNotAllowed());
+                    return;
+                }
+
                 var node = BuildAnnotationDefinition();
                 _annotations.Add(node);
             }
@@ -540,7 +555,6 @@ namespace OneScript.Language.SyntaxAnalysis
             BuildAnnotationParameters(node);
             return node;
         }
-
 
         private void BuildAnnotationParameters(AnnotationNode annotation)
         {
@@ -636,7 +650,10 @@ namespace OneScript.Language.SyntaxAnalysis
                 
                 if (_lastExtractedLexem.Type != LexemType.Identifier && _lastExtractedLexem.Token != Token.EndOfText)
                 {
-                    AddError(LocalizedErrors.UnexpectedOperation());
+                    if (_lastExtractedLexem.Type == LexemType.Annotation)
+                        AddError(LocalizedErrors.AnnotationNotAllowed());
+                    else
+                        AddError(LocalizedErrors.UnexpectedOperation());
                     continue;
                 }
 
