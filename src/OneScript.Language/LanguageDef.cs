@@ -284,6 +284,30 @@ namespace OneScript.Language
             return _priority[op];
         }
 
+        public static int GetBinaryPriority(Token op)
+        {
+            return IsBinaryOperator(op) ? _priority[op] : -1;
+        }
+
+        public static int GetUnaryPriority(Token op)
+        {
+            return op switch
+            {
+                Token.OpenPar => MAX_OPERATION_PRIORITY + 1,
+
+                Token.Not => _priority[op],
+                Token.UnaryMinus => _priority[op],
+                Token.UnaryPlus => _priority[op],
+
+                Token.Minus => _priority[Token.UnaryMinus],
+                Token.Plus => _priority[Token.UnaryPlus],
+
+                _ => MAX_OPERATION_PRIORITY
+            };
+        }
+
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsBuiltInFunction(Token token)
         {
