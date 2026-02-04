@@ -169,6 +169,53 @@ namespace OneScript.Language.Tests
         }
 
         [Fact]
+        public void Check_AnnotationNotAllowed_InList()
+        {
+            var code = @"
+            &Аннотация
+            Перем Пер1, &Анн Пер2;";
+
+            CatchParsingError(code, err => err.First().ErrorId.Should().Be("AnnotationNotAllowed"));
+        }
+
+        [Fact]
+        public void Check_AnnotationNotAllowed_InMethod()
+        {
+            var code = @"
+            Процедура Процедура1()
+                &Аннотация
+                Возврат
+            КонецПроцедуры";
+
+            CatchParsingError(code, err => err.Single().ErrorId.Should().Be("AnnotationNotAllowed"));
+        }
+
+        [Fact]
+        public void Check_AnnotationNotAllowed_BeforeMethodsEnd()
+        {
+            var code = @"
+            Процедура Процедура1()
+                Ч = 0;
+                &Аннотация
+            КонецПроцедуры";
+
+            CatchParsingError(code, err => err.Single().ErrorId.Should().Be("AnnotationNotAllowed"));
+        }
+
+        [Fact]
+        public void Check_AnnotationNotAllowed_InModuleBody()
+        {
+            var code = @"
+            Процедура Процедура1()
+            КонецПроцедуры
+            &Аннотация
+            Ч = 0";
+
+            CatchParsingError(code, err => err.Single().ErrorId.Should().Be("AnnotationNotAllowed"));
+        }
+
+
+        [Fact]
         public void Check_Method_Parameters()
         {
             var code = @"
@@ -1283,12 +1330,7 @@ namespace OneScript.Language.Tests
 	                Перем Переменная Экспорт;
                 КонецПроцедуры";
 
-            CatchParsingError(code, err =>
-            {
-                var errors = err.ToArray();
-                errors.Should().HaveCount(1);
-                errors[0].Description.Should().Contain("Локальная переменная не может быть экспортирована");
-            });
+            CatchParsingError(code, err => err.First().ErrorId.Should().Be("ExportedLocalVar"));
         }
 
         [Fact]
