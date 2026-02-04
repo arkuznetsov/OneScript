@@ -20,7 +20,7 @@ namespace OneScript.Execution
     /// </summary>
     public class ForbiddenBslProcess : IBslProcess
     {
-        public static IBslProcess Instance = new ForbiddenBslProcess();
+        public static readonly IBslProcess Instance = new ForbiddenBslProcess();
             
         private ForbiddenBslProcess()
         {}
