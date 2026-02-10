@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------
+/*----------------------------------------------------------
 This Source Code Form is subject to the terms of the
 Mozilla Public License, v.2.0. If a copy of the MPL
 was not distributed with this file, You can obtain one
@@ -60,15 +60,7 @@ namespace ScriptEngine.HostedScript.Extensions
         
         public static ConfigurationProviders UseEnvironmentVariableConfig(this ConfigurationProviders providers, string varName)
         {
-            var env = System.Environment.GetEnvironmentVariable(varName);
-            if(env == null)
-                return providers;
-
-            var reader = new FormatStringConfigProvider
-            {
-                ValuesString = env
-            };
-            
+            var reader = new EnvironmentVariableConfigProvider(varName);
             providers.Add(reader.GetProvider());
             return providers;
         }
