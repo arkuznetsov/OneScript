@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------
+/*----------------------------------------------------------
 This Source Code Form is subject to the terms of the
 Mozilla Public License, v.2.0. If a copy of the MPL
 was not distributed with this file, You can obtain one
@@ -21,8 +21,8 @@ namespace oscript
                 .SetupConfiguration(p =>
                 {
                     p.UseSystemConfigFile()
-                        .UseEnvironmentVariableConfig("OSCRIPT_CONFIG")
-                        .UseEntrypointConfigFile(codePath);
+                        .UseEntrypointConfigFile(codePath)
+                        .UseEnvironmentVariableConfig("OSCRIPT_CONFIG");
                 });
 
             BuildUpWithIoC(builder);
