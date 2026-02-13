@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------
+/*----------------------------------------------------------
 This Source Code Form is subject to the terms of the
 Mozilla Public License, v.2.0. If a copy of the MPL
 was not distributed with this file, You can obtain one
@@ -8,7 +8,7 @@ at http://mozilla.org/MPL/2.0/.
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using ScriptEngine.Hosting;
 
 namespace ScriptEngine.HostedScript
 {
@@ -20,10 +20,17 @@ namespace ScriptEngine.HostedScript
 
         public bool Required { get; set; }
 
-        public Func<IDictionary<string, string>> GetProvider()
+        public string SourceId => FilePath;
+
+        public IReadOnlyDictionary<string, string> Load()
         {
-            var localCopy = FilePath;
-            return () => ReadConfigFile(localCopy);
+            return (IReadOnlyDictionary<string, string>)ReadConfigFile(FilePath);
+        }
+
+        public string ResolveRelativePath(string path)
+        {
+            var confDir = Path.GetDirectoryName(FilePath);
+            return Path.Combine(confDir, path);
         }
         
         private IDictionary<string, string> ReadConfigFile(string configPath)
@@ -58,30 +65,7 @@ namespace ScriptEngine.HostedScript
                 }
             }
 
-            ExpandRelativePaths(conf, configPath);
-
             return conf;
-        }
-
-        private static void ExpandRelativePaths(IDictionary<string, string> conf, string configFile)
-        {
-            string sysDir = null;
-            conf.TryGetValue(OneScriptLibraryOptions.SYSTEM_LIBRARY_DIR, out sysDir);
-
-            var confDir = System.IO.Path.GetDirectoryName(configFile);
-            if (sysDir != null && !System.IO.Path.IsPathRooted(sysDir))
-            {
-                sysDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(confDir, sysDir));
-                conf[OneScriptLibraryOptions.SYSTEM_LIBRARY_DIR] = sysDir;
-            }
-
-            string additionals;
-            if (conf.TryGetValue(OneScriptLibraryOptions.ADDITIONAL_LIBRARIES, out additionals))
-            {
-                var fullPaths = additionals.Split(new[]{";"}, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(x => Path.GetFullPath(Path.Combine(confDir, x)));
-                conf[OneScriptLibraryOptions.ADDITIONAL_LIBRARIES] = string.Join(";",fullPaths);
-            }
         }
     }
 }
