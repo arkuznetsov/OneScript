@@ -4,8 +4,8 @@ pipeline {
     agent none
 
     environment {
-        VersionPrefix = '2.0.1'
-        VersionSuffix = 'rc.2'+"+${BUILD_NUMBER}"
+        VersionPrefix = '2.0.2'
+        VersionSuffix = 'rc.1'+"+${BUILD_NUMBER}"
         outputEnc = '65001'
     }
 
